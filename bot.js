@@ -49,7 +49,6 @@ for (const file of eventFiles) {
 /**********************************************************************/
 // Define Collection of Commands, Slash Commands and cooldowns
 
-client.commands = new Collection();
 client.slashCommands = new Collection();
 client.buttonCommands = new Collection();
 client.selectCommands = new Collection();
@@ -59,25 +58,23 @@ client.triggers = new Collection();
 
 /**********************************************************************/
 // Registration of Message-Based Commands
-
-/**
- * @type {String[]}
- * @description All command categories aka folders.
- */
-
-const commandFolders = fs.readdirSync("./commands");
-
 // Loop through all files and store commands in commands collection.
 
-for (const folder of commandFolders) {
-	const commandFiles = fs
-		.readdirSync(`./commands/${folder}`)
-		.filter((file) => file.endsWith(".js"));
-	for (const file of commandFiles) {
-		const command = require(`./commands/${folder}/${file}`);
-		client.commands.set(command.name, command);
+function configureClientAction(client, clientActionType, baseFolderName) {
+	client[clientActionType] = new Collection();
+	const baseFolders = fs.readdirSync(`./${baseFolderName}`);
+	for (const folder of baseFolders) {
+		const commandFiles = fs
+			.readdirSync(`./${baseFolderName}/${folder}`)
+			.filter((file) => file.endsWith(".js"));
+		for (const file of commandFiles) {
+			const command = require(`./${baseFolderName}/${folder}/${file}`);
+			client[clientActionType].set(command.name, command);
+		}
 	}
 }
+
+configureClientAction(client, "commands", "commands");
 
 /**********************************************************************/
 // Registration of Slash-Command Interactions.
