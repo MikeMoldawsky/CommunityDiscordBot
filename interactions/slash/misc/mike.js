@@ -105,6 +105,6 @@ module.exports = {
 		});
 
 		const duration = (interaction.options.getInteger("duration") || 1 ) * 60 * 1000; // default of 1 min for testing
-		setTimeout( () => onMeetingCompleted(interaction, voiceChannel.id, meetingCompletedRole), 10000)
+		setTimeout( () => onMeetingCompleted(interaction, voiceChannel.id, meetingCompletedRole), duration)
 	},
 };
