@@ -5,7 +5,8 @@
  */
 
 module.exports = {
-	id: "sample",
+	id: 942472662624657448, // red heart
+
 
 	/**
 	 * @description Executes when the button with ID "sample" is clicked.

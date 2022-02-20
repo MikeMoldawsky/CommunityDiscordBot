@@ -23,12 +23,6 @@ const client = new Client({
 
 /**********************************************************************/
 // Below we will be making an event handler!
-
-/**
- * @description All event files of the event handler.
- * @type {String[]}
- */
-
 const eventFiles = fs
 	.readdirSync("./events")
 	.filter((file) => file.endsWith(".js"));
@@ -49,7 +43,6 @@ for (const file of eventFiles) {
 /**********************************************************************/
 // Define Collection of Commands, Slash Commands and cooldowns
 
-client.slashCommands = new Collection();
 client.buttonCommands = new Collection();
 client.selectCommands = new Collection();
 client.contextCommands = new Collection();
@@ -60,56 +53,32 @@ client.triggers = new Collection();
 // Registration of Message-Based Commands
 // Loop through all files and store commands in commands collection.
 
-function configureClientAction(client, clientActionType, baseFolderName) {
+function configureClientAction(client, clientActionType, baseFolderPath, commandKeyMapper) {
 	client[clientActionType] = new Collection();
-	const baseFolders = fs.readdirSync(`./${baseFolderName}`);
+	const baseFolders = fs.readdirSync(`./${baseFolderPath}`);
 	for (const folder of baseFolders) {
 		const commandFiles = fs
-			.readdirSync(`./${baseFolderName}/${folder}`)
+			.readdirSync(`./${baseFolderPath}/${folder}`)
 			.filter((file) => file.endsWith(".js"));
 		for (const file of commandFiles) {
-			const command = require(`./${baseFolderName}/${folder}/${file}`);
-			client[clientActionType].set(command.name, command);
+			const command = require(`./${baseFolderPath}/${folder}/${file}`);
+			client[clientActionType].set(commandKeyMapper(command), command);
 		}
 	}
 }
 
-configureClientAction(client, "commands", "commands");
 
-/**********************************************************************/
-// Registration of Slash-Command Interactions.
-
-/**
- * @type {String[]}
- * @description All slash commands.
- */
-
-const slashCommands = fs.readdirSync("./interactions/slash");
-
+configureClientAction(client, "commands", "commands", command => command.name);
 // Loop through all files and store slash-commands in slashCommands collection.
+configureClientAction(client, "slashCommands","interactions/slash", command => command.data.name);
 
-for (const module of slashCommands) {
-	const commandFiles = fs
-		.readdirSync(`./interactions/slash/${module}`)
-		.filter((file) => file.endsWith(".js"));
 
-	for (const commandFile of commandFiles) {
-		const command = require(`./interactions/slash/${module}/${commandFile}`);
-		client.slashCommands.set(command.data.name, command);
-	}
-}
 
-/**********************************************************************/
+
+
 // Registration of Context-Menu Interactions
-
-/**
- * @type {String[]}
- * @description All Context Menu commands.
- */
-
-const contextMenus = fs.readdirSync("./interactions/context-menus");
-
 // Loop through all files and store slash-commands in slashCommands collection.
+const contextMenus = fs.readdirSync("./interactions/context-menus");
 
 for (const folder of contextMenus) {
 	const files = fs
@@ -118,22 +87,14 @@ for (const folder of contextMenus) {
 	for (const file of files) {
 		const menu = require(`./interactions/context-menus/${folder}/${file}`);
 		const keyName = `${folder.toUpperCase()} ${menu.data.name}`;
+		console.log(`NAME: >>>>>>>> ${keyName}`)
 		client.contextCommands.set(keyName, menu);
 	}
 }
 
-/**********************************************************************/
 // Registration of Button-Command Interactions.
-
-/**
- * @type {String[]}
- * @description All button commands.
- */
-
-const buttonCommands = fs.readdirSync("./interactions/buttons");
-
 // Loop through all files and store button-commands in buttonCommands collection.
-
+const buttonCommands = fs.readdirSync("./interactions/buttons");
 for (const module of buttonCommands) {
 	const commandFiles = fs
 		.readdirSync(`./interactions/buttons/${module}`)
@@ -141,31 +102,23 @@ for (const module of buttonCommands) {
 
 	for (const commandFile of commandFiles) {
 		const command = require(`./interactions/buttons/${module}/${commandFile}`);
+		console.log(`set command: ${command.id} with command: ${command}`)
 		client.buttonCommands.set(command.id, command);
 	}
 }
 
-/**********************************************************************/
 // Registration of select-menus Interactions
-
-/**
- * @type {String[]}
- * @description All Select Menu commands.
- */
-
- const selectMenus = fs.readdirSync("./interactions/select-menus");
-
- // Loop through all files and store select-menus in slashCommands collection.
- 
- for (const module of selectMenus) {
-	 const commandFiles = fs
-		 .readdirSync(`./interactions/select-menus/${module}`)
-		 .filter((file) => file.endsWith(".js"));
-	 for (const commandFile of commandFiles) {
-		 const command = require(`./interactions/select-menus/${module}/${commandFile}`);
-		 client.selectCommands.set(command.id, command);
-	 }
+// Loop through all files and store select-menus in slashCommands collection.
+const selectMenus = fs.readdirSync("./interactions/select-menus");
+for (const module of selectMenus) {
+ const commandFiles = fs
+	 .readdirSync(`./interactions/select-menus/${module}`)
+	 .filter((file) => file.endsWith(".js"));
+ for (const commandFile of commandFiles) {
+	 const command = require(`./interactions/select-menus/${module}/${commandFile}`);
+	 client.selectCommands.set(command.id, command);
  }
+}
 
 /**********************************************************************/
 // Registration of Slash-Commands in Discord API
@@ -204,16 +157,9 @@ const commandJsonData = [
 
 /**********************************************************************/
 // Registration of Message Based Chat Triggers
-
-/**
- * @type {String[]}
- * @description All trigger categories aka folders.
- */
-
-const triggerFolders = fs.readdirSync("./triggers");
-
 // Loop through all files and store commands in commands collection.
 
+const triggerFolders = fs.readdirSync("./triggers");
 for (const folder of triggerFolders) {
 	const triggerFiles = fs
 		.readdirSync(`./triggers/${folder}`)
@@ -225,5 +171,4 @@ for (const folder of triggerFolders) {
 }
 
 // Login into your client application with bot's token.
-
 client.login(token);
