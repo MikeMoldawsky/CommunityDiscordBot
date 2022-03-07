@@ -33,7 +33,7 @@ This template comes in with many in-built useful and flexible features, such as
 
 #### • **Dynamic Event Handler:**
 
-- All events goes inside the [events](https://github.com/NamVr/DiscordBot-Template/blob/master/events/) folder. You don't need to use `client.on()` in the main `index.js` file to handle events.
+- All events goes inside the [events](https://github.com/NamVr/DiscordBot-Template/blob/master/events/) folder. You don't need to use `client.on()` in the main `db.js` file to handle events.
 - Using simple skeleton code for events, you can make any amount of events in the events folder using the event handler.
 
 #### • **Dynamic Trigger Handler:**
