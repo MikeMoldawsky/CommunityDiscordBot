@@ -58,10 +58,10 @@ module.exports = {
 				guildId,
 				channel: customChannel ? customChannel.id : channelId,
 				startsAt: new Date(),
-				roundCount: interaction.options.getInteger("rounds") || 3,
+				roundCount: interaction.options.getInteger("rounds") || 2,
 				roundDuration: interaction.options.getInteger("duration") || 1,
 				breakDuration: interaction.options.getInteger("break-duration") || 1,
-				roomCapacity: interaction.options.getInteger("room-capacity") || 2,
+				roomCapacity: interaction.options.getInteger("room-capacity") || 1,
 			})
 
 			await interaction.reply({

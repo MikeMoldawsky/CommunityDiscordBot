@@ -6,6 +6,7 @@ const Schema = mongoose.Schema;
 const RoomSchema = new Schema({
 	number: Number,
 	participants: [String],
+	channelId: String,
 })
 
 const RoundSchema = new Schema({

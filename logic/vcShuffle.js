@@ -42,7 +42,7 @@ const startRound = async sessionId => {
 		}).keys()
 	)
 
-	const rooms = _.chunk(_.shuffle(participants), roomCapacity);
+	const groups = _.chunk(_.shuffle(participants), roomCapacity);
 
 	const lastRoundMaxNumber = _.get(
 		_.maxBy(_.last(session.rounds)?.rooms, r => r.number),
@@ -50,12 +50,19 @@ const startRound = async sessionId => {
 		-1
 	);
 
-	session.rounds.push({
-		rooms: _.map(rooms, (r, i) => ({
-			number: lastRoundMaxNumber + i + 1,
-			participants: r
-		}))
-	});
+	const rooms = await Promise.all(
+		_.map(groups, async (group, i) => {
+			const roomNumber = lastRoundMaxNumber + i + 1
+			const vc = await createVoiceChannel(guild, roomNumber)
+			return {
+				number: roomNumber,
+				participants: group,
+				channelId: vc.id,
+			}
+		})
+	)
+
+	session.rounds.push({ rooms });
 	session.status = "ongoing";
 	await session.save();
 
@@ -63,15 +70,26 @@ const startRound = async sessionId => {
 
 	setTimeout(() => {
 		// endRound(sessionId)
+		_.forEach(rooms, async ({ channelId }) => {
+			const voiceChannel = await client.channels.fetch(channelId);
+			await voiceChannel.delete()
+		})
 		console.log(`Round ${_.size(session.rounds)} Ended`);
 		startRound(sessionId);
 		// setTimeout(() => {
 		// 	startRound(sessionId)
 		// }, breakDuration * 60 * 1000)
-	}, roundDuration * 1000);
+	}, roundDuration * 3 * 1000);
 	// }, roundDuration * 60 * 1000);
 
 };
+
+function createVoiceChannel(guild, roomNumber) {
+	// todo - make private + assign users
+	return guild.channels.create(
+		`Room #${roomNumber}`
+		, { type: "GUILD_VOICE", reason: "Let's connect and get to know each other :)" });
+}
 
 const addToRoom = async (session, userId, roomNumber) => {
 	try {
