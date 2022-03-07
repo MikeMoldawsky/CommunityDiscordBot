@@ -19,6 +19,7 @@ module.exports = {
 		.setDescription(
 			"Start a shuffled voice chat session"
 		)
+		.addChannelOption(option => option.setName('channel').setDescription("The participants channel"))
 		.addIntegerOption((option) =>
 			option
 				.setName("rounds")
@@ -43,16 +44,19 @@ module.exports = {
 	 * @param {*} interaction The interaction object of the command.
 	 */
 
+
 	async execute(interaction) {
 
 		console.log({interaction})
 		const {guildId, channelId, user} = interaction
 
+		const customChannel = interaction.options.getChannel("channel")
+
 		try {
 			const session = await startSession({
 				creator: user.id,
 				guildId,
-				channel: channelId,
+				channel: customChannel ? customChannel.id : channelId,
 				startsAt: new Date(),
 				roundCount: interaction.options.getInteger("rounds") || 3,
 				roundDuration: interaction.options.getInteger("duration") || 1,

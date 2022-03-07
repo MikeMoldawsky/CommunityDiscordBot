@@ -1,7 +1,8 @@
+const client = require('./client')
 const Session = require("./db/models/Session");
 const _ = require("lodash");
 
-const startSession = async sessionData => {
+const startSession = async (sessionData) => {
 	// validate session not ongoing
 	// let session = await Session.findOne({
 	// 	guildId: sessionData.guildId,
@@ -11,6 +12,7 @@ const startSession = async sessionData => {
 	// if (!_.isNil(session)) throw `Session already ${session.status}`
 
 	// save to db
+	// console.log({sessionData})
 	const session = new Session(sessionData);
 
 	const result = await session.save();
@@ -30,8 +32,16 @@ const startRound = async sessionId => {
 		return session.save();
 	}
 
-	// todo - fetch users from <guildId>/<channel>
-	const participants = ["user1", "user2", "user3", "user4", "user5", "user6", "user7", "user8"];
+	const guild = client.guilds.cache.get(guildId)
+
+	// fetch participants from <guildId>/<channel> - no bots, no offline users
+	const participants = Array.from(
+		guild.channels.cache.get(channel).members.filter(m => {
+			// console.log({ m })
+			return !m.user.bot && m.presence.status !== 'offline'
+		}).keys()
+	)
+
 	const rooms = _.chunk(_.shuffle(participants), roomCapacity);
 
 	const lastRoundMaxNumber = _.get(
@@ -58,7 +68,8 @@ const startRound = async sessionId => {
 		// setTimeout(() => {
 		// 	startRound(sessionId)
 		// }, breakDuration * 60 * 1000)
-	}, roundDuration * 60 * 1000);
+	}, roundDuration * 1000);
+	// }, roundDuration * 60 * 1000);
 
 };
 
@@ -69,7 +80,6 @@ const addToRoom = async (session, userId, roomNumber) => {
 		const room = _.find(_.last(session.rounds)?.rooms, r => r.number === roomNumber)
 		room.participants.push(userId)
 
-		// session.rounds[session.rounds.length - 1].rooms[roomNumber].participants.push(userId);
 		await session.save();
 	} catch (e) {
 		throw "Wrong parameters";
