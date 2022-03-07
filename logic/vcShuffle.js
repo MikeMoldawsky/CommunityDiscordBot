@@ -23,6 +23,7 @@ const startSession = async (sessionData) => {
 const startRound = async sessionId => {
 	const session = await Session.findById(sessionId);
 
+
 	const { guildId, channel, roomCapacity, status, rounds, roundCount, roundDuration, breakDuration } = session;
 	if (status === "ended") return;
 
@@ -43,6 +44,7 @@ const startRound = async sessionId => {
 	)
 
 	const groups = _.chunk(_.shuffle(participants), roomCapacity);
+
 
 	const lastRoundMaxNumber = _.get(
 		_.maxBy(_.last(session.rounds)?.rooms, r => r.number),
