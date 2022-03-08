@@ -8,7 +8,6 @@
 
 // Deconstructed the constants we need in this file.
 
-const { MessageEmbed, Collection } = require("discord.js");
 const { SlashCommandBuilder } = require("@discordjs/builders");
 const { startSession } = require("../../../logic/vcShuffle");
 
@@ -58,7 +57,7 @@ module.exports = {
 				guildId,
 				channel: customChannel ? customChannel.id : channelId,
 				startsAt: new Date(),
-				roundCount: interaction.options.getInteger("rounds") || 2,
+				roundCount: interaction.options.getInteger("rounds") || 1,
 				roundDuration: interaction.options.getInteger("duration") || 1,
 				breakDuration: interaction.options.getInteger("break-duration") || 1,
 				roomCapacity: interaction.options.getInteger("room-capacity") || 1,

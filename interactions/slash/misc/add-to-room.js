@@ -8,7 +8,6 @@
 
 // Deconstructed the constants we need in this file.
 
-const { MessageEmbed, Collection } = require("discord.js");
 const { SlashCommandBuilder } = require("@discordjs/builders");
 const { getOnGoing, addToRoom } = require("../../../logic/vcShuffle");
 const _ = require('lodash')
@@ -41,7 +40,7 @@ module.exports = {
 		const {guildId, channelId, user} = interaction
 
 		try {
-			const session = await getOnGoing(guildId)
+			const session = await getOnGoing(guildId, channelId)
 			if (_.isNil(session)) {
 				return await interaction.reply({
 					content: 'No ongoing session'
