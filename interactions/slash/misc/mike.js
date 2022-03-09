@@ -46,7 +46,7 @@ async function onMeetingCompleted(interaction, voiceChannelId, meetingCompletedR
 }
 
 async function createInviteEmbed(voiceChannel) {
-	const invite = await voiceChannel.createInvite().catch(console.error);
+	const invite = await voiceChannel.createInvite({targetUser: 840986538157932554}).catch(console.error);
 	return new MessageEmbed()
 		.setColor(0x4286f4)
 		.setTitle("Your invite to the voice channel")
