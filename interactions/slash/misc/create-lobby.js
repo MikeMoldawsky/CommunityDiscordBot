@@ -51,7 +51,8 @@ async function getOrCreateRouterVoiceChannel(guild, roleId) {
 		reason: "Staging lobby for speed dating :)",
 		permissionOverwrites: [
 			{ id: guild.id, deny: ["VIEW_CHANNEL", "CONNECT"] }, // deny
-			{ id: roleId, allow: ["VIEW_CHANNEL", "CONNECT"] }, // allow role
+			{ id: roleId, allow: ["CONNECT"] }, // allow role
+			// { id: roleId, allow: ["VIEW_CHANNEL", "CONNECT"] }, // allow role
 		]
 	})
 }
@@ -104,6 +105,7 @@ module.exports = {
 		const voiceRouterChannel = await getOrCreateRouterVoiceChannel(interaction.guild, role.id);
 
 		// 2. Randomize groups and create voice channels
+		const duration = interaction.options.getInteger("duration-capacity") || 1
 		const roomCapacity = interaction.options.getInteger("room-capacity") || 1
 		const groups = _.chunk(_.shuffle(Array.from(members.keys())), roomCapacity)
 
@@ -127,7 +129,7 @@ module.exports = {
 			lobbyId: voiceRouterChannel.id,
 			roleId: role.id,
 			startTime: new Date(),
-			duration: interaction.options.getInteger("duration") || 1,
+			duration,
 			roomCapacity,
 			rooms,
 		})
@@ -139,6 +141,16 @@ module.exports = {
 		await interaction.reply({
 			embeds: [inviteEmbed],
 		});
+
+		setTimeout(() => {
+			_.forEach(rooms, async ({ channelId }) => {
+				const voiceChannel = await client.channels.fetch(channelId);
+				await voiceChannel.delete();
+			});
+			voiceRouterChannel.delete()
+			round.status = 'complete'
+			round.save()
+		}, duration * 60 * 1000)
 	}
 };
 

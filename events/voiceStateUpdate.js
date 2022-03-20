@@ -22,7 +22,7 @@ module.exports = {
 		 * @description The Message Content of the received message seperated by spaces (' ') in an array, this excludes prefix and command/alias itself.
 		 */
 
-		const round = await Round.findOne({lobbyId: newState.channelId})
+		const round = await Round.findOne({lobbyId: newState.channelId, status: 'active'})
 		if (round) {
 			console.log('ROUND FOUND', round)
 			const userId = newState.id

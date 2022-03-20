@@ -18,6 +18,7 @@ const RoundSchema = new Schema({
 	startTime: Date,
 	duration: {type: Number, default: 10},
 	roomCapacity: {type: Number, default: 2},
+	status: {type: String, default: 'active'},
 	rooms: [RoomSchema],
 });
 
