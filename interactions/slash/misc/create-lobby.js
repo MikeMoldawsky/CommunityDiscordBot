@@ -7,21 +7,17 @@ const MeetingHistory = require("../../../logic/db/models/MeetingHistory");
 const {createVoiceChannel} = require('../../../logic/vcShuffle')
 const matchRooms = require('../../../logic/match-rooms')
 
-async function getOrCreateRole(guildId, roleName) {
-	console.log(`Creating role ${roleName}`);
+async function getOrCreateRole(guildId, roleInfo) {
+	console.log(`Creating role ${roleInfo.name}`);
 	const guild = await client.guilds.fetch(guildId);
 	// TODO replace roleName with roleId
-	let role = guild.roles.cache.find(r => r.name === roleName);
+	let role = guild.roles.cache.find(r => r.name === roleInfo.name);
 	if(!role){
-		role = await guild.roles.create({
-			name: roleName,
-			reason: "You deserve a Role as you completed the meeting!",
-			color: "GOLD"
-		});
-		console.log(`Role was created ${roleName}`);
+		role = await guild.roles.create(roleInfo);
+		console.log(`Role was created ${roleInfo.name}`);
 	}
 	else {
-		console.log(`Role already exists ${roleName}`);
+		console.log(`Role already exists ${roleInfo.name}`);
 	}
 	return role
 }
@@ -95,9 +91,21 @@ module.exports = {
 	 */
 
 	async execute(interaction) {
-		// 0. Create dedicated role to protect the voice staging lobby channel from uninvited users
-		const role = await getOrCreateRole(interaction.guild.id, "speed-dating");
 		const channel = interaction.options.getChannel("lobby") || interaction.channel;
+		const duration = interaction.options.getInteger("duration-capacity") || .25
+		const roomCapacity = interaction.options.getInteger("room-capacity") || 1
+
+		// 0. Create dedicated role to protect the voice staging lobby channel from uninvited users
+		const role = await getOrCreateRole(interaction.guild.id, {
+			name: `speed-dating-${channel.name}`,
+			reason: "Active speed-dating round participant",
+			color: "GOLD"
+		});
+		const completeRole = await getOrCreateRole(interaction.guild.id, {
+			name: `speed-dater`,
+			reason: "You deserve a Role as you completed the meeting!",
+			color: "RED"
+		});
 		// console.log({channel, role})
 		const guild = await client.guilds.fetch(interaction.guild.id)
 		const members = await addRoleToChannelMembers(guild, channel.id, role.id);
@@ -106,13 +114,11 @@ module.exports = {
 		const voiceRouterChannel = await getOrCreateRouterVoiceChannel(interaction.guild, role.id);
 
 		// 2. Randomize groups and create voice channels
-		const duration = interaction.options.getInteger("duration-capacity") || .25
-		const roomCapacity = interaction.options.getInteger("room-capacity") || 1
-
 		// const groups = _.chunk(_.shuffle(Array.from(members.keys())), roomCapacity)
 		const history = await MeetingHistory.findOne({ guildId: guild.id })
 		console.log({historyBefore: history})
 		const { rooms: groups } = matchRooms(Array.from(members.keys()), history, roomCapacity)
+		// todo - handle clear history logic
 
 		console.log({history, groups})
 
@@ -155,8 +161,11 @@ module.exports = {
 				await voiceChannel.delete();
 			});
 			voiceRouterChannel.delete()
+			role.delete()
 			round.status = 'complete'
 			round.save()
+			// todo - decide who is considered a participant and award with a role
+			addRoleToChannelMembers(guild, channel.id, completeRole.id)
 		}, duration * 60 * 1000)
 	}
 };

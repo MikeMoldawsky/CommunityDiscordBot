@@ -44,10 +44,10 @@ module.exports = {
 				const newHistory = _.reduce(channelMemberIds, (h, memberId) => {
 					return {
 						...h,
-						[memberId]: [
+						[memberId]: _.uniq([
 							...(_.get(h, memberId, [])),
 							memberId === userId ? _.without(channelMemberIds, userId) : userId
-						],
+						]),
 					}
 				}, meetingsHistory.history)
 

@@ -175,9 +175,9 @@ client.login(token);
 //
 // let history = {}
 //
-// const ROUNDS = 5
-// const USERS = 10
-// const ROUND_USERS = 10
+// const ROUNDS = 4
+// const USERS = 4
+// const ROUND_USERS = 4
 //
 // const users = _.map(Array(USERS), (v, i) => `User ${i}`)
 //
