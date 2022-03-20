@@ -3,7 +3,9 @@ const _ = require("lodash");
 const { MessageEmbed } = require("discord.js");
 const client = require("../../../logic/client");
 const Round = require("../../../logic/db/models/Round");
+const MeetingHistory = require("../../../logic/db/models/MeetingHistory");
 const {createVoiceChannel} = require('../../../logic/vcShuffle')
+const matchRooms = require('../../../logic/match-rooms')
 
 async function getOrCreateRole(guildId, roleName) {
 	console.log(`Creating role ${roleName}`);
@@ -106,7 +108,14 @@ module.exports = {
 		// 2. Randomize groups and create voice channels
 		const duration = interaction.options.getInteger("duration-capacity") || .25
 		const roomCapacity = interaction.options.getInteger("room-capacity") || 1
-		const groups = _.chunk(_.shuffle(Array.from(members.keys())), roomCapacity)
+
+		// const groups = _.chunk(_.shuffle(Array.from(members.keys())), roomCapacity)
+		const history = await MeetingHistory.findOne({ guildId: guild.id })
+		console.log({historyBefore: history})
+		const { rooms: groups } = matchRooms(Array.from(members.keys()), history, roomCapacity)
+
+		console.log({history, groups})
+
 		const rooms = await Promise.all(
 			_.map(groups, async (group, i) => {
 				const roomNumber = i + 1;

@@ -169,25 +169,26 @@ for (const folder of triggerFolders) {
 // Login into your client application with bot's token.
 client.login(token);
 
-/* TEST MATCH ROOMS
-const matchRooms = require('./logic/match-rooms')
-const _ = require('lodash')
+// // TEST MATCH ROOMS
+// const matchRooms = require('./logic/match-rooms')
+// const _ = require('lodash')
+//
+// let history = {}
+//
+// const ROUNDS = 5
+// const USERS = 10
+// const ROUND_USERS = 10
+//
+// const users = _.map(Array(USERS), (v, i) => `User ${i}`)
+//
+// for (let i = 0; i < ROUNDS; i++) {
+// 	let roundUsers = _.take(_.shuffle(users), ROUND_USERS)
+// 	let {rooms} = matchRooms(roundUsers, history, 2)
+// 	const repetitions = _.countBy(history, userMatches => userMatches.length - _.uniq(userMatches).length)
+// 	// todo - improve clear history logic
+// 	if (!_.has(repetitions, '0')) {
+// 		history = {}
+// 	}
+// 	console.log({rooms, history, repetitions})
+// }
 
-let history = {}
-
-const ROUNDS = 20
-const USERS = 50
-const ROUND_USERS = 40
-
-const users = _.map(Array(USERS), (v, i) => `User ${i}`)
-
-for (let i = 0; i < ROUNDS; i++) {
-	let roundUsers = _.take(_.shuffle(users), ROUND_USERS)
-	let {rooms, history: h} = matchRooms(roundUsers, history, 2)
-	console.log({rooms, h})
-}
-
-const repetitions = _.countBy(history, userMatches => userMatches.length - _.uniq(userMatches).length)
-
-console.log({repetitions})
- */

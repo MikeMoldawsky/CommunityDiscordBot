@@ -39,9 +39,9 @@ const matchRoom = (unmatched, rooms, roomCapacity, history, retries = 0) => {
 			return matchRoom(unmatched, rooms, roomCapacity, history, retries + 1)
 		}
 		const extraMember = roomMembers[0]
-		let lastRoom = _.findLast(rooms, r => r.length === roomCapacity && !_.includes(r, extraMember))
+		let lastRoom = _.findLast(rooms, r => r.length <= roomCapacity && !_.includes(r, extraMember))
 		if (!lastRoom) {
-			lastRoom = _.findLast(rooms, r => r.length === roomCapacity)
+			lastRoom = _.findLast(rooms, r => r.length <= roomCapacity)
 		}
 		if (!lastRoom) {
 			lastRoom = _.last(rooms)
@@ -66,6 +66,13 @@ const matchRoom = (unmatched, rooms, roomCapacity, history, retries = 0) => {
 }
 
 const matchRooms = (members, history, roomCapacity) => {
+	if (members.length <= roomCapacity) {
+		// dev edge case - small number of users
+		_.forEach(members, m => {
+			_.set(history, m, [..._.get(history, m, []), ..._.without(members, m)])
+		})
+		return {rooms: [members], history}
+	}
 	return matchRoom(members, [], roomCapacity, history)
 }
 

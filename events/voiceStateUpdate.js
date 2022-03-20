@@ -40,16 +40,18 @@ module.exports = {
 					meetingsHistory = new MeetingHistory({ guildId })
 				}
 				const channel = await guild.channels.cache.get(room.channelId)
-				const newHistory = _.reduce(Array.from(channel.members.values()), (h, m) => {
-					console.log({m})
-						return {
-							...h,
-							[m.id]: [...(_.get(h, m.id, [])), userId],
-						}
+				const channelMemberIds = Array.from(channel.members.keys())
+				const newHistory = _.reduce(channelMemberIds, (h, memberId) => {
+					return {
+						...h,
+						[memberId]: [
+							...(_.get(h, memberId, [])),
+							memberId === userId ? _.without(channelMemberIds, userId) : userId
+						],
+					}
 				}, meetingsHistory.history)
 
 				console.log({newHistory})
-				newHistory[userId] = Array.from(channel.members.keys())
 
 				meetingsHistory.history = newHistory
 				await meetingsHistory.save()
