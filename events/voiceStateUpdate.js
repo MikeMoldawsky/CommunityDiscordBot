@@ -14,7 +14,8 @@ module.exports = {
 	/**
 	 * @description Executes when a channel is created and handle it.
 	 * @author Naman Vrati
-	 * @param {*} message The message which was created.
+	 * @param {*} oldState
+	 * @param {*} newState
 	 */
 
 	async execute(oldState, newState) {
@@ -39,7 +40,6 @@ module.exports = {
 					meetingsHistory = new MeetingHistory({ guildId })
 				}
 				const channel = await guild.channels.cache.get(room.channelId)
-				// console.log({members: channel.members})
 				const newHistory = _.reduce(Array.from(channel.members.values()), (h, m) => {
 					console.log({m})
 						return {
