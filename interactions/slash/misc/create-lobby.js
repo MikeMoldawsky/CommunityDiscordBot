@@ -93,8 +93,7 @@ module.exports = {
 	 */
 
 	async execute(interaction) {
-		// 0. Create dedicated role to protect the voice staging lobby channel from
-		// uninvited users
+		// 0. Create dedicated role to protect the voice staging lobby channel from uninvited users
 		const role = await getOrCreateRole(interaction.guild.id, "speed-dating");
 		const channel = interaction.options.getChannel("lobby") || interaction.channel;
 		// console.log({channel, role})
@@ -105,10 +104,9 @@ module.exports = {
 		const voiceRouterChannel = await getOrCreateRouterVoiceChannel(interaction.guild, role.id);
 
 		// 2. Randomize groups and create voice channels
-		const duration = interaction.options.getInteger("duration-capacity") || 1
+		const duration = interaction.options.getInteger("duration-capacity") || .25
 		const roomCapacity = interaction.options.getInteger("room-capacity") || 1
 		const groups = _.chunk(_.shuffle(Array.from(members.keys())), roomCapacity)
-
 		const rooms = await Promise.all(
 			_.map(groups, async (group, i) => {
 				const roomNumber = i + 1;

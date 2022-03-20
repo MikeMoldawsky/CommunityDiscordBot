@@ -1,15 +1,13 @@
 const mongoose = require('mongoose')
 const db = require('../db')
 
-const Schema = mongoose.Schema;
-
-const RoomSchema = new Schema({
+const RoomSchema = new mongoose.Schema({
 	number: Number,
 	participants: [String],
 	channelId: String,
 })
 
-const RoundSchema = new Schema({
+const RoundSchema = new mongoose.Schema({
 	creator: String,
 	guildId: String,
 	channelId: String,

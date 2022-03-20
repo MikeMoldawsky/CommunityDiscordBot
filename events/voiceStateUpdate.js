@@ -6,6 +6,7 @@
 const _ = require("lodash");
 const client = require("../logic/client");
 const Round = require("../logic/db/models/Round");
+const MeetingHistory = require("../logic/db/models/MeetingHistory");
 
 module.exports = {
 	name: "voiceStateUpdate",
@@ -26,11 +27,32 @@ module.exports = {
 		if (round) {
 			console.log('ROUND FOUND', round)
 			const userId = newState.id
+			const guildId = newState.guild.id
 			const room = _.find(round.rooms, r => _.includes(r.participants, userId))
 			if (room) {
 				console.log('ROOM FOUND', room)
-				const guild = client.guilds.cache.get(newState.guild.id)
+				const guild = client.guilds.cache.get(guildId)
 				await guild.members.cache.get(newState.id).voice.setChannel(room.channelId)
+
+				let meetingsHistory = await MeetingHistory.findOne({ guildId })
+				if (!meetingsHistory) {
+					meetingsHistory = new MeetingHistory({ guildId })
+				}
+				const channel = await guild.channels.cache.get(room.channelId)
+				// console.log({members: channel.members})
+				const newHistory = _.reduce(Array.from(channel.members.values()), (h, m) => {
+					console.log({m})
+						return {
+							...h,
+							[m.id]: [...(_.get(h, m.id, [])), userId],
+						}
+				}, meetingsHistory.history)
+
+				console.log({newHistory})
+				newHistory[userId] = Array.from(channel.members.keys())
+
+				meetingsHistory.history = newHistory
+				await meetingsHistory.save()
 			}
 		}
 	},
