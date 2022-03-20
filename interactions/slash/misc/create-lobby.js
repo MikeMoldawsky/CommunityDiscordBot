@@ -1,51 +1,60 @@
 const { SlashCommandBuilder } = require("@discordjs/builders");
 const _ = require("lodash");
 const { MessageEmbed } = require("discord.js");
+const client = require("../../../logic/client");
+const Round = require("../../../logic/db/models/Round");
+const {createVoiceChannel} = require('../../../logic/vcShuffle')
 
-async function getOrCreateRole(client, guildId, roleName) {
+async function getOrCreateRole(guildId, roleName) {
 	console.log(`Creating role ${roleName}`);
 	const guild = await client.guilds.fetch(guildId);
-	// TODO check if role exists in active session in database, if so return.
-	if(true){
-		const role = await guild.roles.create({
+	// TODO replace roleName with roleId
+	let role = guild.roles.cache.find(r => r.name === roleName);
+	if(!role){
+		role = await guild.roles.create({
 			name: roleName,
-			// unicodeEmoji: "🫂",
 			reason: "You deserve a Role as you completed the meeting!",
 			color: "GOLD"
 		});
 		console.log(`Role was created ${roleName}`);
-		return role
 	}
-	console.log(`Role already exists ${roleName}`);
-	// TODO: fetch role and return
-	return null;
+	else {
+		console.log(`Role already exists ${roleName}`);
+	}
+	return role
 }
 
+async function addRoleToChannelMembers(guildId, channelId, roleId) {
+	console.log(`Adding role ${roleId} to channel ${channelId}`);
+	const guild = await client.guilds.fetch(guildId)
+	const channel = await guild.channels.fetch(channelId);
+	const fetchedChannel = await channel.fetch(true)
 
-async function addRoleToChannelMembers(client, channelId, roleId) {
-	console.log(`Adding role ${roleId} to user ${channelId}`);
-	const channel = await client.channels.fetch(channelId);
-	await Promise.all(await channel.members.filter(m => {
-		// console.log({ m })
-		return !m.user.bot && m.presence.status !== "offline";
-	}).map(member => {
-		member.roles.add(roleId);
-		console.log(`Successfully added role ${roleId} to user ${member.id}`);
-	}));
-}
+	const members = fetchedChannel.members.filter(
+		m => !m.user.bot && m.presence.status !== "offline"
+	)
+	console.log('MEMBERS: ', members.size)
 
-
-	async function getOrCreateRouterVoiceChannel(guild, roleId) {
-		// TODO: get from DB if exists
-		return guild.channels.create(`Router Voice Lobby`, {
-			type: "GUILD_VOICE",
-			reason: "Staging lobby for speed dating :)",
-			permissionOverwrites: [
-				{ id: guild.id, deny: ["VIEW_CHANNEL", "CONNECT"] }, // deny
-				{ id: roleId, allow: ["VIEW_CHANNEL", "CONNECT"] }, // allow role
-			]
+	await Promise.all(
+		members.map(async m => {
+			await m.roles.add(roleId)
 		})
-	}
+	)
+
+	return members
+}
+
+async function getOrCreateRouterVoiceChannel(guild, roleId) {
+	// TODO: get from DB if exists
+	return guild.channels.create(`Router Voice Lobby`, {
+		type: "GUILD_VOICE",
+		reason: "Staging lobby for speed dating :)",
+		permissionOverwrites: [
+			{ id: guild.id, deny: ["VIEW_CHANNEL", "CONNECT"] }, // deny
+			{ id: roleId, allow: ["VIEW_CHANNEL", "CONNECT"] }, // allow role
+		]
+	})
+}
 
 async function createInviteEmbed(voiceChannel) {
 	const invite = await voiceChannel.createInvite().catch(console.error);
@@ -85,14 +94,47 @@ module.exports = {
 	async execute(interaction) {
 		// 0. Create dedicated role to protect the voice staging lobby channel from
 		// uninvited users
-		const role = await getOrCreateRole(interaction.client, interaction.guild.id, "speed-dating");
-		const lobby = interaction.options.getChannel("lobby");
-		await addRoleToChannelMembers(interaction.client, lobby.id, role.id);
+		const role = await getOrCreateRole(interaction.guild.id, "speed-dating");
+		const channel = interaction.options.getChannel("lobby") || interaction.channel;
+		// console.log({channel, role})
+		const guild = await client.guilds.fetch(interaction.guild.id)
+		const members = await addRoleToChannelMembers(guild, channel.id, role.id);
 
 		// 1. Create Protected Voice Channel.
 		const voiceRouterChannel = await getOrCreateRouterVoiceChannel(interaction.guild, role.id);
 
-		// 2. Send invite to Voice Staging Channel
+		// 2. Randomize groups and create voice channels
+		const roomCapacity = interaction.options.getInteger("room-capacity") || 1
+		const groups = _.chunk(_.shuffle(Array.from(members.keys())), roomCapacity)
+
+		const rooms = await Promise.all(
+			_.map(groups, async (group, i) => {
+				const roomNumber = i + 1;
+				const vc = await createVoiceChannel(guild, roomNumber, group);
+				return {
+					number: roomNumber,
+					participants: group,
+					channelId: vc.id
+				};
+			})
+		);
+
+		// 3. Add to DB
+		const round = new Round({
+			creator: interaction.user.id,
+			guildId: interaction.guild.id,
+			channelId: channel.id,
+			lobbyId: voiceRouterChannel.id,
+			roleId: role.id,
+			startTime: new Date(),
+			duration: interaction.options.getInteger("duration") || 1,
+			roomCapacity,
+			rooms,
+		})
+
+		await round.save();
+
+		// 4. Send invite to Voice Staging Channel
 		const inviteEmbed = await createInviteEmbed(voiceRouterChannel);
 		await interaction.reply({
 			embeds: [inviteEmbed],
