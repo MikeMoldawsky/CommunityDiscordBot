@@ -55,14 +55,14 @@ async function getOrCreateRouterVoiceChannel(guild, roleId) {
 	})
 }
 
-async function createInviteEmbed(voiceChannel) {
+async function createInviteEmbed(voiceChannel, imageUrl) {
 	const invite = await voiceChannel.createInvite().catch(console.error);
 	return new MessageEmbed()
 		.setColor(0x4286f4)
 		.setTitle("Your invite to the voice channel")
 		.setDescription("It's all about connections")
 		.setURL(invite.url)
-		.setImage("https://i.imgur.com/ZGPxFN2.jpg");
+		.setImage(imageUrl);
 }
 
 
@@ -81,7 +81,11 @@ module.exports = {
 		.addIntegerOption((option) =>
 			option
 				.setName("room-capacity")
-				.setDescription("The capacity of each room.")),
+				.setDescription("The capacity of each room."))
+		.addStringOption((option) =>
+			option
+				.setName("invite-image-url")
+				.setDescription("The image to embed in the invitation")),
 
 	/**
 	 * @description Executes when the interaction is called by interaction handler.
@@ -94,6 +98,9 @@ module.exports = {
 		const channel = interaction.options.getChannel("lobby") || interaction.channel;
 		const duration = interaction.options.getInteger("duration-capacity") || .25
 		const roomCapacity = interaction.options.getInteger("room-capacity") || 1
+		const imageUrl = interaction.options.getString("invite-image-url") || ""
+
+		console.log({interaction})
 
 		// 0. Create dedicated role to protect the voice staging lobby channel from uninvited users
 		const role = await getOrCreateRole(interaction.guild.id, {
@@ -120,7 +127,7 @@ module.exports = {
 		const { rooms: groups } = matchRooms(Array.from(members.keys()), history, roomCapacity)
 		// todo - handle clear history logic
 
-		console.log({history, groups})
+		// console.log({history, groups})
 
 		const rooms = await Promise.all(
 			_.map(groups, async (group, i) => {
@@ -145,12 +152,13 @@ module.exports = {
 			duration,
 			roomCapacity,
 			rooms,
+			imageUrl,
 		})
 
 		await round.save();
 
 		// 4. Send invite to Voice Staging Channel
-		const inviteEmbed = await createInviteEmbed(voiceRouterChannel);
+		const inviteEmbed = await createInviteEmbed(voiceRouterChannel, imageUrl);
 		await interaction.reply({
 			embeds: [inviteEmbed],
 		});

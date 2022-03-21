@@ -18,6 +18,7 @@ const RoundSchema = new mongoose.Schema({
 	roomCapacity: {type: Number, default: 2},
 	status: {type: String, default: 'active'},
 	rooms: [RoomSchema],
+	imageUrl: String,
 });
 
 const Round = db.model('Round', RoundSchema)
