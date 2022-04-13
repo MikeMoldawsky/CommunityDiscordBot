@@ -1,6 +1,6 @@
 const _ = require('lodash')
 
-const matchRoom = (unmatched, rooms, roomCapacity, history, retries = 0) => {
+const matchRoom = (unmatched, rooms, roomCapacity, history = {}, retries = 0) => {
 	if (retries === 5) {
 		return { rooms, history }
 	}
@@ -32,7 +32,7 @@ const matchRoom = (unmatched, rooms, roomCapacity, history, retries = 0) => {
 		}
 	}
 
-	const isExtraRoom = roomMembers.length === 1
+	const isExtraRoom = roomMembers.length === 1 && roomCapacity > 1
 	if (isExtraRoom) {
 		if (rooms.length === 0) {
 			// handle edge case
@@ -60,12 +60,12 @@ const matchRoom = (unmatched, rooms, roomCapacity, history, retries = 0) => {
 		rooms.push(roomMembers)
 	}
 
-	// console.log({ history })
+	console.log({ history })
 
 	return matchRoom(_.without(unmatched, ...roomMembers), rooms, roomCapacity, history)
 }
 
-const matchRooms = (members, history, roomCapacity) => {
+const matchRooms = (members, history = {}, roomCapacity) => {
 	if (members.length <= roomCapacity) {
 		// dev edge case - small number of users
 		_.forEach(members, m => {
@@ -73,6 +73,7 @@ const matchRooms = (members, history, roomCapacity) => {
 		})
 		return {rooms: [members], history}
 	}
+	console.log('matchRoom', {members, roomCapacity})
 	return matchRoom(members, [], roomCapacity, history)
 }
 

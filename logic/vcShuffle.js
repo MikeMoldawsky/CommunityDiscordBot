@@ -94,7 +94,8 @@ async function createVoiceChannel(guild, roomNumber, memberIds) {
 		type: "GUILD_VOICE",
 		reason: "Let's connect and get to know each other :)",
 		permissionOverwrites: [
-			{ id: guild.id, deny: ["VIEW_CHANNEL", "CONNECT"] },
+			{ id: guild.id, deny: ["CONNECT"] },
+			// { id: guild.id, deny: ["VIEW_CHANNEL", "CONNECT"] },
 			..._.map(memberIds, id => ({ id: id, allow: ["VIEW_CHANNEL", "CONNECT"] }))
 		]
 	})

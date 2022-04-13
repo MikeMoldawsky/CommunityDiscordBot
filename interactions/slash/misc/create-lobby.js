@@ -31,7 +31,7 @@ async function addRoleToChannelMembers(guildId, channelId, roleId) {
 	const members = fetchedChannel.members.filter(
 		m => !m.user.bot && m.presence.status !== "offline"
 	)
-	console.log('MEMBERS: ', members.size)
+	// console.log('MEMBERS: ', members.size)
 
 	await Promise.all(
 		members.map(async m => {
@@ -49,8 +49,8 @@ async function getOrCreateRouterVoiceChannel(guild, roleId) {
 		reason: "Staging lobby for speed dating :)",
 		permissionOverwrites: [
 			{ id: guild.id, deny: ["VIEW_CHANNEL", "CONNECT"] }, // deny
-			{ id: roleId, allow: ["CONNECT"] }, // allow role
-			// { id: roleId, allow: ["VIEW_CHANNEL", "CONNECT"] }, // allow role
+			// { id: roleId, allow: ["CONNECT"] }, // allow role
+			{ id: roleId, allow: ["VIEW_CHANNEL", "CONNECT"] }, // allow role
 		]
 	})
 }
@@ -96,9 +96,9 @@ module.exports = {
 
 	async execute(interaction) {
 		const channel = interaction.options.getChannel("lobby") || interaction.channel;
-		const duration = interaction.options.getInteger("duration-capacity") || .25
+		const duration = interaction.options.getInteger("duration-capacity") || .5
 		const roomCapacity = interaction.options.getInteger("room-capacity") || 1
-		const imageUrl = interaction.options.getString("invite-image-url") || ""
+		const imageUrl = interaction.options.getString("invite-image-url") || "https://i.imgur.com/ZGPxFN2.jpg"
 
 		console.log({interaction})
 
@@ -123,11 +123,12 @@ module.exports = {
 		// 2. Randomize groups and create voice channels
 		// const groups = _.chunk(_.shuffle(Array.from(members.keys())), roomCapacity)
 		const history = await MeetingHistory.findOne({ guildId: guild.id })
-		console.log({historyBefore: history})
+		// console.log({historyBefore: history})
 		const { rooms: groups } = matchRooms(Array.from(members.keys()), history, roomCapacity)
+		// const { rooms: groups } = matchRooms(Array.from(members.keys()), history, roomCapacity)
 		// todo - handle clear history logic
 
-		// console.log({history, groups})
+		console.log({history, groups})
 
 		const rooms = await Promise.all(
 			_.map(groups, async (group, i) => {
