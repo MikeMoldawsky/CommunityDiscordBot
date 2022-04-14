@@ -49,7 +49,7 @@ const GuildSpeedDateBotSchema = new mongoose.Schema({
 	config: ConfigSchema,
 	activeSpeedDateSession: ActiveSpeedDateSessionSchema,
 	// speedDatesHistory: [RoundSchema],
-	// membersMeetingsHistory: Object,
+	memberMeetingsHistory: {type: Object, default: {}},
 })
 
 const GuildSpeedDateBot = db.model('GuildSpeedDateBot', GuildSpeedDateBotSchema)

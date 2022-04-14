@@ -37,11 +37,8 @@ const assignRound = async (guildId) => {
 				const user = guild.members.cache.get(userId)
 				user.voice.setChannel(vc.id)
 				participants[userId] = group.filter(uid => uid !== userId)
-				console.log({user})
 				return {id: userId, name: user.user.username}
 			})
-
-			console.log({roomParticipants})
 
 			return {
 				number: roomNumber,
@@ -52,8 +49,6 @@ const assignRound = async (guildId) => {
 	);
 
 	const newAssignRounds = assignRounds + 1
-
-	console.log({rooms, newRooms})
 
 	await GuildSpeedDateBot.findOneAndUpdate({guildId}, {
 		'activeSpeedDateSession.participants': participants,

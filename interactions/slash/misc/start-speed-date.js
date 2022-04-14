@@ -199,7 +199,7 @@ async function registerOnSpeedDateSessionComplete(guildId, timeOutInMinutes) {
 		try {
 			// 0. Get state from DB
 			const guildSpeedDateBotDoc = await getGuildSpeedDateBotDocumentOrThrow(guildId);
-			const { activeSpeedDateSession, guildInfo } = guildSpeedDateBotDoc;
+			const { activeSpeedDateSession, guildInfo, memberMeetingsHistory } = guildSpeedDateBotDoc;
 			if(!activeSpeedDateSession){
 				console.log(`Guild ${guildInfo} doesn't have any active speed date session - skipping on-complete operations.`)
 				return;
@@ -215,7 +215,7 @@ async function registerOnSpeedDateSessionComplete(guildId, timeOutInMinutes) {
 			// TODO: add role to users
 
 			// 2. Delete Router & Voice Channel
-			const {routerVoiceChannel, rooms} = activeSpeedDateSession;
+			const {routerVoiceChannel, rooms, participants} = activeSpeedDateSession;
 			const routerVoiceChannelClient = await client.channels.fetch(routerVoiceChannel.channelId);
 			await routerVoiceChannelClient.delete();
 			_.forEach(rooms, async ({ voiceChannelId }) => {
@@ -223,17 +223,28 @@ async function registerOnSpeedDateSessionComplete(guildId, timeOutInMinutes) {
 				voiceChannel.delete();
 			});
 
-			// 3. Delete temporary speed-dating role for Router
+			// 3. Save participants history
+			_.forEach(participants, (meetings, userId) => {
+				memberMeetingsHistory[userId] = [..._.get(memberMeetingsHistory, userId, []), ...meetings]
+			})
+
+			// 4. Delete temporary speed-dating role for Router
 			const guildClient = await client.guilds.fetch(guildId)
 			await guildClient.roles.delete(routerVoiceChannel.allowedRoleId);
 
-			// 4. Save that active session is completed - i.e. delete it
+			// 5. Save that active session is completed - i.e. delete it
+			// TODO - Asaf - do this in single request
+			await GuildSpeedDateBot.findOneAndUpdate({guildId}, {memberMeetingsHistory})
+
 			guildSpeedDateBotDoc.activeSpeedDateSession = undefined;
+
+			console.log({guildSpeedDateBotDoc: guildSpeedDateBotDoc.memberMeetingsHistory})
+
 			await persistAndGetGuildSpeedDateBot(guildSpeedDateBotDoc, 'speed date completed');
 		} catch (e) {
 			console.log(`Failed to perform onComplete operations for ${guildId}`, e)
 		}
-	}, timeOutInMinutes * 30 * 1000
+	}, timeOutInMinutes * 15 * 1000
 	);
 }
 
