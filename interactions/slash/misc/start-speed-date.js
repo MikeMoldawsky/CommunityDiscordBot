@@ -235,7 +235,7 @@ async function registerOnSpeedDateSessionComplete(guildId, timeOutInMinutes) {
 module.exports = {
 	// The data needed to register slash commands to Discord.
 	data: new SlashCommandBuilder()
-		.setName("create-voice-lobby")
+		.setName("start-speed-date")
 		.setDescription(
 			"Creates a voice lobby for routing."
 		)
