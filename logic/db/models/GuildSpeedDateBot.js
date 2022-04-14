@@ -19,8 +19,8 @@ const RouterVoiceChannelSchema = new mongoose.Schema({
 const ActiveSpeedDateSessionSchema = new mongoose.Schema({
 	speedDateSessionConfig: SpeedDateSessionConfigSchema,
 	routerVoiceChannel: RouterVoiceChannelSchema,
-	round: RoundSchema,
-	participants: Object, // { [participantId]: {} }
+	// round: RoundSchema,
+	// participants: Object, // { [participantId]: {} }
 }, { _id : false })
 
 const ConfigSchema = new mongoose.Schema({
@@ -29,12 +29,17 @@ const ConfigSchema = new mongoose.Schema({
 
 const GuildInfoSchema = new mongoose.Schema({
 	guildId: String,
+	guildName: String,
+}, { _id : false })
+
+const GuildSpeedDateBotSchema = new mongoose.Schema({
+	guildInfo: GuildInfoSchema,
 	config: ConfigSchema,
 	activeSpeedDateSession: ActiveSpeedDateSessionSchema,
-	speedDatesHistory: [RoundSchema],
-	participantsHistory: Object,
+	// speedDatesHistory: [RoundSchema],
+	// participantsHistory: Object,
 })
 
-const GuildInfo = db.model('GuildInfo', GuildInfoSchema)
+const GuildSpeedDateBot = db.model('GuildSpeedDateBot', GuildSpeedDateBotSchema)
 
-module.exports = GuildInfo
+module.exports = GuildSpeedDateBot
