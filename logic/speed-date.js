@@ -14,7 +14,8 @@ const assignRound = async (guildId) => {
 		return
 	}
 
-	const {assignRounds, routerVoiceChannel, speedDateSessionConfig, participants, rooms} = guildInfo.activeSpeedDateSession
+	const {activeSpeedDateSession, memberMeetingsHistory} = guildInfo
+	const {assignRounds, routerVoiceChannel, speedDateSessionConfig, participants, rooms} = activeSpeedDateSession
 
 	if (assignRounds >= ASSIGN_ROUNDS) {
 		console.log(`assignRounds - rounds limit reached for guild ${guildId}`)
@@ -26,7 +27,7 @@ const assignRound = async (guildId) => {
 
 	if (routerChannel.members.size === 0) return
 
-	const { rooms: groups } = matchRooms(Array.from(routerChannel.members.keys()), {}, speedDateSessionConfig.roomCapacity)
+	const { rooms: groups } = matchRooms(Array.from(routerChannel.members.keys()), memberMeetingsHistory, speedDateSessionConfig.roomCapacity)
 
 	const maxRoomNum = _.max(_.map(rooms, 'number')) || 0
 	const newRooms = await Promise.all(

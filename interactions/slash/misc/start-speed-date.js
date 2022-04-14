@@ -223,14 +223,16 @@ async function registerOnSpeedDateSessionComplete(guildId, timeOutInMinutes) {
 				voiceChannel.delete();
 			});
 
-			// 3. Save participants history
-			_.forEach(participants, (meetings, userId) => {
-				memberMeetingsHistory[userId] = [..._.get(memberMeetingsHistory, userId, []), ...meetings]
-			})
-
-			// 4. Delete temporary speed-dating role for Router
+			// 3. Delete temporary speed-dating role for Router
 			const guildClient = await client.guilds.fetch(guildId)
 			await guildClient.roles.delete(routerVoiceChannel.allowedRoleId);
+
+			// 4. Save participants history and add participation role
+			_.forEach(participants, (meetings, userId) => {
+				const m = guildClient.members.cache.get(userId)
+				m.roles.add(speedDateCompletedRole.id)
+				memberMeetingsHistory[userId] = [..._.get(memberMeetingsHistory, userId, []), ...meetings]
+			})
 
 			// 5. Save that active session is completed - i.e. delete it
 			// TODO - Asaf - do this in single request
@@ -328,47 +330,6 @@ module.exports = {
 		await registerOnSpeedDateSessionComplete(guildId, guildSpeedDateBotDoc.activeSpeedDateSession.speedDateSessionConfig.speedDateDurationMinutes);
 	}
 };
-
-// TODO(asaf): Drafts that will probably help you
-
-	// // 2. Randomize groups and create voice channels
-	// // const groups = _.chunk(_.shuffle(Array.from(members.keys())), roomCapacity)
-	// const history = await MeetingHistory.findOne({ guildId: guild.id })
-	// // console.log({historyBefore: history})
-	// const { rooms: groups } = matchRooms(Array.from(members.keys()), history, roomCapacity)
-	// // const { rooms: groups } = matchRooms(Array.from(members.keys()), history, roomCapacity)
-	// // todo - handle clear history logic
-	//
-	// console.log({ history, groups })
-	//
-	// const rooms = await Promise.all(
-	// 	_.map(groups, async (group, i) => {
-	// 		const roomNumber = i + 1;
-	// 		const vc = await createVoiceChannel(guild, roomNumber, group);
-	// 		return {
-	// 			number: roomNumber,
-	// 			participants: group,
-	// 			channelId: vc.id
-	// 		};
-	// 	})
-	// );
-
-	// // 3. Add to DB
-	// const round = new Round({
-	// 	creator: interaction.user.id,
-	// 	guildId: interaction.guild.id,
-	// 	channelId: channel.id,
-	// 	lobbyId: voiceRouterChannel.id,
-	// 	roleId: allowedVoiceRouterRole.id,
-	// 	startTime: new Date(),
-	// 	duration,
-	// 	roomCapacity,
-	// 	rooms,
-	// 	imageUrl,
-	// })
-	//
-	// await round.save();
-	//
 
 
 
