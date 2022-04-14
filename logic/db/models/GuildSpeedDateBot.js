@@ -2,6 +2,17 @@ const mongoose = require('mongoose')
 const db = require('../db')
 const RoundSchema = require('./Round')
 
+const ParticipantSchema = new mongoose.Schema({
+	id: String,
+	name: String,
+}, { _id : false })
+
+const RoomSchema = new mongoose.Schema({
+	number: Number,
+	participants: [ParticipantSchema],
+	voiceChannelId: String,
+}, { _id : false })
+
 const SpeedDateSessionConfigSchema = new mongoose.Schema({
 	lobbyChannelId: String,
 	lobbyChannelName: String,
@@ -19,8 +30,9 @@ const RouterVoiceChannelSchema = new mongoose.Schema({
 const ActiveSpeedDateSessionSchema = new mongoose.Schema({
 	speedDateSessionConfig: SpeedDateSessionConfigSchema,
 	routerVoiceChannel: RouterVoiceChannelSchema,
-	// round: RoundSchema,
-	// participants: Object, // { [participantId]: {} }
+	assignRounds: {type: Number, default: 0},
+	rooms: {type: [RoomSchema], default: []},
+	participants: {type: Object, default: {}}, // { [participantId]: {} }
 }, { _id : false })
 
 const ConfigSchema = new mongoose.Schema({
@@ -37,7 +49,7 @@ const GuildSpeedDateBotSchema = new mongoose.Schema({
 	config: ConfigSchema,
 	activeSpeedDateSession: ActiveSpeedDateSessionSchema,
 	// speedDatesHistory: [RoundSchema],
-	// participantsHistory: Object,
+	// membersMeetingsHistory: Object,
 })
 
 const GuildSpeedDateBot = db.model('GuildSpeedDateBot', GuildSpeedDateBotSchema)

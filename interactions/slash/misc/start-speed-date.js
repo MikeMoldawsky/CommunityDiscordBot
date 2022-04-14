@@ -3,6 +3,7 @@ const _ = require("lodash");
 const { MessageEmbed } = require("discord.js");
 const client = require("../../../logic/client");
 const GuildSpeedDateBot = require("../../../logic/db/models/GuildSpeedDateBot");
+const { assignRound, ASSIGN_INTERVAL, ASSIGN_ROUNDS } = require('../../../logic/speed-date')
 
 const DEFAULT_INVITE_IMAGE_URL = "https://i.imgur.com/ZGPxFN2.jpg";
 
@@ -213,10 +214,14 @@ async function registerOnSpeedDateSessionComplete(guildId, timeOutInMinutes) {
 				});
 			// TODO: add role to users
 
-			// 2. Delete Router Channel
-			const {routerVoiceChannel} = activeSpeedDateSession;
+			// 2. Delete Router & Voice Channel
+			const {routerVoiceChannel, rooms} = activeSpeedDateSession;
 			const routerVoiceChannelClient = await client.channels.fetch(routerVoiceChannel.channelId);
 			await routerVoiceChannelClient.delete();
+			_.forEach(rooms, async ({ voiceChannelId }) => {
+				const voiceChannel = await client.channels.fetch(voiceChannelId);
+				voiceChannel.delete();
+			});
 
 			// 3. Delete temporary speed-dating role for Router
 			const guildClient = await client.guilds.fetch(guildId)
@@ -228,7 +233,7 @@ async function registerOnSpeedDateSessionComplete(guildId, timeOutInMinutes) {
 		} catch (e) {
 			console.log(`Failed to perform onComplete operations for ${guildId}`, e)
 		}
-	}, timeOutInMinutes * 60 * 1000
+	}, timeOutInMinutes * 30 * 1000
 	);
 }
 
@@ -268,15 +273,21 @@ module.exports = {
 		const lobbyChannelClient = await guildClient.channels.fetch(channelId);
 
 		// 0. Get Or Create Guild Speed Date Document
-		const prevGuildSpeedDateBotDoc = await getOrCreateGuildSpeedDateBotDocument(guildId, guildName);
+		let prevGuildSpeedDateBotDoc = await getOrCreateGuildSpeedDateBotDocument(guildId, guildName);
 		// 1. Active Session check as multiple sessions aren't allowed (should be fixed manually or with bot commands).
 		if(prevGuildSpeedDateBotDoc.activeSpeedDateSession){
-			console.log(`Active speed date session found - can't start a new session for ${guildId}`);
-			await interaction.reply({
-				content: "There is an active speed date in progress.\nTrigger end-speed-date command before starting a new session.\n Or run update-speed-date",
-				ephemeral: true,
-			});
-			return;
+
+
+			// TODO - remove temp code for DEV
+			await prevGuildSpeedDateBotDoc.delete()
+			prevGuildSpeedDateBotDoc = await getOrCreateGuildSpeedDateBotDocument(guildId, guildName);
+
+			// console.log(`Active speed date session found - can't start a new session for ${guildId}`);
+			// await interaction.reply({
+			// 	content: "There is an active speed date in progress.\nTrigger end-speed-date command before starting a new session.\n Or run update-speed-date",
+			// 	ephemeral: true,
+			// });
+			// return;
 		}
 
 		// 2. Initialize Speed Date Infrastructure - Roles, Router, DB etc...
@@ -294,7 +305,14 @@ module.exports = {
 		// 3. Allow Speed Daters to join Router Voice Channel with an Invite.
 		await startSpeedDateSession(interaction, guildClient, lobbyChannelClient, guildSpeedDateBotDoc);
 
-		// 4. Handle Cleanup after duration time is completed
+		// 4. Schedule assigning the rooms
+		for (let i = 1; i <= ASSIGN_ROUNDS; i++) {
+			setTimeout(() => {
+				assignRound(guildId)
+			}, i * ASSIGN_INTERVAL)
+		}
+
+		// 5. Handle Cleanup after duration time is completed
 		// TODO: didn't really do anything here..... NOT SURE if I need await here
 		await registerOnSpeedDateSessionComplete(guildId, guildSpeedDateBotDoc.activeSpeedDateSession.speedDateSessionConfig.speedDateDurationMinutes);
 	}
