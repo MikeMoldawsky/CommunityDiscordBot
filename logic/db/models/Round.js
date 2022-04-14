@@ -10,7 +10,7 @@ const RoomSchema = new mongoose.Schema({
 	number: Number,
 	participants: [ParticipantSchema],
 	voiceChannelId: String,
-})
+}, { _id : false })
 
 const RoundSchema = new mongoose.Schema({
 	creator: String,
