@@ -1,4 +1,4 @@
-const client = require("./client");
+const client = require("./discord/client");
 const Session = require("./db/models/Session");
 const _ = require("lodash");
 

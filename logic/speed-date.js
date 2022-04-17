@@ -1,4 +1,4 @@
-const client = require('./client')
+const client = require('./discord/client')
 const GuildSpeedDateBot = require('./db/models/GuildSpeedDateBot')
 const matchRooms = require('./match-rooms')
 const {createVoiceChannel} = require('./vcShuffle')

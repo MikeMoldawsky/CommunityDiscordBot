@@ -1,198 +1,12 @@
 const { SlashCommandBuilder } = require("@discordjs/builders");
 const _ = require("lodash");
-const { MessageEmbed } = require("discord.js");
-const client = require("../../../logic/client");
+const client = require("../../../logic/discord/client");
 const GuildSpeedDateBot = require("../../../logic/db/models/GuildSpeedDateBot");
 const { assignRound, ASSIGN_INTERVAL, ASSIGN_ROUNDS } = require('../../../logic/speed-date')
+const { persistAndGetGuildSpeedDateBot, getGuildSpeedDateBotDocumentOrThrow } = require("../../../logic/db/guild-db-manager");
+const { bootstrapSpeedDateInfrastructureForGuild, startSpeedDateSessionForGuildAndGetInvite } = require("../../../logic/speed-date-manager/speed-date-manager");
+const { getOrCreateRole } = require("../../../logic/discord/utils");
 
-const DEFAULT_INVITE_IMAGE_URL = "https://i.imgur.com/ZGPxFN2.jpg";
-
-async function getOrCreateRole(guildId, roleInfo) {
-	try {
-		console.log(`Creating role ${roleInfo.name}`);
-		const guild = await client.guilds.fetch(guildId);
-		// TODO replace roleName with roleId
-		let role = guild.roles.cache.find(r => r.name === roleInfo.name);
-		if(!role){
-			role = await guild.roles.create(roleInfo);
-			console.log(`Role was created ${roleInfo.name}`);
-		}
-		else {
-			console.log(`Role already exists ${roleInfo.name}`);
-		}
-		return role
-	} catch (e) {
-		console.log(`Failed to create Role ${roleInfo} for Guild ${guildId}`);
-	}
-}
-
-async function getOrCreateProtectedRouterVoiceChannel(guildClient, roleId) {
-	const routerVoiceChannelName = "Router Voice Lobby";
-	try {
-		let routerVoiceChannel = guildClient.channels.cache.find(c => c.name === routerVoiceChannelName);
-		if(routerVoiceChannel){
-			console.log(`Found existing Router Voice Channel ${routerVoiceChannelName} for guild ${guildClient.id}`)
-			return routerVoiceChannel
-		} else {
-			console.log(`Creating Router Voice Channel ${routerVoiceChannelName} for guild ${guildClient.id}`)
-			return await guildClient.channels.create(routerVoiceChannelName, {
-				type: "GUILD_VOICE",
-				reason: "Staging lobby for speed dating :)",
-				permissionOverwrites: [
-					{ id: guildClient.id, deny: ["VIEW_CHANNEL", "CONNECT"] }, // deny
-					// { id: roleId, allow: ["CONNECT"] }, // allow role
-					{ id: roleId, allow: ["VIEW_CHANNEL", "CONNECT"] } // allow role
-				]
-			});
-		}
-	} catch (e) {
-		console.log(`Failed to create Router Voice Channel ${routerVoiceChannelName} for guild ${guildClient.id}`)
-	}
-}
-
-
-async function addRoleToChannelMembers(guildClient, channelClient, roleId) {
-	try {
-		console.log(`Adding role ${roleId} to channel ${channelClient}`);
-		const forcedChannelClient = await channelClient.fetch(true) // TODO(mike): ask Asaf why do we need force fetch?
-		const members = forcedChannelClient.members.filter(
-			member => {
-				const isBot = _.get(member, "user.bot", false)
-				// TODO(mike): talk to Asaf - we had a bug here as presence can be null.
-				// I think that we can give to all the Role to be safe as the creating rooms only happens at router level,
-				// const isOnline = _.get(member, "presence.status") === "online";
-				if(isBot){
-					console.log(`Skipped adding role to user ${member.user}`)
-				}
-				return !isBot;
-			}
-		)
-		await Promise.all(members.map(async m => await m.roles.add(roleId)));
-		return members
-	} catch (e) {
-		console.log(`Failed to add Role ${roleId} for Channel ${channelClient.id} members at Guild ${guildClient.id}`, e);
-	}
-}
-
-async function createRoleProtectedRouterVoiceChannel(guild, guildId) {
-	try {
-		console.log(`Creating Voice Channel Router for Guild ${guildId}`);
-		// Create dedicated role to protect the voice router channel from uninvited users
-		const allowedVoiceRouterRole = await getOrCreateRole(guildId, {
-			name: `speed-dating-participant`,
-			reason: "Active speed-dating round participant",
-			color: "GOLD"
-		});
-		// Create voice router channel
-		const routerVoiceChannel = await getOrCreateProtectedRouterVoiceChannel(guild, allowedVoiceRouterRole.id);
-		return {
-			allowedRoleId: allowedVoiceRouterRole.id,
-			allowedRoleName: allowedVoiceRouterRole.name,
-			channelId: routerVoiceChannel.id,
-			channelName: routerVoiceChannel.name
-		};
-	} catch (e) {
-		console.log(`Failed to create Voice Router Channel for Guild ${guild.id}`, e);
-	}
-}
-
-async function createRouterVoiceChannelInvite(routerVoiceChannelClient, config) {
-	try {
-		console.log(`Creating Router Voice Channel invite`);
-		const invite = await routerVoiceChannelClient.createInvite();
-		return new MessageEmbed()
-			.setColor(0x4286f4)
-			.setTitle("Your invite to the voice channel")
-			.setDescription("It's all about connections")
-			.setURL(invite.url)
-			.setImage(config.imageUrl);
-	} catch (e) {
-			console.log(`Failed to create Router Voice Channel invite`, e)
-	}
-}
-
-
-async function getGuildSpeedDateBotDocumentOrThrow(guildId, guildName) {
-	const guildInfo = await GuildSpeedDateBot.findOne({ guildId: guildId }).exec();
-	if (!guildInfo) {
-		console.log(`GuildInfo for guild ${guildName} with id ${guildId}`);
-		throw Error(`Guild ${guildName} with id ${guildId} should have existing bot configurations`);
-	}
-	return guildInfo;
-}
-
-async function getOrCreateGuildSpeedDateBotDocument(guildId, guildName) {
-	try {
-		let guildInfo = await GuildSpeedDateBot.findOne({ guildId: guildId }).exec();
-		if (guildInfo) {
-			console.log(`Found speed date bot configurations for guild ${guildName} with id ${guildId}`);
-			return guildInfo;
-		}
-		console.log(`Creating guildInfo for guild ${guildName} with id ${guildId}`);
-		return await GuildSpeedDateBot.create({
-				guildInfo: {
-					guildId: guildId,
-					guildName: guildName,
-				},
-				config: { imageUrl: DEFAULT_INVITE_IMAGE_URL },
-				activeSpeedDate: undefined,
-				// speedDatesHistory: [],
-				// participantsHistory: {},
-			});
-	} catch (e) {
-		console.log(`Failed to get or create guildInfo for guild ${guildName} with id ${guildId}`, e);
-	}
-}
-
-async function persistAndGetGuildSpeedDateBot(guildInfoDocument, updateReason) {
-	try{
-		console.log(`Updating GuildInfo in DB for guild ${guildInfoDocument.guildName} with id ${guildInfoDocument.guildId} - ${updateReason}`)
-		return await guildInfoDocument.save();
-	} catch (e) {
-		console.log(`Failed to update DB for guild ${guildInfoDocument.guildName} with id ${guildInfoDocument.guildId}`, e)
-	}
-}
-
-async function initializeSpeedDateSession(guildClient, guildSpeedDateBotDoc, speedDateSessionConfig) {
-	const {guildInfo: {guildId, guildName} } = guildSpeedDateBotDoc;
-	try {
-		console.log(`Initializing speed date session for guild ${guildName} with id ${guildId}`);
-		// 0. Persist active session config before creating actual objects (roles, channels etc.)
-		// Helps to avoid a bad state (e.g. if we crashed while creating roles but didn't persist).
-		guildSpeedDateBotDoc.activeSpeedDateSession = {
-			speedDateSessionConfig: speedDateSessionConfig
-		};
-		await persistAndGetGuildSpeedDateBot(guildSpeedDateBotDoc, "speed date session config update");
-		// 1. Creating router voice channel
-		guildSpeedDateBotDoc.activeSpeedDateSession.routerVoiceChannel = await createRoleProtectedRouterVoiceChannel(guildClient, guildId);
-		return await persistAndGetGuildSpeedDateBot(guildSpeedDateBotDoc, "speed router voice channel update");
-	} catch (e) {
-		console.log(`Failed to initializeSpeedDateSession for ${guildName} with id ${guildId}`, e)
-	}
-}
-
-async function startSpeedDateSession(interaction, guildClient, lobbyChannelClient, guildSpeedDateBotDoc) {
-	try {
-		console.log(`Starting speed date session for guild ${guildSpeedDateBotDoc.guildInfo} with config ${guildSpeedDateBotDoc.activeSpeedDateSession}`);
-		const {activeSpeedDateSession: {routerVoiceChannel}, config } = guildSpeedDateBotDoc;
-		const routerVoiceChannelClient = await guildClient.channels.fetch(routerVoiceChannel.channelId);
-
-		// 1. Allow members to join Router Voice Channel
-		//TODO: Do we  actually need the members roles?
-		const allowedRouterChannelMembers = await addRoleToChannelMembers(guildClient, lobbyChannelClient, routerVoiceChannel.allowedRoleId);
-
-		// 2. Create invite to join Router Voice Channel
-		const routerVoiceChannelInvite = await createRouterVoiceChannelInvite(routerVoiceChannelClient, config);
-
-		// 3. Send invite to all allowed Router Voice Channel members.
-		await interaction.reply({
-			embeds: [routerVoiceChannelInvite],
-		});
-		console.log(`Successfully started speed date session for ${guildSpeedDateBotDoc.guildInfo}`);
-	} catch (e) {
-		console.log(`Failed to start speed date session for ${guildSpeedDateBotDoc.guildInfo} with config ${guildSpeedDateBotDoc.activeSpeedDateSession}`);
-	}
-}
 
 async function registerOnSpeedDateSessionComplete(guildId, timeOutInMinutes) {
 	setTimeout(async () => {
@@ -275,48 +89,41 @@ module.exports = {
 	 */
 
 	async execute(interaction) {
-		const channelId = interaction.options.getChannel("lobby") || interaction.channel.id; // TODO: remove default channel ID - it can be dangerous;
+		const lobbyChannelId = interaction.options.getChannel("lobby") || interaction.channel.id; // TODO: remove default channel ID - it can be dangerous;
 		const guildId = interaction.guild.id;
 		const guildName = interaction.guild.name;
-
+		const speedDateDurationMinutes = interaction.options.getInteger("duration-capacity") || 1;
+		const roomCapacity = interaction.options.getInteger("room-capacity") || 2;
 		// TODO(mike): add validations over the inputs - e.g. capacity >= 2, guildClient bot found etc...
 
-		// Creating clients
-		const guildClient = await client.guilds.fetch(guildId)
-		const lobbyChannelClient = await guildClient.channels.fetch(channelId);
+		// 0. Let the bot time to work on the interaction
+		await interaction.deferReply({ephemeral: true}); // Slash Commands has only 3 seconds to reply to an interaction.
 
-		// 0. Get Or Create Guild Speed Date Document
-		let prevGuildSpeedDateBotDoc = await getOrCreateGuildSpeedDateBotDocument(guildId, guildName);
-		// 1. Active Session check as multiple sessions aren't allowed (should be fixed manually or with bot commands).
-		if(prevGuildSpeedDateBotDoc.activeSpeedDateSession){
-
-
-			// TODO - remove temp code for DEV
-			await prevGuildSpeedDateBotDoc.delete()
-			prevGuildSpeedDateBotDoc = await getOrCreateGuildSpeedDateBotDocument(guildId, guildName);
-
-			// console.log(`Active speed date session found - can't start a new session for ${guildId}`);
-			// await interaction.reply({
-			// 	content: "There is an active speed date in progress.\nTrigger end-speed-date command before starting a new session.\n Or run update-speed-date",
-			// 	ephemeral: true,
-			// });
-			// return;
+		// 1. Bootstrap infrastructure that is required for speed dating (Roles, Voice Channel Router etc.)
+		try{
+			await bootstrapSpeedDateInfrastructureForGuild(guildId, guildName, speedDateDurationMinutes, lobbyChannelId, roomCapacity);
+		}catch (e) {
+			console.log(`Failed to bootstrap infrastructure for guild ${guildName} with id ${guildId}`);
+			await interaction.followUp({
+				content: "Failed to start speed dating. Check if there isn't an active round.",
+				ephemeral: true,
+			});
+			return;
 		}
 
-		// 2. Initialize Speed Date Infrastructure - Roles, Router, DB etc...
-		const speedDateSessionConfig = {
-			lobbyChannelId: channelId,
-			lobbyChannelName: lobbyChannelClient.name,
-			speedDateDurationMinutes: interaction.options.getInteger("duration-capacity") || 1,
-			roomCapacity: interaction.options.getInteger("room-capacity") || 2
-		}
-		const guildSpeedDateBotDoc = await initializeSpeedDateSession(guildClient, prevGuildSpeedDateBotDoc, speedDateSessionConfig);
-
+		// 2. Start the MatchMaker Task over the Router Channel
 		// TODO(Asaf/Mike): here we already know the Voice Channel so we can start a Scheduled Task that will create the rooms for the participants in the Router.
 
-		// From Here - only use the DB objects to build other objects.
 		// 3. Allow Speed Daters to join Router Voice Channel with an Invite.
-		await startSpeedDateSession(interaction, guildClient, lobbyChannelClient, guildSpeedDateBotDoc);
+		const routerVoiceChannelInvite = await startSpeedDateSessionForGuildAndGetInvite(guildId, lobbyChannelId);
+		// We're using editReply - it is required as we're using a deferReply
+		await interaction.followUp({
+			embeds: [routerVoiceChannelInvite],
+			ephemeral: false,
+		});
+
+		// TODO(mike): Didn't organize yet
+		const guildSpeedDateBotDoc = await getGuildSpeedDateBotDocumentOrThrow(guildId);
 
 		// 4. Schedule assigning the rooms
 		for (let i = 1; i <= ASSIGN_ROUNDS; i++) {
