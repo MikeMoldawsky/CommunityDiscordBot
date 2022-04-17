@@ -34,6 +34,7 @@ module.exports = {
 		// A try to executes the interaction.
 
 		try {
+			console.log(`Executing Slash Command ${command.data.name}`)
 			await command.execute(interaction);
 		} catch (err) {
 			console.error(err);
