@@ -38,7 +38,7 @@ module.exports = {
 			await command.execute(interaction);
 		} catch (err) {
 			console.error(err);
-			await interaction.reply({
+			await interaction.followUp({
 				content: "There was an issue while executing that command!",
 				ephemeral: true,
 			});

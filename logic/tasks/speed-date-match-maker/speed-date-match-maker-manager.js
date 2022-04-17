@@ -65,7 +65,7 @@ const matchRoom = (unmatched, rooms, roomCapacity, history = {}, retries = 0) =>
 	return matchRoom(_.without(unmatched, ...roomMembers), rooms, roomCapacity, history)
 }
 
-const matchRooms = (members, history = {}, roomCapacity) => {
+const speedDateMatchMakerManager = (members, history = {}, roomCapacity) => {
 	if (members.length <= roomCapacity) {
 		// dev edge case - small number of users
 		_.forEach(members, m => {
@@ -73,8 +73,8 @@ const matchRooms = (members, history = {}, roomCapacity) => {
 		})
 		return {rooms: [members], history}
 	}
-	console.log('matchRoom', {members, roomCapacity})
+	console.log('matchRoom', {members, roomCapacity: roomCapacity})
 	return matchRoom(members, [], roomCapacity, history)
 }
 
-module.exports = matchRooms
+module.exports = speedDateMatchMakerManager

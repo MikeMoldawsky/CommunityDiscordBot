@@ -2,9 +2,9 @@ const client = require("../discord/client");
 const { getGuildSpeedDateBotDocumentOrThrow, getOrCreateGuildSpeedDateBotDocument } = require("../db/guild-db-manager");
 const { addRoleToChannelMembers } = require("../discord/utils");
 const { createRouterVoiceChannelInvite } = require("../discord/discord-speed-date-manager");
-const { initializeSpeedDateSessionForGuild } = require("../bootstrap/speed-date-bootstrapper");
+const { initializeSpeedDateSessionForGuild } = require("../speed-date-bootstraper/speed-date-bootstrapper");
 
-async function bootstrapSpeedDateInfrastructureForGuild(guildId, guildName, speedDateDurationMinutes, lobbyChannelId, roomCapacity) {
+async function bootstrapSpeedDateInfrastructureForGuild(guildId, guildName, speedDateDurationMinutes, lobbyChannelId, roomCapacity, matchMakerStopTime) {
 	// Creating clients
 	const guildClient = await client.guilds.fetch(guildId);
 	const lobbyChannelClient = await guildClient.channels.fetch(lobbyChannelId);
@@ -15,7 +15,7 @@ async function bootstrapSpeedDateInfrastructureForGuild(guildId, guildName, spee
 		console.log(`Active speed date session found - can't start a new session for ${guildId}`);
 		throw Error(`There is an active speed date in progress for ${guildId}.`);
 	}
-	return await initializeSpeedDateSessionForGuild(prevGuildSpeedDateBotDoc, guildClient, lobbyChannelClient, speedDateDurationMinutes, roomCapacity);
+	return await initializeSpeedDateSessionForGuild(prevGuildSpeedDateBotDoc, guildClient, lobbyChannelClient, speedDateDurationMinutes, roomCapacity, matchMakerStopTime);
 }
 
 async function startSpeedDateSessionForGuildAndGetInvite(guildId, lobbyChannelId) {
@@ -25,7 +25,6 @@ async function startSpeedDateSessionForGuildAndGetInvite(guildId, lobbyChannelId
 		// Creating clients
 		const guildClient = await client.guilds.fetch(guildId);
 		const lobbyChannelClient = await guildClient.channels.fetch(lobbyChannelId);
-
 		const routerVoiceChannelClient = await guildClient.channels.fetch(activeSpeedDateSession.routerVoiceChannel.channelId);
 
 		// 1. Allow members to join Router Voice Channel
@@ -38,6 +37,7 @@ async function startSpeedDateSessionForGuildAndGetInvite(guildId, lobbyChannelId
 		return routerVoiceChannelInvite;
 	} catch (e) {
 		console.log(`Failed to start speed date session for guild ${guildId}`, e);
+		throw new Error(`Failed to start speed date session for guild ${guildId}`);
 	}
 }
 
