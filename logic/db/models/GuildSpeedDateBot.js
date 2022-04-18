@@ -36,8 +36,25 @@ const ActiveSpeedDateSessionSchema = new mongoose.Schema({
 	participants: {type: Object, default: {}}, // { [participantId]: {} }
 }, { _id : false })
 
+const SpeedDateInviteConfig = new mongoose.Schema({
+	title: String,
+	description: String,
+	image : String,
+}, { _id : false })
+
+const SpeedDateMusicConfig = new mongoose.Schema({
+	url: String,
+	volume: Number,
+}, { _id : false })
+
+const SpeedDateVoiceLobbyConfig = new mongoose.Schema({
+	invite: SpeedDateInviteConfig,
+	music: SpeedDateMusicConfig
+}, { _id : false })
+
+
 const ConfigSchema = new mongoose.Schema({
-	imageUrl: String,
+	voiceLobby: SpeedDateVoiceLobbyConfig
 }, { _id : false })
 
 const GuildInfoSchema = new mongoose.Schema({

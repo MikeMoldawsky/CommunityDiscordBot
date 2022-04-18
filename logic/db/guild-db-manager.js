@@ -1,4 +1,5 @@
 const GuildSpeedDateBot = require("./models/GuildSpeedDateBot");
+const _ = require("lodash");
 
 const DEFAULT_INVITE_IMAGE_URL = "https://i.imgur.com/ZGPxFN2.jpg";
 
@@ -19,10 +20,33 @@ async function throwIfActiveSession(guildId) {
 	}
 }
 
-async function updatedConfigFieldsForGuild(guildId, imageUrl) {
-	await GuildSpeedDateBot.findOneAndUpdate({ guildId }, {
-		'config.imageUrl': imageUrl,
-	});
+async function updatedConfigFieldsForGuild(guildId, imageUrl, inviteTitle, inviteDescription, musicUrl, musicVolume) {
+	// TODO - change the ugly implementation
+	const updateFields = {}
+	const inviteConfigPrefix = 'config.voiceLobby.invite.'
+	if(imageUrl){
+		updateFields[inviteConfigPrefix + 'image'] = imageUrl;
+	}
+	if(inviteTitle){
+		updateFields[inviteConfigPrefix + 'title'] = inviteTitle;
+	}
+	if(inviteDescription){
+		updateFields[inviteConfigPrefix + 'description'] = inviteDescription;
+	}
+	const musicConfigPrefix = 'config.voiceLobby.music.'
+	if(musicUrl){
+		updateFields[musicConfigPrefix + 'url'] = musicUrl;
+	}
+	if(musicVolume){
+		updateFields[musicConfigPrefix + 'volume'] = musicVolume;
+	}
+
+	if(_.isEmpty(updateFields)){
+		console.log(`Nothing to update for guild ${guildId}`);
+		return;
+	}
+	console.log(`Performing configuration update with params: ${JSON.stringify(updateFields)}`)
+	await GuildSpeedDateBot.findOneAndUpdate({ guildId }, updateFields);
 }
 
 async function deleteActiveSessionForGuild(guildId) {
@@ -63,7 +87,19 @@ async function getOrCreateGuildSpeedDateBotDocument(guildId, guildName) {
 				guildId: guildId,
 				guildName: guildName,
 			},
-			config: { imageUrl: DEFAULT_INVITE_IMAGE_URL },
+			config: {
+				voiceLobby:{
+					invite: {
+						image: DEFAULT_INVITE_IMAGE_URL,
+						title: "Your invite to the voice channel",
+						description: "It's all about connections"
+					},
+					music: {
+						url: 'https://soundcloud.com/julian_avila/elevatormusic',
+						volume: 3
+					}
+				}
+			},
 			activeSpeedDate: undefined,
 			// speedDatesHistory: [],
 			// participantsHistory: {},

@@ -38,7 +38,11 @@ async function addCompletedRolesToSpeedDaters(guildClient, guildInfo, participan
 async function cleanUpSpeedDateForGuild(guildId) {
 	try {
 			const guildSpeedDateBotDoc = await getGuildSpeedDateBotDocumentOrThrow(guildId);
-			const { activeSpeedDateSession:{routerVoiceChannel, dates, participants} , guildInfo, memberMeetingsHistory } = guildSpeedDateBotDoc;
+			if(!guildSpeedDateBotDoc.activeSpeedDateSession){
+				console.log(`Active speed date not found for${guildId} - Nothing to clean...`);
+				return;
+			}
+			const { activeSpeedDateSession:{ routerVoiceChannel, dates, participants} , guildInfo, memberMeetingsHistory } = guildSpeedDateBotDoc;
 			console.log(`Starting Cleanup for guild ${guildInfo}`)
 			// 1. Cleanup resources - Router Roles etc.
 			const guildClient = await client.guilds.fetch(guildId);
@@ -56,7 +60,6 @@ async function cleanUpSpeedDateForGuild(guildId) {
 		} catch (e) {
 			console.log(`Failed to perform onComplete operations for ${guildId}`, e)
 		}
-
 }
 
 module.exports = {
