@@ -27,7 +27,8 @@ async function initializeSpeedDateSessionForGuild(guildSpeedDateBotDoc, guildCli
 
 		return routerChannel
 	} catch (e) {
-		console.log(`Failed to initializeSpeedDateSession for ${guildName} with id ${guildId}`, e)
+		console.log(`Failed to initializeSpeedDateSession for ${guildName} with id ${guildId}`, e);
+		throw Error(`Failed to initializeSpeedDateSession for ${guildName} with id ${guildId}, ${e}`);
 	}
 }
 
