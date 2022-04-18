@@ -50,7 +50,7 @@ module.exports = {
 
 		// 1. Bootstrap infrastructure that is required for speed dating (Roles, Voice Channel Router etc.)
 		try {
-			await bootstrapSpeedDateInfrastructureForGuild(guildId, guildName, speedDateDurationMinutes, lobbyChannelId, roomCapacity, matchMakerStopTime);
+			await bootstrapSpeedDateInfrastructureForGuild(guildId, guildName, speedDateDurationMinutes, lobbyChannelId, roomCapacity, matchMakerStopTime, interaction);
 		} catch (e) {
 			console.log(`Failed to bootstrap infrastructure for guild ${guildName} with id ${guildId}`);
 			await interaction.followUp({

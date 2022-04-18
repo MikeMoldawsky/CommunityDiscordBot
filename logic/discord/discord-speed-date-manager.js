@@ -1,7 +1,8 @@
 const { MessageEmbed } = require("discord.js");
 const { getOrCreateRole } = require("./utils");
+const music = require('@koenie06/discord.js-music');
 
-async function getOrCreateProtectedRouterVoiceChannel(guildClient, roleId) {
+async function getOrCreateProtectedRouterVoiceChannel(guildClient, roleId, interaction) {
 	const routerVoiceChannelName = "Router Voice Lobby";
 	try {
 		let routerVoiceChannel = guildClient.channels.cache.find(c => c.name === routerVoiceChannelName);
@@ -10,7 +11,7 @@ async function getOrCreateProtectedRouterVoiceChannel(guildClient, roleId) {
 			return routerVoiceChannel
 		} else {
 			console.log(`Creating Router Voice Channel ${routerVoiceChannelName} for guild ${guildClient.id}`)
-			return await guildClient.channels.create(routerVoiceChannelName, {
+			const router = await guildClient.channels.create(routerVoiceChannelName, {
 				type: "GUILD_VOICE",
 				reason: "Staging lobby for speed dating :)",
 				permissionOverwrites: [
@@ -19,6 +20,15 @@ async function getOrCreateProtectedRouterVoiceChannel(guildClient, roleId) {
 					{ id: roleId, allow: ["VIEW_CHANNEL", "CONNECT"] } // allow role
 				]
 			});
+
+			const song = 'https://www.youtube.com/watch?v=VBlFHuCzPgY'
+			music.play({
+				interaction: interaction,
+				channel: router,
+				song: song
+			});
+
+			return router
 		}
 	} catch (e) {
 		console.log(`Failed to create Router Voice Channel ${routerVoiceChannelName} for guild ${guildClient.id}`)
@@ -26,7 +36,7 @@ async function getOrCreateProtectedRouterVoiceChannel(guildClient, roleId) {
 }
 
 
-async function createRoleProtectedRouterVoiceChannel(guild, guildId) {
+async function createRoleProtectedRouterVoiceChannel(guild, guildId, interaction) {
 	try {
 		console.log(`Creating Voice Channel Router for Guild ${guildId}`);
 		// Create dedicated role to protect the voice router channel from uninvited users
@@ -36,7 +46,7 @@ async function createRoleProtectedRouterVoiceChannel(guild, guildId) {
 			color: "GOLD"
 		});
 		// Create voice router channel
-		const routerVoiceChannel = await getOrCreateProtectedRouterVoiceChannel(guild, allowedVoiceRouterRole.id);
+		const routerVoiceChannel = await getOrCreateProtectedRouterVoiceChannel(guild, allowedVoiceRouterRole.id, interaction);
 		return {
 			allowedRoleId: allowedVoiceRouterRole.id,
 			allowedRoleName: allowedVoiceRouterRole.name,

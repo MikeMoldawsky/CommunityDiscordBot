@@ -30,7 +30,7 @@ const matchRoom = (unmatched, rooms, roomCapacity, history = {}, forceMatch = fa
 			roomMembers.push(_.last(available))
 			options = _.initial(options)
 		}
-		else if (forceMatch) {
+		else if (forceMatch && options.length > 0) {
 			roomMembers.push(_.last(options))
 			options = _.initial(options)
 		}

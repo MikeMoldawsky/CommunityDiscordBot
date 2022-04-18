@@ -2,7 +2,7 @@ const { createRoleProtectedRouterVoiceChannel } = require("../discord/discord-sp
 const { persistAndGetGuildSpeedDateBot } = require("../db/guild-db-manager");
 const moment = require("moment");
 
-async function initializeSpeedDateSessionForGuild(guildSpeedDateBotDoc, guildClient, lobbyChannelClient, speedDateDurationMinutes, roomCapacity, matchMakerStopTime) {
+async function initializeSpeedDateSessionForGuild(guildSpeedDateBotDoc, guildClient, lobbyChannelClient, speedDateDurationMinutes, roomCapacity, matchMakerStopTime, interaction) {
 	// 2. Initialize Speed Date Infrastructure - Roles, Router, DB etc...
 	const {guildInfo: {guildId, guildName} } = guildSpeedDateBotDoc;
 	try {
@@ -21,7 +21,7 @@ async function initializeSpeedDateSessionForGuild(guildSpeedDateBotDoc, guildCli
 		};
 		guildSpeedDateBotDoc = await persistAndGetGuildSpeedDateBot(guildSpeedDateBotDoc, "speed date session config update");
 		// 1. Creating router voice channel
-		guildSpeedDateBotDoc.activeSpeedDateSession.routerVoiceChannel = await createRoleProtectedRouterVoiceChannel(guildClient, guildId);
+		guildSpeedDateBotDoc.activeSpeedDateSession.routerVoiceChannel = await createRoleProtectedRouterVoiceChannel(guildClient, guildId, interaction);
 		return await persistAndGetGuildSpeedDateBot(guildSpeedDateBotDoc, "speed router voice channel update");
 	} catch (e) {
 		console.log(`Failed to initializeSpeedDateSession for ${guildName} with id ${guildId}`, e)
