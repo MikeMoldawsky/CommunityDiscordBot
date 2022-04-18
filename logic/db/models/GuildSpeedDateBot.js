@@ -42,8 +42,19 @@ const SpeedDateInviteConfig = new mongoose.Schema({
 	image : String,
 }, { _id : false })
 
+const SpeedDateMusicConfig = new mongoose.Schema({
+	url: String,
+	volume: Number,
+}, { _id : false })
+
+const SpeedDateVoiceLobbyConfig = new mongoose.Schema({
+	invite: SpeedDateInviteConfig,
+	music: SpeedDateMusicConfig
+}, { _id : false })
+
+
 const ConfigSchema = new mongoose.Schema({
-	invite: SpeedDateInviteConfig
+	voiceLobby: SpeedDateVoiceLobbyConfig
 }, { _id : false })
 
 const GuildInfoSchema = new mongoose.Schema({

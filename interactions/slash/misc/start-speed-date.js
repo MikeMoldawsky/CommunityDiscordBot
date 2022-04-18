@@ -4,6 +4,7 @@ const { bootstrapSpeedDateInfrastructureForGuild, startSpeedDateSessionForGuildA
 const moment = require("moment");
 const { startSpeedDateSessionCompleteTask } = require("../../../logic/tasks/speed-date-cleanup/speed-date-cleanup-task");
 const music = require('@koenie06/discord.js-music');
+const { getGuildSpeedDateBotDocumentOrThrow } = require("../../../logic/db/guild-db-manager");
 
 const ASSIGN_DATES_INTERVAL = 5 * 1000
 const MAX_SECONDS_FOR_MATCHING = 15;
@@ -60,17 +61,17 @@ module.exports = {
 			try {
 				const matchMakerStopTime = moment().add(MAX_SECONDS_FOR_MATCHING, "seconds").toDate()
 				const routerChannel = await bootstrapSpeedDateInfrastructureForGuild(guildId, guildName, speedDateDurationMinutes, lobbyChannelId, roomCapacity, matchMakerStopTime, interaction.user.id);
-				const song = 'https://soundcloud.com/julian_avila/elevatormusic'
+				const { config: {voiceLobby: { music : musicConfig }} } = await getGuildSpeedDateBotDocumentOrThrow(guildId);
 				// const song = 'https://www.youtube.com/watch?v=VBlFHuCzPgY';
-				console.log(`Staring music for guild ${guildName} with id ${guildId} - ${song}`);
+				console.log(`Staring music for guild ${guildName} with id ${guildId} - ${musicConfig.url}`);
 				await music.play({
 					interaction: interaction,
 					channel: routerChannel,
-					song: song,
+					song: musicConfig.url || 'https://soundcloud.com/julian_avila/elevatormusic',
 				});
 				await music.volume({
 					interaction: interaction,
-					volume: 3,
+					volume: musicConfig.volume,
 				});
 
 			} catch (e) {

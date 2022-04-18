@@ -23,7 +23,7 @@ async function bootstrapSpeedDateInfrastructureForGuild(guildId, guildName, spee
 
 async function startSpeedDateSessionForGuildAndGetInvite(guildId, lobbyChannelId) {
 	try {
-		const {activeSpeedDateSession, config: {invite}, guildInfo }  = await getGuildSpeedDateBotDocumentOrThrow(guildId);
+		const {activeSpeedDateSession, config: { voiceLobby: { invite }}, guildInfo }  = await getGuildSpeedDateBotDocumentOrThrow(guildId);
 		console.log(`Starting speed date session for guild ${guildInfo} with config ${activeSpeedDateSession}`);
 		// Creating clients
 		const guildClient = await client.guilds.fetch(guildId);
