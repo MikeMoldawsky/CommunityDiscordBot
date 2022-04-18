@@ -19,7 +19,8 @@ async function createSpeedDatesMatches(guildBotDoc, forceMatch = false) {
 		return;
 	}
 
-	const { rooms } = matchRooms(Array.from(routerChannel.members.keys()), memberMeetingsHistory, speedDateSessionConfig.roomCapacity, forceMatch)
+	const routerMembers = routerChannel.members.filter(m => !m.user.bot)
+	const { rooms } = matchRooms(Array.from(routerMembers.keys()), memberMeetingsHistory, speedDateSessionConfig.roomCapacity, forceMatch)
 
 	const maxRoomNum = _.max(_.map(dates, 'number')) || 0
 	const newDates = await Promise.all(
