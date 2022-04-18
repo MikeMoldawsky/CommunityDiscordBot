@@ -1,7 +1,7 @@
 const { MessageEmbed } = require("discord.js");
 const { getOrCreateRole } = require("./utils");
-const { getGuildWithActiveSpeedDateSessionOrThrow } = require("../../../logic/db/guild-db-manager");
-const client = require("../../../logic/discord/client");
+const { getGuildWithActiveSpeedDateSessionOrThrow } = require("../../logic/db/guild-db-manager");
+const client = require("../../logic/discord/client");
 const music = require("@koenie06/discord.js-music");
 
 const ROUTER_VOICE_LOBBY_NAME = "❤️ Speed Date Lobby ❤️";
