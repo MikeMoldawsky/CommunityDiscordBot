@@ -11,6 +11,27 @@ async function getGuildSpeedDateBotDocumentOrThrow(guildId, guildName = "no-para
 	return guildInfo;
 }
 
+async function throwIfActiveSession(guildId) {
+	const guildBotDoc = await getGuildSpeedDateBotDocumentOrThrow(guildId);
+	if (guildBotDoc.activeSpeedDateSession) {
+		console.log(`There is an active session for guild ${guildBotDoc.guildInfo}`);
+		throw Error(`There is an active session for guild ${guildBotDoc.guildInfo}`);
+	}
+}
+
+async function updatedConfigFieldsForGuild(guildId, imageUrl) {
+	await GuildSpeedDateBot.findOneAndUpdate({ guildId }, {
+		'config.imageUrl': imageUrl,
+	});
+}
+
+async function deleteActiveSessionForGuild(guildId) {
+	console.log(`Deleting active session from DB for guild ${guildId}`)
+	await GuildSpeedDateBot.findOneAndUpdate({ guildId }, {
+		'activeSpeedDateSession': null,
+	});
+}
+
 async function getGuildWithActiveSpeedDateSessionOrThrow(guildId) {
 	const guildBotDoc = await getGuildSpeedDateBotDocumentOrThrow(guildId);
 	if (!guildBotDoc.activeSpeedDateSession) {
@@ -56,5 +77,8 @@ module.exports = {
 	persistAndGetGuildSpeedDateBot,
 	getGuildWithActiveSpeedDateSessionOrThrow,
 	getGuildSpeedDateBotDocumentOrThrow,
-	getOrCreateGuildSpeedDateBotDocument
+	getOrCreateGuildSpeedDateBotDocument,
+	throwIfActiveSession,
+	updatedConfigFieldsForGuild,
+	deleteActiveSessionForGuild
 };

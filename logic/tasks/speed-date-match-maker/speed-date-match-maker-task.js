@@ -20,18 +20,18 @@ async function createSpeedDatesMatches(guildBotDoc, forceMatch = false) {
 	}
 
 	const routerMembers = routerChannel.members.filter(m => !m.user.bot)
-
-	const { rooms: groups } = matchRooms(Array.from(routerMembers.keys()), memberMeetingsHistory, speedDateSessionConfig.roomCapacity, forceMatch)
+	const { rooms } = matchRooms(Array.from(routerMembers.keys()), memberMeetingsHistory, speedDateSessionConfig.roomCapacity, forceMatch)
 
 	const maxRoomNum = _.max(_.map(dates, 'number')) || 0
 	const newDates = await Promise.all(
-		groups.map(async (group, i) => {
+		rooms.map(async (room, i) => {
 			const roomNumber = maxRoomNum + i + 1;
-			const vc = await createVoiceChannel(guild, roomNumber, group);
-			const roomParticipants = group.map((userId) => {
+			console.log(`guild ${guild}\n numner: ${roomNumber}\n room: ${room}`)
+			const vc = await createVoiceChannel(guild, roomNumber, room);
+			const roomParticipants = room.map((userId) => {
 				const user = guild.members.cache.get(userId)
 				user.voice.setChannel(vc.id)
-				participants[userId] = group.filter(uid => uid !== userId)
+				participants[userId] = room.filter(uid => uid !== userId)
 				return {id: userId, name: user.user.username}
 			})
 
