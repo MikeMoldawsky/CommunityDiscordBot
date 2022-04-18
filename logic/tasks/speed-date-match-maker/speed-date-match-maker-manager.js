@@ -66,13 +66,6 @@ const matchRoom = (unmatched, rooms, roomCapacity, history = {}, retries = 0) =>
 }
 
 const speedDateMatchMakerManager = (members, history = {}, roomCapacity) => {
-	if (members.length <= roomCapacity) {
-		// dev edge case - small number of users
-		_.forEach(members, m => {
-			_.set(history, m, [..._.get(history, m, []), ..._.without(members, m)])
-		})
-		return {rooms: [members], history}
-	}
 	console.log('matchRoom', {members, roomCapacity: roomCapacity})
 	return matchRoom(members, [], roomCapacity, history)
 }

@@ -46,7 +46,7 @@ async function startSpeedDateSessionCompleteTask(guildId, interval) {
 				console.log(`Cleanup skipped - Guild ${guildInfo} doesn't have any active speed date session.`)
 				return;
 			}
-			const {routerVoiceChannel, rooms, participants, speedDateStartTime, speedDateSessionConfig: {speedDateDurationMinutes} } = activeSpeedDateSession;
+			const {routerVoiceChannel, dates, participants, speedDateStartTime, speedDateSessionConfig: {speedDateDurationMinutes} } = activeSpeedDateSession;
 			const speedDateEndMoment = moment(speedDateStartTime).add(speedDateDurationMinutes, "minutes");
 			const currentMoment = moment();
 			if(currentMoment < speedDateEndMoment){
@@ -57,7 +57,7 @@ async function startSpeedDateSessionCompleteTask(guildId, interval) {
 			console.log(`Starting Cleanup for guild ${guildInfo}`)
 			// 1. Cleanup resources - Router Roles etc.
 			const guildClient = await client.guilds.fetch(guildId);
-			await cleanUpVoiceRouterAndTempRoles(routerVoiceChannel, rooms, guildClient);
+			await cleanUpVoiceRouterAndTempRoles(routerVoiceChannel, dates, guildClient);
 
 			// 2. Create Speed Date Completed Role & Save participants history and add participation role
 			// TODO - Mike - it should probably live some place else!

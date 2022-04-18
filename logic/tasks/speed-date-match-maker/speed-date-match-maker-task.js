@@ -8,7 +8,7 @@ const moment = require("moment");
 
 
 async function createSpeedDatesMatches(guildBotDoc) {
-	const {activeSpeedDateSession: {routerVoiceChannel, speedDateSessionConfig, participants, rooms},
+	const {activeSpeedDateSession: {routerVoiceChannel, speedDateSessionConfig, participants, dates},
 		memberMeetingsHistory, guildInfo} = guildBotDoc;
 
 	const guild = await client.guilds.fetch(guildInfo.guildId)
@@ -21,8 +21,8 @@ async function createSpeedDatesMatches(guildBotDoc) {
 
 	const { rooms: groups } = matchRooms(Array.from(routerChannel.members.keys()), memberMeetingsHistory, speedDateSessionConfig.roomCapacity)
 
-	const maxRoomNum = _.max(_.map(rooms, 'number')) || 0
-	const newRooms = await Promise.all(
+	const maxRoomNum = _.max(_.map(dates, 'number')) || 0
+	const newDates = await Promise.all(
 		groups.map(async (group, i) => {
 			const roomNumber = maxRoomNum + i + 1;
 			const vc = await createVoiceChannel(guild, roomNumber, group);
@@ -43,7 +43,7 @@ async function createSpeedDatesMatches(guildBotDoc) {
 
 	await GuildSpeedDateBot.findOneAndUpdate({guildId: guildInfo.guildId}, {
 		'activeSpeedDateSession.participants': participants,
-		'activeSpeedDateSession.speedDates': [...rooms, ...newRooms],
+		'activeSpeedDateSession.dates': [...dates, ...newDates],
 	})
 }
 
