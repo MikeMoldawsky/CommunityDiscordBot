@@ -3,12 +3,12 @@ const { startDateMatchMakerForGuild } = require('../../../logic/tasks/speed-date
 const { bootstrapSpeedDateInfrastructureForGuild, startSpeedDateSessionForGuildAndGetInvite } = require("../../../logic/speed-date-manager/speed-date-manager");
 const moment = require("moment");
 const { startSpeedDateSessionCompleteTask } = require("../../../logic/tasks/speed-date-cleanup/speed-date-cleanup-task");
-const music = require('@koenie06/discord.js-music');
-const { getGuildSpeedDateBotDocumentOrThrow } = require("../../../logic/db/guild-db-manager");
+const { playMusicInRouterVoiceChannel } = require("../../../logic/discord/discord-speed-date-manager");
 
 const ASSIGN_DATES_INTERVAL = 5 * 1000
-const MAX_SECONDS_FOR_MATCHING = 15;
+const MAX_SECONDS_FOR_MATCHING = 60;
 const ON_COMPLETE_TASK_INTERVAL = 10 * 1000
+
 
 module.exports = {
 	// The data needed to register slash commands to Discord.
@@ -58,30 +58,10 @@ module.exports = {
 
 		try {
 			// 1. Bootstrap infrastructure that is required for speed dating (Roles, Voice Channel Router etc.)
-			try {
 				const matchMakerStopTime = moment().add(MAX_SECONDS_FOR_MATCHING, "seconds").toDate()
-				const routerChannel = await bootstrapSpeedDateInfrastructureForGuild(guildId, guildName, speedDateDurationMinutes, lobbyChannelId, roomCapacity, matchMakerStopTime, interaction.user.id);
-				const { config: {voiceLobby: { music : musicConfig }} } = await getGuildSpeedDateBotDocumentOrThrow(guildId);
-				// const song = 'https://www.youtube.com/watch?v=VBlFHuCzPgY';
-				console.log(`Staring music for guild ${guildName} with id ${guildId} - ${musicConfig.url}`);
-				await music.play({
-					interaction: interaction,
-					channel: routerChannel,
-					song: musicConfig.url || 'https://soundcloud.com/julian_avila/elevatormusic',
-				});
-				await music.volume({
-					interaction: interaction,
-					volume: musicConfig.volume,
-				});
+				await bootstrapSpeedDateInfrastructureForGuild(guildId, guildName, speedDateDurationMinutes, lobbyChannelId, roomCapacity, matchMakerStopTime, interaction.user.id);
 
-			} catch (e) {
-				console.log(`Failed to bootstrap infrastructure for guild ${guildName} with id ${guildId}`, e);
-				await interaction.followUp({
-					content: "Failed to start speed dating. Check if there isn't an active round.",
-					ephemeral: true, // TODO: doesn't work as ephemeral of the origin msg is false
-				});
-				return;
-			}
+				await playMusicInRouterVoiceChannel(interaction, guildId);
 
 			// 2. Start the MatchMaker Task over the Router Channel
 			startDateMatchMakerForGuild(guildId, ASSIGN_DATES_INTERVAL)

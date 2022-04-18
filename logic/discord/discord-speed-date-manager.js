@@ -1,5 +1,8 @@
 const { MessageEmbed } = require("discord.js");
 const { getOrCreateRole } = require("./utils");
+const { getGuildWithActiveSpeedDateSessionOrThrow } = require("../../../logic/db/guild-db-manager");
+const client = require("../../../logic/discord/client");
+const music = require("@koenie06/discord.js-music");
 
 const ROUTER_VOICE_LOBBY_NAME = "❤️ Speed Date Lobby ❤️";
 
@@ -69,8 +72,31 @@ async function createRouterVoiceChannelInvite(routerVoiceChannelClient, config) 
 	}
 }
 
+async function playMusicInRouterVoiceChannel(interaction, guildId) {
+	try {
+		const { config: {voiceLobby: { music : musicConfig }},  guildInfo, activeSpeedDateSession: { routerVoiceChannel } } = await getGuildWithActiveSpeedDateSessionOrThrow(guildId);
+		const guildClient = await client.guilds.fetch(guildId);
+		const routerChannel =  await guildClient.channels.fetch(routerVoiceChannel.channelId);
+
+		console.log(`Staring music for guild ${guildInfo.guildName} with id ${guildId} - ${musicConfig.url}`);
+		await music.play({
+			interaction: interaction,
+			channel: routerChannel,
+			song: musicConfig.url || 'https://soundcloud.com/julian_avila/elevatormusic',
+		});
+		await music.volume({
+			interaction: interaction,
+			volume: musicConfig.volume,
+		});
+	} catch (e) {
+		console.log(`Failed to play music for guild ${guildId}`, e);
+		throw Error(`Failed to play music for guild ${guildId}, ${e}`)
+	}
+}
+
 
 module.exports = {
 	createRoleProtectedRouterVoiceChannel,
-	createRouterVoiceChannelInvite
+	createRouterVoiceChannelInvite,
+	playMusicInRouterVoiceChannel
 }

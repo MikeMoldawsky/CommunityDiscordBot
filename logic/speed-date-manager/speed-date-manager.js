@@ -18,7 +18,7 @@ async function bootstrapSpeedDateInfrastructureForGuild(guildId, guildName, spee
 		console.log(`Active speed date session found - can't start a new session for ${guildId}`);
 		throw Error(`There is an active speed date in progress for ${guildId}.`);
 	}
-	return await initializeSpeedDateSessionForGuild(prevGuildSpeedDateBotDoc, guildClient, lobbyChannelClient, speedDateDurationMinutes, roomCapacity, matchMakerStopTime, creatorId);
+	await initializeSpeedDateSessionForGuild(prevGuildSpeedDateBotDoc, guildClient, lobbyChannelClient, speedDateDurationMinutes, roomCapacity, matchMakerStopTime, creatorId);
 }
 
 async function startSpeedDateSessionForGuildAndGetInvite(guildId, lobbyChannelId) {
