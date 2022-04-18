@@ -40,7 +40,7 @@ module.exports = {
 		 lobbyChannelId = interaction.options.getChannel("lobby") || interaction.channel.id; // TODO: remove default channel ID - it can be dangerous;
 		 guildId = interaction.guild.id;
 		 guildName = interaction.guild.name;
-		 speedDateDurationMinutes = interaction.options.getInteger("duration-capacity") || 1;
+		 speedDateDurationMinutes = interaction.options.getInteger("duration") || 2;
 		 roomCapacity = interaction.options.getInteger("room-capacity") || 2;
 		// TODO: decide how much time we want - maybe configurable
 		// TODO(mike): add validations over the inputs - e.g. capacity >= 2, guildClient bot found etc...

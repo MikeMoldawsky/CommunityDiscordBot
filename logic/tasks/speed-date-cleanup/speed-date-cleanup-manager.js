@@ -7,18 +7,28 @@ const _ = require("lodash");
 const GuildSpeedDateBot = require("../../../logic/db/models/GuildSpeedDateBot");
 const { deleteActiveSessionForGuild } = require("../../db/guild-db-manager");
 
-
 async function cleanUpVoiceRouterAndTempRoles(routerVoiceChannel, rooms, guildClient) {
-	// 2. Delete Router & Voice Channel
-	const routerVoiceChannelClient = await client.channels.fetch(routerVoiceChannel.channelId);
-	await routerVoiceChannelClient.delete();
-	_.forEach(rooms, async ({ voiceChannelId }) => {
-		const voiceChannel = await client.channels.fetch(voiceChannelId);
-		voiceChannel.delete();
-	});
+	await Promise.all(
+		_.map(rooms, async ({ voiceChannelId }) => {
+			const voiceChannel = await client.channels.fetch(voiceChannelId);
+			await Promise.all(
+				_.map(Array.from(voiceChannel.members.keys()), async userId => {
+					const user = await guildClient.members.fetch(userId)
+					return user.voice.setChannel(routerVoiceChannel.channelId)
+				})
+			)
+			return voiceChannel.delete();
+		})
+	)
 
-	// 3. Delete temporary speed-dating role for Router
-	await guildClient.roles.delete(routerVoiceChannel.allowedRoleId);
+	setTimeout(async () => {
+		// 2. Delete Router & Voice Channel
+		const routerVoiceChannelClient = await client.channels.fetch(routerVoiceChannel.channelId);
+		await routerVoiceChannelClient.delete();
+
+		// 3. Delete temporary speed-dating role for Router
+		await guildClient.roles.delete(routerVoiceChannel.allowedRoleId);
+	}, 30 * 1000)
 }
 
 async function addCompletedRolesToSpeedDaters(guildClient, guildInfo, participants, memberMeetingsHistory) {

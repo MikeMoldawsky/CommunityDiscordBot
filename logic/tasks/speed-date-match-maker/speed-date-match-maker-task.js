@@ -29,10 +29,11 @@ async function createSpeedDatesMatches(guildBotDoc, forceMatch = false) {
 			console.log(`guild ${guild}\n numner: ${roomNumber}\n room: ${room}`)
 			const vc = await createVoiceChannel(guild, roomNumber, room);
 			const roomParticipants = room.map((userId) => {
-				const user = guild.members.cache.get(userId)
-				user.voice.setChannel(vc.id)
+				const member = guild.members.cache.get(userId)
+				console.log('createSpeedDatesMatches', {vc, member})
+				member.voice.setChannel(vc.id)
 				participants[userId] = room.filter(uid => uid !== userId)
-				return {id: userId, name: user.user.username}
+				return {id: userId, name: member.user.username}
 			})
 
 			return {

@@ -31,6 +31,7 @@ const matchRoom = (unmatched, rooms, roomCapacity, history = {}, forceMatch = fa
 			options = _.initial(options)
 		}
 		else if (forceMatch && options.length > 0) {
+			console.log(`Forcing match for members who have no unique options`)
 			roomMembers.push(_.last(options))
 			options = _.initial(options)
 		}
@@ -72,7 +73,7 @@ const matchRoom = (unmatched, rooms, roomCapacity, history = {}, forceMatch = fa
 }
 
 const speedDateMatchMakerManager = (members, history = {}, roomCapacity, forceMatch) => {
-	console.log('matchRoom', {members, roomCapacity: roomCapacity})
+	// console.log('matchRoom', {members, roomCapacity: roomCapacity})
 	return matchRoom(members, [], roomCapacity, history, forceMatch)
 }
 

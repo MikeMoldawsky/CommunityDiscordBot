@@ -44,8 +44,8 @@ module.exports = {
 
 		// 1. Don't allow configure while active speed dating
 		try {
-			await throwIfActiveSession(guildId)
 			await getOrCreateGuildSpeedDateBotDocument(guildId, guildName); // if it's the first time you should be able to configure
+			await throwIfActiveSession(guildId)
 			await updatedConfigFieldsForGuild(guildId, inviteImageUrl, inviteTitle, inviteText, musicUrl, musicVolume);
 		} catch (e) {
 			console.log(`Can't update configuration while active speed date for guild ${guildName} with ${guildId}`, e);
