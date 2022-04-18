@@ -1,8 +1,7 @@
 const { MessageEmbed } = require("discord.js");
 const { getOrCreateRole } = require("./utils");
-const music = require('@koenie06/discord.js-music');
 
-async function getOrCreateProtectedRouterVoiceChannel(guildClient, roleId, interaction) {
+async function getOrCreateProtectedRouterVoiceChannel(guildClient, roleId, creatorId) {
 	const routerVoiceChannelName = "Router Voice Lobby";
 	try {
 		let routerVoiceChannel = guildClient.channels.cache.find(c => c.name === routerVoiceChannelName);
@@ -11,32 +10,24 @@ async function getOrCreateProtectedRouterVoiceChannel(guildClient, roleId, inter
 			return routerVoiceChannel
 		} else {
 			console.log(`Creating Router Voice Channel ${routerVoiceChannelName} for guild ${guildClient.id}`)
-			const router = await guildClient.channels.create(routerVoiceChannelName, {
+			return await guildClient.channels.create(routerVoiceChannelName, {
 				type: "GUILD_VOICE",
 				reason: "Staging lobby for speed dating :)",
 				permissionOverwrites: [
-					{ id: guildClient.id, deny: ["VIEW_CHANNEL", "CONNECT"] }, // deny
-					// { id: roleId, allow: ["CONNECT"] }, // allow role
-					{ id: roleId, allow: ["VIEW_CHANNEL", "CONNECT"] } // allow role
+					{ id: guildClient.id, deny: ["VIEW_CHANNEL", "CONNECT", "SPEAK"] }, // deny
+					{ id: roleId, allow: ["VIEW_CHANNEL", "CONNECT"] }, // allow role
+					{ id: creatorId, allow: ["SPEAK"] }, // allow creator to speak
 				]
 			});
-
-			const song = 'https://www.youtube.com/watch?v=VBlFHuCzPgY'
-			music.play({
-				interaction: interaction,
-				channel: router,
-				song: song
-			});
-
-			return router
 		}
 	} catch (e) {
-		console.log(`Failed to create Router Voice Channel ${routerVoiceChannelName} for guild ${guildClient.id}`)
+		console.log(`Failed to create Router Voice Channel ${routerVoiceChannelName} for guild ${guildClient.id}, ${e}`)
+		throw Error(`Failed to create Router Voice Channel ${routerVoiceChannelName} for guild ${guildClient.id}, ${e}`)
 	}
 }
 
 
-async function createRoleProtectedRouterVoiceChannel(guild, guildId, interaction) {
+async function createRoleProtectedRouterVoiceChannel(guild, guildId, creatorId) {
 	try {
 		console.log(`Creating Voice Channel Router for Guild ${guildId}`);
 		// Create dedicated role to protect the voice router channel from uninvited users
@@ -46,12 +37,15 @@ async function createRoleProtectedRouterVoiceChannel(guild, guildId, interaction
 			color: "GOLD"
 		});
 		// Create voice router channel
-		const routerVoiceChannel = await getOrCreateProtectedRouterVoiceChannel(guild, allowedVoiceRouterRole.id, interaction);
+		const routerVoiceChannel = await getOrCreateProtectedRouterVoiceChannel(guild, allowedVoiceRouterRole.id, creatorId);
 		return {
-			allowedRoleId: allowedVoiceRouterRole.id,
-			allowedRoleName: allowedVoiceRouterRole.name,
-			channelId: routerVoiceChannel.id,
-			channelName: routerVoiceChannel.name
+			routerData: {
+				allowedRoleId: allowedVoiceRouterRole.id,
+				allowedRoleName: allowedVoiceRouterRole.name,
+				channelId: routerVoiceChannel.id,
+				channelName: routerVoiceChannel.name
+			},
+			routerChannel: routerVoiceChannel,
 		};
 	} catch (e) {
 		console.log(`Failed to create Voice Router Channel for Guild ${guild.id}`, e);

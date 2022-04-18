@@ -4,6 +4,7 @@ const { startDateMatchMakerForGuild } = require('../../../logic/tasks/speed-date
 const { bootstrapSpeedDateInfrastructureForGuild, startSpeedDateSessionForGuildAndGetInvite } = require("../../../logic/speed-date-manager/speed-date-manager");
 const moment = require("moment");
 const { startSpeedDateSessionCompleteTask } = require("../../../logic/tasks/speed-date-cleanup-task/speed-date-cleanup-task");
+const music = require('@koenie06/discord.js-music');
 
 const ASSIGN_DATES_INTERVAL = 5 * 1000
 const MAX_SECONDS_FOR_MATCHING = 15;
@@ -50,7 +51,18 @@ module.exports = {
 
 		// 1. Bootstrap infrastructure that is required for speed dating (Roles, Voice Channel Router etc.)
 		try {
-			await bootstrapSpeedDateInfrastructureForGuild(guildId, guildName, speedDateDurationMinutes, lobbyChannelId, roomCapacity, matchMakerStopTime, interaction);
+			const routerChannel = await bootstrapSpeedDateInfrastructureForGuild(guildId, guildName, speedDateDurationMinutes, lobbyChannelId, roomCapacity, matchMakerStopTime, interaction.user.id);
+			const song = 'https://soundcloud.com/julian_avila/elevatormusic'
+			await music.play({
+				interaction: interaction,
+				channel: routerChannel,
+				song: song,
+			});
+			await music.volume({
+				interaction: interaction,
+				volume: 1,
+			});
+
 		} catch (e) {
 			console.log(`Failed to bootstrap infrastructure for guild ${guildName} with id ${guildId}`);
 			await interaction.followUp({
