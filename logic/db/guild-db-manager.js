@@ -1,7 +1,8 @@
 const GuildSpeedDateBot = require("./models/GuildSpeedDateBot");
 const _ = require("lodash");
 
-const DEFAULT_INVITE_IMAGE_URL = "https://i.imgur.com/ZGPxFN2.jpg";
+const DEFAULT_INVITE_IMAGE_URL = "https://www.thebirdstage.com/wp-content/uploads/2016/02/Speed-Dating.jpg";
+const DEFAULT_LOBBY_MUSIC_URL = 'https://soundcloud.com/julian_avila/elevatormusic';
 
 async function getGuildSpeedDateBotDocumentOrThrow(guildId, guildName = "no-param") {
 	const guildInfo = await GuildSpeedDateBot.findOne({ guildId: guildId }).exec();
@@ -91,11 +92,11 @@ async function getOrCreateGuildSpeedDateBotDocument(guildId, guildName) {
 				voiceLobby:{
 					invite: {
 						image: DEFAULT_INVITE_IMAGE_URL,
-						title: "Your invite to the voice channel",
-						description: "It's all about connections"
+						title: "🎉 Speed Date Invite 🎉",
+						description: "Congratulations!\nYou've been invited to the community Speed Date event.\nJoin Us 💖"
 					},
 					music: {
-						url: 'https://soundcloud.com/julian_avila/elevatormusic',
+						url: DEFAULT_LOBBY_MUSIC_URL,
 						volume: 3
 					}
 				}
