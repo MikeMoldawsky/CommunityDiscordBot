@@ -22,7 +22,7 @@ async function cleanUpVoiceRouterAndTempRoles(routerVoiceChannel, rooms, guildCl
 	await guildClient.roles.delete(routerVoiceChannel.allowedRoleId);
 }
 
-async function addCompletedRolesToSpeedDaters(guildInfo, participants, memberMeetingsHistory) {
+async function addCompletedRolesToSpeedDaters(guildClient, guildInfo, participants, memberMeetingsHistory) {
 	console.log(`Completed Speed Date Round role for ${guildInfo}`);
 	const speedDateCompletedRole = await getOrCreateRole(guildInfo.guildId, {
 		name: `speed-dater`,
@@ -61,7 +61,7 @@ async function startSpeedDateSessionCompleteTask(guildId, interval) {
 
 			// 2. Create Speed Date Completed Role & Save participants history and add participation role
 			// TODO - Mike - it should probably live some place else!
-			await addCompletedRolesToSpeedDaters(guildInfo, participants, memberMeetingsHistory);
+			await addCompletedRolesToSpeedDaters(guildClient, guildInfo, participants, memberMeetingsHistory);
 
 			// 3. Save that active session is completed - i.e. delete it
 			// TODO - Asaf - do this in single request
