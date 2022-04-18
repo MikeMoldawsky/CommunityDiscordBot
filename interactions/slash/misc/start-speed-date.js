@@ -6,7 +6,7 @@ const moment = require("moment");
 const { startSpeedDateSessionCompleteTask } = require("../../../logic/tasks/speed-date-cleanup-task/speed-date-cleanup-task");
 
 const ASSIGN_DATES_INTERVAL = 5 * 1000
-const MAX_MINUTES_FOR_MATCHING = 2;
+const MAX_SECONDS_FOR_MATCHING = 15;
 const ON_COMPLETE_TASK_INTERVAL = 10 * 1000
 
 module.exports = {
@@ -40,7 +40,7 @@ module.exports = {
 		const speedDateDurationMinutes = interaction.options.getInteger("duration-capacity") || 1;
 		const roomCapacity = interaction.options.getInteger("room-capacity") || 2;
 		// TODO: decide how much time we want - maybe configurable
-		const matchMakerStopTime = moment().add(MAX_MINUTES_FOR_MATCHING, "minutes").toDate()
+		const matchMakerStopTime = moment().add(MAX_SECONDS_FOR_MATCHING, "seconds").toDate()
 		// TODO(mike): add validations over the inputs - e.g. capacity >= 2, guildClient bot found etc...
 
 		// 0. Let the bot time to work on the interaction

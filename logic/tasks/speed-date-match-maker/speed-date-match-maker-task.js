@@ -7,7 +7,7 @@ const { getGuildSpeedDateBotDocumentOrThrow } = require("../../db/guild-db-manag
 const moment = require("moment");
 
 
-async function createSpeedDatesMatches(guildBotDoc) {
+async function createSpeedDatesMatches(guildBotDoc, forceMatch = false) {
 	const {activeSpeedDateSession: {routerVoiceChannel, speedDateSessionConfig, participants, dates},
 		memberMeetingsHistory, guildInfo} = guildBotDoc;
 
@@ -19,7 +19,7 @@ async function createSpeedDatesMatches(guildBotDoc) {
 		return;
 	}
 
-	const { rooms: groups } = matchRooms(Array.from(routerChannel.members.keys()), memberMeetingsHistory, speedDateSessionConfig.roomCapacity)
+	const { rooms: groups } = matchRooms(Array.from(routerChannel.members.keys()), memberMeetingsHistory, speedDateSessionConfig.roomCapacity, forceMatch)
 
 	const maxRoomNum = _.max(_.map(dates, 'number')) || 0
 	const newDates = await Promise.all(
@@ -57,6 +57,12 @@ async function startDateMatchMakerForGuild(guildId, interval){
 	}
 	const stopMatchingMoment = moment(guildBotDoc.activeSpeedDateSession.matchMakerStopTime);
 	if(currentMoment > stopMatchingMoment){
+		try {
+			await createSpeedDatesMatches(guildBotDoc, true);
+		} catch (e) {
+			console.log(`Failed to match make for guild ${guildBotDoc.guildInfo}`, e);
+			throw Error(`Failed to match make for guild ${guildBotDoc.guildInfo}`);
+		}
 		console.log(`Stop Match Making - exceeded match making time for ${guildBotDoc.guildInfo}: ${currentMoment} > ${stopMatchingMoment}`)
 		return;
 	}

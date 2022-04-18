@@ -9,11 +9,15 @@ async function bootstrapSpeedDateInfrastructureForGuild(guildId, guildName, spee
 	const guildClient = await client.guilds.fetch(guildId);
 	const lobbyChannelClient = await guildClient.channels.fetch(lobbyChannelId);
 	// 0. Get Or Create Guild Speed Date Document
-	const prevGuildSpeedDateBotDoc = await getOrCreateGuildSpeedDateBotDocument(guildId, guildName);
+	let prevGuildSpeedDateBotDoc = await getOrCreateGuildSpeedDateBotDocument(guildId, guildName);
 	// 1. Active Session check as multiple sessions aren't allowed (should be fixed manually or with bot commands).
 	if(prevGuildSpeedDateBotDoc.activeSpeedDateSession){
-		console.log(`Active speed date session found - can't start a new session for ${guildId}`);
-		throw Error(`There is an active speed date in progress for ${guildId}.`);
+
+		await prevGuildSpeedDateBotDoc.delete()
+		prevGuildSpeedDateBotDoc = await getOrCreateGuildSpeedDateBotDocument(guildId, guildName);
+
+		// console.log(`Active speed date session found - can't start a new session for ${guildId}`);
+		// throw Error(`There is an active speed date in progress for ${guildId}.`);
 	}
 	return await initializeSpeedDateSessionForGuild(prevGuildSpeedDateBotDoc, guildClient, lobbyChannelClient, speedDateDurationMinutes, roomCapacity, matchMakerStopTime);
 }
