@@ -56,7 +56,6 @@ async function cleanUpSpeedDateForGuild(guildId) {
 		} catch (e) {
 			console.log(`Failed to perform onComplete operations for ${guildId}`, e)
 		}
-
 }
 
 module.exports = {

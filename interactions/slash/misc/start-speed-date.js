@@ -3,7 +3,7 @@ const _ = require("lodash");
 const { startDateMatchMakerForGuild } = require('../../../logic/tasks/speed-date-match-maker/speed-date-match-maker-task')
 const { bootstrapSpeedDateInfrastructureForGuild, startSpeedDateSessionForGuildAndGetInvite } = require("../../../logic/speed-date-manager/speed-date-manager");
 const moment = require("moment");
-const { startSpeedDateSessionCompleteTask } = require("../../../logic/tasks/speed-date-cleanup-task/speed-date-cleanup-task");
+const { startSpeedDateSessionCompleteTask } = require("../../../logic/tasks/speed-date-cleanup/speed-date-cleanup-task");
 
 const ASSIGN_DATES_INTERVAL = 5 * 1000
 const MAX_SECONDS_FOR_MATCHING = 15;

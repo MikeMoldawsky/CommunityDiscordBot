@@ -21,7 +21,7 @@ async function throwIfActiveSession(guildId) {
 
 async function updatedConfigFieldsForGuild(guildId, imageUrl) {
 	await GuildSpeedDateBot.findOneAndUpdate({ guildId }, {
-		'config.imageUrl': imageUrl,
+		'config.invite.image': imageUrl,
 	});
 }
 
@@ -63,7 +63,13 @@ async function getOrCreateGuildSpeedDateBotDocument(guildId, guildName) {
 				guildId: guildId,
 				guildName: guildName,
 			},
-			config: { imageUrl: DEFAULT_INVITE_IMAGE_URL },
+			config: {
+				invite: {
+					image: DEFAULT_INVITE_IMAGE_URL,
+					title: "Your invite to the voice channel",
+					description: "It's all about connections"
+				}
+			},
 			activeSpeedDate: undefined,
 			// speedDatesHistory: [],
 			// participantsHistory: {},

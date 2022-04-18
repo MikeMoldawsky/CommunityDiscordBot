@@ -1,7 +1,7 @@
 const { SlashCommandBuilder } = require("@discordjs/builders");
 const { getOrCreateGuildSpeedDateBotDocument, deleteActiveSessionForGuild } = require("../../../logic/db/guild-db-manager");
 const _ = require("lodash");
-const { cleanUpSpeedDateForGuild } = require("../../../logic/tasks/speed-date-cleanup-task/speed-date-cleanup-manager");
+const { cleanUpSpeedDateForGuild } = require("../../../logic/tasks/speed-date-cleanup/speed-date-cleanup-manager");
 
 module.exports = {
 	// The data needed to register slash commands to Discord.

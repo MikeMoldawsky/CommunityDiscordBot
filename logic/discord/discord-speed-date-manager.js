@@ -54,10 +54,10 @@ async function createRouterVoiceChannelInvite(routerVoiceChannelClient, config) 
 		const invite = await routerVoiceChannelClient.createInvite();
 		return new MessageEmbed()
 			.setColor(0x4286f4)
-			.setTitle("Your invite to the voice channel")
-			.setDescription("It's all about connections")
-			.setURL(invite.url)
-			.setImage(config.imageUrl);
+			.setTitle(config.title || "Your invite to the voice channel")
+			.setDescription(config.description || "It's all about connections")
+			.setImage(config.image)
+			.setURL(invite.url);
 	} catch (e) {
 		console.log(`Failed to create Router Voice Channel invite`, e)
 	}
