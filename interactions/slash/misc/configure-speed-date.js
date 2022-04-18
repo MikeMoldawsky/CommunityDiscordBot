@@ -56,7 +56,6 @@ module.exports = {
 			return;
 		}
 
-
 		await interaction.followUp({
 			content: "Successfully updated the speed date configurations.",
 			ephemeral: true,

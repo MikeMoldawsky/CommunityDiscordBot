@@ -1,16 +1,18 @@
 const { MessageEmbed } = require("discord.js");
 const { getOrCreateRole } = require("./utils");
 
+const ROUTER_VOICE_LOBBY_NAME = "❤️ Speed Date Lobby ❤️";
+
 async function getOrCreateProtectedRouterVoiceChannel(guildClient, roleId, creatorId) {
-	const routerVoiceChannelName = "Router Voice Lobby";
 	try {
-		let routerVoiceChannel = guildClient.channels.cache.find(c => c.name === routerVoiceChannelName);
+		// TODO - should NOT find the router by the name but from DB through the ID
+		let routerVoiceChannel = guildClient.channels.cache.find(c => c.name === ROUTER_VOICE_LOBBY_NAME);
 		if(routerVoiceChannel){
-			console.log(`Found existing Router Voice Channel ${routerVoiceChannelName} for guild ${guildClient.id}`)
+			console.log(`Found existing Router Voice Channel ${ROUTER_VOICE_LOBBY_NAME} for guild ${guildClient.id}`)
 			return routerVoiceChannel
 		} else {
-			console.log(`Creating Router Voice Channel ${routerVoiceChannelName} for guild ${guildClient.id}`)
-			return await guildClient.channels.create(routerVoiceChannelName, {
+			console.log(`Creating Router Voice Channel ${ROUTER_VOICE_LOBBY_NAME} for guild ${guildClient.id}`)
+			return await guildClient.channels.create(ROUTER_VOICE_LOBBY_NAME, {
 				type: "GUILD_VOICE",
 				reason: "Staging lobby for speed dating :)",
 				permissionOverwrites: [
@@ -21,8 +23,8 @@ async function getOrCreateProtectedRouterVoiceChannel(guildClient, roleId, creat
 			});
 		}
 	} catch (e) {
-		console.log(`Failed to create Router Voice Channel ${routerVoiceChannelName} for guild ${guildClient.id}, ${e}`)
-		throw Error(`Failed to create Router Voice Channel ${routerVoiceChannelName} for guild ${guildClient.id}, ${e}`)
+		console.log(`Failed to create Router Voice Channel ${ROUTER_VOICE_LOBBY_NAME} for guild ${guildClient.id}, ${e}`)
+		throw Error(`Failed to create Router Voice Channel ${ROUTER_VOICE_LOBBY_NAME} for guild ${guildClient.id}, ${e}`)
 	}
 }
 
