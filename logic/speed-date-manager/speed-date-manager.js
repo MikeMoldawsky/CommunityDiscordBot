@@ -1,14 +1,12 @@
 const client = require("../discord/client");
-const { getGuildSpeedDateBotDocumentOrThrow, getOrCreateGuildSpeedDateBotDocument,
-	getGuildWithActiveSpeedDateSessionOrThrow
-} = require("../db/guild-db-manager");
+const { getOrCreateGuildSpeedDateBotDocument, getGuildWithActiveSpeedDateSessionOrThrow } = require("../db/guild-db-manager");
 const { addRoleToChannelMembers } = require("../discord/utils");
 const { createRouterVoiceChannelInvite } = require("../discord/discord-speed-date-manager");
 const { initializeSpeedDateSessionForGuild } = require("../speed-date-bootstraper/speed-date-bootstrapper");
 const { startDateMatchMakerTaskWithDelayForGuild } = require("../tasks/speed-date-match-maker/speed-date-match-maker-task");
 
 
-async function bootstrapSpeedDateInfrastructureForGuild(guildId, guildName, speedDateDurationMinutes, lobbyChannelId, roomCapacity, matchMakerStopTime, creatorId) {
+async function bootstrapSpeedDateInfrastructureForGuild(guildId, guildName, speedDateDurationMinutes, lobbyChannelId, roomCapacity, creatorId) {
 	// Creating clients
 	const guildClient = await client.guilds.fetch(guildId);
 	const lobbyChannelClient = await guildClient.channels.fetch(lobbyChannelId);
@@ -22,7 +20,7 @@ async function bootstrapSpeedDateInfrastructureForGuild(guildId, guildName, spee
 		console.log(`Active speed date session found - can't start a new session for ${guildId}`);
 		throw Error(`There is an active speed date in progress for ${guildId}.`);
 	}
-	await initializeSpeedDateSessionForGuild(prevGuildSpeedDateBotDoc, guildClient, lobbyChannelClient, speedDateDurationMinutes, roomCapacity, matchMakerStopTime, creatorId);
+	await initializeSpeedDateSessionForGuild(prevGuildSpeedDateBotDoc, guildClient, lobbyChannelClient, speedDateDurationMinutes, roomCapacity, creatorId);
 }
 
 async function allowMembersJoinLobbyAndGetInvite(guildId, invitedMemberChannelId, routerLobbyChannelId, allowedJoinRoleId, inviteConfig) {
@@ -44,7 +42,7 @@ async function allowMembersJoinLobbyAndGetInvite(guildId, invitedMemberChannelId
 	}
 }
 
-async function startSpeedDateRoundAndGetInvite(guildId, matchMakerInterval, matchMakerTaskDelay){
+async function startSpeedDatesAndGetInvite(guildId, matchMakerInterval, matchMakerTaskDelay, matchMakerDurationInSeconds){
 	let activeSpeedDateBotDoc;
 	try {
 		activeSpeedDateBotDoc = await getGuildWithActiveSpeedDateSessionOrThrow(guildId);
@@ -54,7 +52,7 @@ async function startSpeedDateRoundAndGetInvite(guildId, matchMakerInterval, matc
 	const {activeSpeedDateSession: { routerVoiceChannel: {allowedRoleId, channelId }, speedDateSessionConfig: { lobbyChannelId }},
 		config: { voiceLobby: { invite }}, guildInfo } = activeSpeedDateBotDoc;
 	console.log(`Speed Date INVITE MEMBERS for guild ${guildInfo}`);
-	startDateMatchMakerTaskWithDelayForGuild(guildId, matchMakerInterval, matchMakerTaskDelay)
+	startDateMatchMakerTaskWithDelayForGuild(guildId, matchMakerInterval, matchMakerTaskDelay, matchMakerDurationInSeconds)
 		.catch(e => console.log(e));
 	return await allowMembersJoinLobbyAndGetInvite(guildId, lobbyChannelId, channelId, allowedRoleId, invite);
 }
@@ -62,5 +60,5 @@ async function startSpeedDateRoundAndGetInvite(guildId, matchMakerInterval, matc
 
 module.exports = {
 	bootstrapSpeedDateInfrastructureForGuild,
-	startSpeedDateRoundAndGetInvite
+	startSpeedDatesAndGetInvite
 }

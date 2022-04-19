@@ -50,6 +50,26 @@ async function updatedConfigFieldsForGuild(guildId, imageUrl, inviteTitle, invit
 	await GuildSpeedDateBot.findOneAndUpdate({ guildId }, updateFields);
 }
 
+async function updatedMatchMakerFieldsForGuild(guildId, startTime, durationInSeconds) {
+	// TODO - change the ugly implementation
+	const updateFields = {}
+	if(startTime){
+		updateFields['activeSpeedDateSession.matchMaker.startTime'] = startTime;
+	}
+	if(durationInSeconds){
+		updateFields['activeSpeedDateSession.matchMaker.durationInSeconds'] = durationInSeconds;
+	}
+
+	if(_.isEmpty(updateFields)){
+		console.log(`Not updating Match Maker in DB - nothing to update for guild ${guildId}`);
+		return;
+	}
+	console.log(`Performing configuration update with params: ${JSON.stringify(updateFields)}`)
+	await GuildSpeedDateBot.findOneAndUpdate({ guildId }, updateFields);
+}
+
+
+
 async function deleteActiveSessionForGuild(guildId) {
 	console.log(`Deleting active session from DB for guild ${guildId}`)
 	await GuildSpeedDateBot.findOneAndUpdate({ guildId }, {
@@ -68,10 +88,10 @@ async function getGuildWithActiveSpeedDateSessionOrThrow(guildId) {
 
 async function persistAndGetGuildSpeedDateBot(guildInfoDocument, updateReason) {
 	try{
-		console.log(`Updating GuildInfo in DB for guild ${guildInfoDocument.guildName} with id ${guildInfoDocument.guildId} - ${updateReason}`)
+		console.log(`Updating DataBase - START`,  { guildInfo: guildInfoDocument.guildInfo, updateReason})
 		return await guildInfoDocument.save();
 	} catch (e) {
-		console.log(`Failed to update DB for guild ${guildInfoDocument.guildName} with id ${guildInfoDocument.guildId}`, e)
+		console.log(`Updating DataBase - FAILED`,  { guildInfo: guildInfoDocument.guildInfo, updateReason}, e)
 	}
 }
 
@@ -117,5 +137,6 @@ module.exports = {
 	getOrCreateGuildSpeedDateBotDocument,
 	throwIfActiveSession,
 	updatedConfigFieldsForGuild,
-	deleteActiveSessionForGuild
+	deleteActiveSessionForGuild,
+	updatedMatchMakerFieldsForGuild
 };

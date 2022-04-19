@@ -3,7 +3,7 @@ const GuildSpeedDateBot = require('../../db/models/GuildSpeedDateBot')
 const matchRooms = require('./speed-date-match-maker-manager')
 const {createVoiceChannel} = require('../../vcShuffle')
 const _ = require('lodash')
-const { getGuildWithActiveSpeedDateSessionOrThrow } = require("../../db/guild-db-manager");
+const { getGuildWithActiveSpeedDateSessionOrThrow, updatedMatchMakerFieldsForGuild } = require("../../db/guild-db-manager");
 const moment = require("moment");
 
 
@@ -69,7 +69,8 @@ async function startDateMatchMakerTaskForGuild(guildId, interval){
 		console.log(`Match maker STOP - active session not found - ${activeGuildBotDoc.guildInfo}`)
 		return;
 	}
-	const stopMatchingMoment = moment(activeGuildBotDoc.activeSpeedDateSession.matchMakerStopTime);
+	const {activeSpeedDateSession:{ matchMaker } } = activeGuildBotDoc;
+	const stopMatchingMoment = moment(matchMaker.startTime).add(matchMaker.durationInSeconds, "seconds");
 	if(currentMoment > stopMatchingMoment){
 		await createSpeedDatesMatches(activeGuildBotDoc, true);
 		console.log(`Match maker TASK COMPLETED - ${activeGuildBotDoc.guildInfo}, now: ${currentMoment}, stopMatchTime: ${stopMatchingMoment}`)
@@ -80,13 +81,22 @@ async function startDateMatchMakerTaskForGuild(guildId, interval){
 	setTimeout(() => startDateMatchMakerTaskForGuild(guildId, interval), interval);
 }
 
-async function startDateMatchMakerTaskWithDelayForGuild(guildId, matchMakerInterval, matchMakerTaskDelay){
+async function startDateMatchMakerTaskWithDelayForGuild(guildId, matchMakerInterval, matchMakerTaskDelay, matchMakerDurationInSeconds){
 	console.log("Match maker START TASK WITH DELAY", {guildId, matchMakerInterval, matchMakerTaskDelay})
+	// 1. Assert active session
 	try {
 		await getGuildWithActiveSpeedDateSessionOrThrow(guildId);
 	} catch (e) {
 		console.log("Match maker TASK with DELAY - FAILED - active session not found", {guildId, matchMakerInterval, matchMakerTaskDelay})
 		throw Error(`Match maker TASK with DELAY - FAILED - active session not found for ${guildId}, ${e}`)
+	}
+	// 1. Update match maker configurations
+	try {
+		const matchMakerStartTime = moment().toDate();
+		await updatedMatchMakerFieldsForGuild(guildId, matchMakerStartTime, matchMakerDurationInSeconds);
+	} catch (e) {
+		console.log("Match maker TASK with DELAY - FAILED - failed to update match maker config", {guildId, matchMakerInterval, matchMakerTaskDelay})
+		throw Error(`Match maker TASK with DELAY - FAILED - failed to update match maker config ${guildId}, ${e}`)
 	}
 	// Starting match maker task in delay to let people enter the lobby and enjoy the music
 	setTimeout(() => startDateMatchMakerTaskForGuild(guildId, matchMakerInterval), matchMakerTaskDelay);

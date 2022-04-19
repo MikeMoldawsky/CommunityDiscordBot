@@ -1,21 +1,23 @@
 const { SlashCommandBuilder } = require("@discordjs/builders");
 const { updateBotConfigIfNeeded } = require("../../../logic/speed-date-config-manager/speed-date-config-manager");
-const moment = require("moment");
-const { bootstrapSpeedDateInfrastructureForGuild, startSpeedDateSessionForGuildAndGetInvite,
-	startSpeedDateRoundAndGetInvite
-} = require("../../../logic/speed-date-manager/speed-date-manager");
+const { bootstrapSpeedDateInfrastructureForGuild, startSpeedDatesAndGetInvite } = require("../../../logic/speed-date-manager/speed-date-manager");
 const { playMusicInRouterVoiceChannel } = require("../../../logic/discord/discord-speed-date-manager");
-const { startDateMatchMakerForGuild } = require("../../../logic/tasks/speed-date-match-maker/speed-date-match-maker-task");
-const { startSpeedDateSessionCompleteTask } = require("../../../logic/tasks/speed-date-cleanup/speed-date-cleanup-task");
-const { getOrCreateGuildSpeedDateBotDocument, throwIfActiveSession, getGuildWithActiveSpeedDateSessionOrThrow } = require("../../../logic/db/guild-db-manager");
+const { endSpeedDateSessionTask } = require("../../../logic/tasks/speed-date-cleanup/speed-date-cleanup-task");
+const { getOrCreateGuildSpeedDateBotDocument, throwIfActiveSession } = require("../../../logic/db/guild-db-manager");
 
+// Inputs
+const DEFAULT_SPEED_DATE_DURATION_MINUTES = 4;
+const DEFAULT_ROOM_CAPACITY = 2;
+// Match Maker
 const MATCH_MAKER_INTERVAL = 5 * 1000
-const MATCH_MAKER_TASK_DELAY = 30 * 1000;
-const MAX_SECONDS_FOR_MATCHING = 60;
+const MATCH_MAKER_TASK_DELAY = 60 * 1000;
+const MATCH_MAKER_DURATION_SECONDS = 180;
+// On Complete
 const ON_COMPLETE_TASK_INTERVAL = 10 * 1000
 
 
-async function configure(interaction){
+
+async function configureSession(interaction){
 	const guildId = interaction.guild.id;
 	const guildName = interaction.guild.name;
 	const inviteImageUrl = interaction.options.getString("invite-image-url");
@@ -34,14 +36,15 @@ async function configure(interaction){
 	}
 }
 
-async function initialize(interaction){
+
+async function initializeSession(interaction){
 	let lobbyChannelId, guildId, guildName, speedDateDurationMinutes, roomCapacity;
 	try {
 		guildId = interaction.guild.id;
 		guildName = interaction.guild.name;
 		lobbyChannelId = interaction.options.getChannel("lobby") || interaction.channel.id; // TODO: remove default channel ID - it can be dangerous;
-		speedDateDurationMinutes = interaction.options.getInteger("duration") || 2;
-		roomCapacity = interaction.options.getInteger("room-capacity") || 2;
+		speedDateDurationMinutes = interaction.options.getInteger("duration") || DEFAULT_SPEED_DATE_DURATION_MINUTES;
+		roomCapacity = interaction.options.getInteger("room-capacity") || DEFAULT_ROOM_CAPACITY;
 		// TODO: decide how much time we want - maybe configurable
 		// TODO(mike): add validations over the inputs - e.g. capacity >= 2, guildClient bot found etc...
 		// 0. Let the bot time to work on the interaction
@@ -52,8 +55,7 @@ async function initialize(interaction){
 	}
 	try {
 		// 1. Bootstrap infrastructure that is required for speed dating (Roles, Voice Channel Router etc.)
-		const matchMakerStopTime = moment().add(MAX_SECONDS_FOR_MATCHING, "seconds").toDate()
-		await bootstrapSpeedDateInfrastructureForGuild(guildId, guildName, speedDateDurationMinutes, lobbyChannelId, roomCapacity, matchMakerStopTime, interaction.user.id);
+		await bootstrapSpeedDateInfrastructureForGuild(guildId, guildName, speedDateDurationMinutes, lobbyChannelId, roomCapacity, interaction.user.id);
 		await playMusicInRouterVoiceChannel(interaction, guildId);
 	} catch (e){
 		console.log(`Failed to initialize speed dating`, e);
@@ -61,24 +63,6 @@ async function initialize(interaction){
 	}
 }
 
-async function startRoundAndGetInvite(interaction){
-	const guildId = interaction.guild.id;
-	try {
-		// 1. Start the MatchMaker Task over the Router Channel
-		const {  activeSpeedDateSession: { routerVoiceChannel }} = await getGuildWithActiveSpeedDateSessionOrThrow(guildId);
-
-		startDateMatchMakerForGuild(guildId, MATCH_MAKER_INTERVAL)
-			.catch(e => console.log(e));
-		return await startSpeedDateSessionForGuildAndGetInvite(guildId);
-	} catch (e) {
-		console.log(`Failed to start speed-date for with id ${guildId}`, e);
-		throw Error(`Failed to start speed-date for with id ${guildId} ${e}`);
-	}
-}
-
-async function close(interaction){
-
-}
 
 module.exports = {
 	// The data needed to register slash commands to Discord.
@@ -88,7 +72,7 @@ module.exports = {
 			"Let's you configure things like the router lobby invitation, and music"
 		)
 		.addSubcommand(
-			subCommand => subCommand.setName("configure")
+			subCommand => subCommand.setName("configure-session")
 				.setDescription(
 					"Let's you configure things like the router lobby invitation, and music"
 				)
@@ -99,7 +83,7 @@ module.exports = {
 				.addIntegerOption(option => option.setName('music-volume').setDescription("The music volume that will be played in the speed date's router lobby voice channel"))
 		)
 		.addSubcommand(
-			subCommand => subCommand.setName("initialize")
+			subCommand => subCommand.setName("initialize-session")
 				.setDescription(
 					"Creates a voice lobby for routing."
 				)
@@ -114,18 +98,16 @@ module.exports = {
 						.setDescription("The capacity of each room.")),
 		)
 		.addSubcommand(
-			subCommand => subCommand.setName("start-round")
+			subCommand => subCommand.setName("start-dates")
 				.setDescription(
 					"Let's you configure things like the router lobby invitation, and music"
 				)
-				.addIntegerOption(option => option.setName('music-volume').setDescription("The music volume that will be played in the speed date's router lobby voice channel"))
 		)
 		.addSubcommand(
-			subCommand => subCommand.setName("close")
+			subCommand => subCommand.setName("end-session")
 				.setDescription(
 					"close speed date session"
 				)
-				.addIntegerOption(option => option.setName('music-volume').setDescription("The music volume that will be played in the speed date's router lobby voice channel"))
 		),
 
 	/**
@@ -134,42 +116,43 @@ module.exports = {
 	 */
 
 	async execute(interaction) {
-		const subcommand = interaction.options.getSubcommand();
-		const guildId = interaction.guild.id;
-		const guildName = interaction.guild.name;
+		let subcommand, guildId, guildName;
 		try {
+			subcommand = interaction.options.getSubcommand();
+			guildId = interaction.guild.id;
+			guildName = interaction.guild.name;
 			console.log(`>>>>>>>>>> EXECUTING COMMAND ${subcommand} - START`, {guildName, guildId});
 			switch (subcommand) {
-				case 'configure':
+				case 'configure-session':
 					await interaction.deferReply({ephemeral: true}); // Slash Commands has only 3 seconds to reply to an interaction.
-					await configure(interaction);
+					await configureSession(interaction);
 					break;
-				case 'initialize':
+				case 'initialize-session':
 					await interaction.deferReply({ephemeral: true}); // Slash Commands has only 3 seconds to reply to an interaction.
-					await initialize(interaction);
+					await initializeSession(interaction);
 					break;
-				case 'start-round':
+				case 'start-dates':
 					await interaction.deferReply({ephemeral: false}); // Slash Commands has only 3 seconds to reply to an interaction.
-					const routerVoiceChannelInvite = await startSpeedDateRoundAndGetInvite(guildId, MATCH_MAKER_INTERVAL, MATCH_MAKER_TASK_DELAY);
+					const routerVoiceChannelInvite = await startSpeedDatesAndGetInvite(guildId, MATCH_MAKER_INTERVAL, MATCH_MAKER_TASK_DELAY, MATCH_MAKER_DURATION_SECONDS);
 					// TODO: check if we want to send invite on every round
 					await interaction.followUp({ embeds: [routerVoiceChannelInvite], ephemeral: false,});
 					break;
-				case 'close':
+				case 'end-session':
 					await interaction.deferReply({ephemeral: true}); // Slash Commands has only 3 seconds to reply to an interaction.
-					await close(interaction);
+					await endSpeedDateSessionTask(guildId).catch(e => console.log(e));
 					break;
 				default:
 					throw Error(`Unknown subcommand: ${subcommand}`);
 			}
 			console.log(`<<<<<<<<<< EXECUTING COMMAND ${subcommand} - SUCCESS`, {guildName, guildId});
 			await interaction.followUp({
-				content: `Successfully executed speed-date subcommand ${subcommand}.`,
+				content: `EXECUTING COMMAND ${subcommand} - SUCCESS.`,
 				ephemeral: true,
 			});
 		}	catch (e) {
 			console.log(`<<<<<<<<<< EXECUTING COMMAND ${subcommand} - FAILED`, {guildName, guildId}, e);
 			await interaction.followUp({
-				content: `Failed to execute speed-date subcommand ${subcommand}.`,
+				content: `EXECUTING COMMAND ${subcommand} - FAILED.`,
 				ephemeral: true
 			});
 		}

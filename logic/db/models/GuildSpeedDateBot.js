@@ -38,12 +38,16 @@ const SpeedDateInvitedParticipantsSchema = new mongoose.Schema({
 	userId: SpeedDateParticipantSchema
 }, { _id : false });
 
+const MatchMakerSessionSchema = new mongoose.Schema({
+	startTime: Date,
+	durationInSeconds: Number
+}, { _id : false });
+
 const ActiveSpeedDateSessionSchema = new mongoose.Schema({
 	speedDateSessionConfig: SpeedDateSessionConfigSchema,
+	matchMaker: MatchMakerSessionSchema,
 	routerVoiceChannel: RouterVoiceChannelSchema,
-	speedDateInvitedParticipants: SpeedDateInvitedParticipantsSchema,
-	matchMakerStopTime: Date,
-	speedDateStartTime: Date,
+	// speedDateInvitedParticipants: SpeedDateInvitedParticipantsSchema,
 	dates: {type: [DateSchema], default: []},
 	participants: {type: Object, default: {}}, // { [participantId]: {} }
 }, { _id : false })
