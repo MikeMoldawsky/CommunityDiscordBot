@@ -1,11 +1,8 @@
-const {
-	getGuildSpeedDateBotDocumentOrThrow,
-} = require("../../../logic/db/guild-db-manager");
 const { getOrCreateRole } = require("../../../logic/discord/utils");
 const client = require("../../../logic/discord/client");
 const _ = require("lodash");
 const GuildSpeedDateBot = require("../../../logic/db/models/GuildSpeedDateBot");
-const { deleteActiveSessionForGuild } = require("../../db/guild-db-manager");
+const { deleteActiveSessionForGuild, getGuildWithActiveSpeedDateSessionOrThrow } = require("../../db/guild-db-manager");
 
 async function cleanUpVoiceRouterAndTempRoles(routerVoiceChannel, rooms, guildClient) {
 	await Promise.all(
@@ -45,33 +42,34 @@ async function addCompletedRolesToSpeedDaters(guildClient, guildInfo, participan
 	});
 }
 
-async function cleanUpSpeedDateForGuild(guildId) {
+async function cleanUpSpeedDateSessionForGuild(guildId) {
+	let activeGuildSpeedDateBotDoc;
+	console.log(`CleanUp speed date session - START`, {guildId});
 	try {
-			const guildSpeedDateBotDoc = await getGuildSpeedDateBotDocumentOrThrow(guildId);
-			if(!guildSpeedDateBotDoc.activeSpeedDateSession){
-				console.log(`Active speed date not found for${guildId} - Nothing to clean...`);
-				return;
-			}
-			const { activeSpeedDateSession:{ routerVoiceChannel, dates, participants} , guildInfo, memberMeetingsHistory } = guildSpeedDateBotDoc;
-			console.log(`Starting Cleanup for guild ${guildInfo}`)
-			// 1. Cleanup resources - Router Roles etc.
-			const guildClient = await client.guilds.fetch(guildId);
-			await cleanUpVoiceRouterAndTempRoles(routerVoiceChannel, dates, guildClient);
-
-			// 2. Create Speed Date Completed Role & Save participants history and add participation role
-			// TODO - Mike - it should probably live some place else!
-			await addCompletedRolesToSpeedDaters(guildClient, guildInfo, participants, memberMeetingsHistory);
-
-			// 3. Save that active session is completed - i.e. delete it
-			// TODO - Asaf - do this in single request
-			await GuildSpeedDateBot.findOneAndUpdate({guildId}, {memberMeetingsHistory})
-			console.log({guildSpeedDateBotDoc: guildSpeedDateBotDoc.memberMeetingsHistory})
-			await deleteActiveSessionForGuild(guildId);
-		} catch (e) {
-			console.log(`Failed to perform onComplete operations for ${guildId}`, e)
-		}
+		activeGuildSpeedDateBotDoc = await getGuildWithActiveSpeedDateSessionOrThrow(guildId);
+	} catch (e) {
+		console.log(`CleanUp speed date session - NOOP - no active session found`, {guildId});
+		return;
+	}
+	try {
+		const { activeSpeedDateSession:{ routerVoiceChannel, dates, participants} , guildInfo, memberMeetingsHistory } = activeGuildSpeedDateBotDoc;
+		console.log(`Starting Cleanup for guild ${guildInfo}`)
+		// 1. Cleanup resources - Router Roles etc.
+		const guildClient = await client.guilds.fetch(guildId);
+		await cleanUpVoiceRouterAndTempRoles(routerVoiceChannel, dates, guildClient);
+		// 2. Create Speed Date Completed Role & Save participants history and add participation role
+		// TODO - Mike - it should probably live some place else!
+		await addCompletedRolesToSpeedDaters(guildClient, guildInfo, participants, memberMeetingsHistory);
+		// 3. Save that active session is completed - i.e. delete it
+		// TODO - Asaf - do this in single request
+		await GuildSpeedDateBot.findOneAndUpdate({guildId}, {memberMeetingsHistory})
+		await deleteActiveSessionForGuild(guildId);
+	} catch (e) {
+			console.log(`CleanUp speed date session - FAILURE`, {guildId}, e);
+			throw Error(`CleanUp speed date session - FAILURE, ${guildId}, ${e}`);
+	}
 }
 
 module.exports = {
-	cleanUpSpeedDateForGuild
+	cleanUpSpeedDateSessionForGuild
 }
