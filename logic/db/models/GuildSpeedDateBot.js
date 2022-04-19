@@ -27,9 +27,21 @@ const RouterVoiceChannelSchema = new mongoose.Schema({
 	channelName: String
 }, { _id : false })
 
+const SpeedDateParticipantSchema = new mongoose.Schema({
+	userId: {
+		participant: ParticipantSchema,
+		inviteSent: Boolean
+	}
+}, { _id : false });
+
+const SpeedDateInvitedParticipantsSchema = new mongoose.Schema({
+	userId: SpeedDateParticipantSchema
+}, { _id : false });
+
 const ActiveSpeedDateSessionSchema = new mongoose.Schema({
 	speedDateSessionConfig: SpeedDateSessionConfigSchema,
 	routerVoiceChannel: RouterVoiceChannelSchema,
+	speedDateInvitedParticipants: SpeedDateInvitedParticipantsSchema,
 	matchMakerStopTime: Date,
 	speedDateStartTime: Date,
 	dates: {type: [DateSchema], default: []},

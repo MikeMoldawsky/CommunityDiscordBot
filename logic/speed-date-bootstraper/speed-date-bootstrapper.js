@@ -24,7 +24,6 @@ async function initializeSpeedDateSessionForGuild(guildSpeedDateBotDoc, guildCli
 		const {routerData, routerChannel} = await createRoleProtectedRouterVoiceChannel(guildClient, guildId, creatorId);
 		guildSpeedDateBotDoc.activeSpeedDateSession.routerVoiceChannel = routerData
 		await persistAndGetGuildSpeedDateBot(guildSpeedDateBotDoc, "speed router voice channel update");
-
 		return routerChannel
 	} catch (e) {
 		console.log(`Failed to initializeSpeedDateSession for ${guildName} with id ${guildId}`, e);

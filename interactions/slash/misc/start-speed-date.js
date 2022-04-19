@@ -72,9 +72,7 @@ module.exports = {
 				.catch(e => console.log(e));
 
 			// 4. Allow Speed Daters to join Router Voice Channel with an Invite.
-			const routerVoiceChannelInvite = await startSpeedDateSessionForGuildAndGetInvite(guildId, lobbyChannelId);
-			console.log("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$")
-			console.log(routerVoiceChannelInvite)
+			const routerVoiceChannelInvite = await startSpeedDateSessionForGuildAndGetInvite(guildId);
 			// We're using editReply - it is required as we're using a deferReply
 			await interaction.followUp({
 				embeds: [routerVoiceChannelInvite],

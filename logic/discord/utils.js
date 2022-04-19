@@ -24,7 +24,7 @@ async function getOrCreateRole(guildId, roleInfo) {
 
 async function addRoleToChannelMembers(guildClient, channelClient, roleId) {
 	try {
-		console.log(`Adding role ${roleId} to channel ${channelClient}`);
+		console.log(`Adding role ${roleId} to channel ${channelClient} members`);
 		const forcedChannelClient = await channelClient.fetch(true) // TODO(mike): ask Asaf why do we need force fetch?
 		const members = forcedChannelClient.members.filter(
 			member => {
