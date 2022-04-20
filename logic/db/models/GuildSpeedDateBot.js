@@ -38,14 +38,23 @@ const SpeedDateInvitedParticipantsSchema = new mongoose.Schema({
 	userId: SpeedDateParticipantSchema
 }, { _id : false });
 
-const MatchMakerSessionSchema = new mongoose.Schema({
-	startTime: Date,
+const RoundMatchMakerSchema = new mongoose.Schema({
 	durationInSeconds: Number
+}, { _id : false });
+
+const RoundConfigSchema = new mongoose.Schema({
+	startTime: Date,
+	durationInMinutes: Number
+}, { _id : false });
+
+const RoundSchema = new mongoose.Schema({
+	config: RoundConfigSchema,
+	matchMaker: RoundMatchMakerSchema,
 }, { _id : false });
 
 const ActiveSessionSchema = new mongoose.Schema({
 	sessionConfig: SessionConfigSchema,
-	matchMaker: MatchMakerSessionSchema,
+	round: RoundSchema,
 	routerVoiceChannel: RouterVoiceChannelSchema,
 	// speedDateInvitedParticipants: SpeedDateInvitedParticipantsSchema,
 	dates: {type: [DateSchema], default: []},

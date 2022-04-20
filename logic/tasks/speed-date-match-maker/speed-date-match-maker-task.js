@@ -8,6 +8,7 @@ const moment = require("moment");
 
 
 async function createSpeedDatesMatchesInternal(guildBotDoc, forceMatch = false) {
+	console.log(`Match maker - SEARCHING DATES - ${guildBotDoc.guildInfo}, forceMatch ${forceMatch}`)
 	const {activeSession: {routerVoiceChannel, sessionConfig, participants, dates},
 		memberMeetingsHistory, guildInfo} = guildBotDoc;
 
@@ -16,16 +17,16 @@ async function createSpeedDatesMatchesInternal(guildBotDoc, forceMatch = false) 
 	const routerMembers = routerChannel.members.filter(m => !m.user.bot)
 
 	if (routerMembers.size < 2){
-		console.log(`Match maker - no enough members for match in Router Lobby`,  { guildInfo, membersCount: routerChannel.members.size});
+		console.log(`Match maker - No Enough Members in Lobby`,  { guildInfo, membersCount: routerMembers.size});
 		return;
 	}
 	const { rooms } = matchRooms(Array.from(routerMembers.keys()), memberMeetingsHistory, sessionConfig.roomCapacity, forceMatch)
-	console.log(`Match maker Creating ${rooms.length} DATES- ${guildInfo}`);
+	console.log(`Match maker - Creating ${rooms.length} DATES`, {guildInfo});
 	const maxRoomNum = _.max(_.map(dates, 'number')) || 0
 	const newDates = await Promise.all(
 		rooms.map(async (room, i) => {
 			const roomNumber = maxRoomNum + i + 1;
-			console.log(`Match maker CREATING DATE - ${guildInfo}, ${room}`);
+			console.log(`Match maker - CREATING DATE.`, {guildInfo, room});
 			const vc = await createVoiceChannel(guild, roomNumber, room);
 			const roomParticipants = room.map((userId) => {
 				const member = guild.members.cache.get(userId)
@@ -51,7 +52,6 @@ async function createSpeedDatesMatchesInternal(guildBotDoc, forceMatch = false) 
 
 async function createSpeedDatesMatches(guildBotDoc, forceMatch = false) {
 	try {
-		console.log(`Match maker SEARCHING DATES - ${guildBotDoc.guildInfo}, forceMatch ${forceMatch}`)
 		await createSpeedDatesMatchesInternal(guildBotDoc, forceMatch);
 	} catch (e) {
 		console.log(`Failed to match make for guild ${guildBotDoc.guildInfo}`, e);
@@ -60,24 +60,24 @@ async function createSpeedDatesMatches(guildBotDoc, forceMatch = false) {
 }
 
 async function startDateMatchMakerTaskForGuild(guildId, interval){
-	console.log(`Match maker WAKING UP for guild ${guildId}`)
+	console.log("Match maker TASK - WAKING UP...", {guildId})
 	const currentMoment = moment();
 	let activeGuildBotDoc;
 	try {
 		activeGuildBotDoc = await getGuildWithActiveSessionOrThrow(guildId);
 	} catch (e) {
-		console.log(`Match maker STOP - active session not found - ${activeGuildBotDoc.guildInfo}`)
+		console.log("Match Maker TASK - STOP - active session not found", {guildInfo: activeGuildBotDoc.guildInfo})
 		return;
 	}
-	const {activeSession:{ matchMaker } } = activeGuildBotDoc;
-	const stopMatchingMoment = moment(matchMaker.startTime).add(matchMaker.durationInSeconds, "seconds");
+	const {activeSession:{ round:{ config,  matchMaker} } } = activeGuildBotDoc;
+	const stopMatchingMoment = moment(config.startTime).add(matchMaker.durationInSeconds, "seconds");
 	if(currentMoment > stopMatchingMoment){
 		await createSpeedDatesMatches(activeGuildBotDoc, true);
-		console.log(`Match maker TASK COMPLETED - ${activeGuildBotDoc.guildInfo}, now: ${currentMoment}, stopMatchTime: ${stopMatchingMoment}`)
+		console.log("Match Maker TASK - COMPLETED", {guildInfo: activeGuildBotDoc.guildInfo, roundStartTime: config.startTime, currentMoment, stopMatchingMoment})
 		return;
 	}
 	await createSpeedDatesMatches(activeGuildBotDoc, false)
-	console.log(`Match maker SLEEPING for ${interval} ms - ${activeGuildBotDoc.guildInfo}...`)
+	console.log(`Match maker TASK - SLEEPING... `, { intervalMs: interval, guildInfo: activeGuildBotDoc.guildInfo})
 	setTimeout(() => startDateMatchMakerTaskForGuild(guildId, interval), interval);
 }
 
@@ -91,9 +91,8 @@ async function startDateMatchMakerTaskWithDelay(guildId, matchMakerInterval, mat
 		throw Error(`Match maker TASK with DELAY - FAILED - active session not found for ${guildId}, ${e}`)
 	}
 	// 1. Update match maker configurations
-	try {
-		const matchMakerStartTime = moment().toDate();
-		await updatedMatchMakerFieldsForGuild(guildId, matchMakerStartTime, matchMakerDurationInSeconds);
+	try {;
+		await updatedMatchMakerFieldsForGuild(guildId, matchMakerDurationInSeconds);
 	} catch (e) {
 		console.log("Match maker TASK with DELAY - FAILED - failed to update match maker config", {guildId, matchMakerInterval, matchMakerTaskDelay})
 		throw Error(`Match maker TASK with DELAY - FAILED - failed to update match maker config ${guildId}, ${e}`)
@@ -101,8 +100,6 @@ async function startDateMatchMakerTaskWithDelay(guildId, matchMakerInterval, mat
 	// Starting match maker task in delay to let people enter the lobby and enjoy the music
 	setTimeout(() => startDateMatchMakerTaskForGuild(guildId, matchMakerInterval), matchMakerTaskDelay);
 }
-
-
 
 module.exports = {
 	startDateMatchMakerTaskWithDelay

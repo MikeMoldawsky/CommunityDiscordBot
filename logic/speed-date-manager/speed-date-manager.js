@@ -1,10 +1,11 @@
 const client = require("../discord/client");
-const { getOrCreateGuildSpeedDateBotDocument, getGuildWithActiveSessionOrThrow } = require("../db/guild-db-manager");
+const { getOrCreateGuildSpeedDateBotDocument, getGuildWithActiveSessionOrThrow, updatedRoundConfig } = require("../db/guild-db-manager");
 const { addRoleToChannelMembers } = require("../discord/utils");
 const { createRouterVoiceChannelInvite } = require("../discord/discord-speed-date-manager");
 const { initializeSpeedDateSessionForGuild } = require("../speed-date-bootstraper/speed-date-bootstrapper");
 const { startDateMatchMakerTaskWithDelay } = require("../tasks/speed-date-match-maker/speed-date-match-maker-task");
 const { startSpeedDateRoundTerminatorTask } = require("../tasks/speed-date-round-terminator/speed-date-round-terminator-task");
+const moment = require("moment");
 
 
 async function bootstrapSpeedDateInfrastructureForGuild(guildId, guildName, speedDateDurationMinutes, lobbyChannelId, roomCapacity, creatorId) {
@@ -48,10 +49,20 @@ async function startSpeedDatesAndGetInvite(guildId, matchMakerInterval, matchMak
 	try {
 		activeSpeedDateBotDoc = await getGuildWithActiveSessionOrThrow(guildId);
 	} catch (e){
-		console.log("START SPEED DATE ROUND FAILED - active speed date session not found", {guildId}, e);
+		console.log("SPEED DATE ROUND - START - FAILED - active speed date session not found", {guildId}, e);
 	}
-	const {activeSession: { routerVoiceChannel: {allowedRoleId, channelId }, sessionConfig: { lobbyChannelId }},
+	const {activeSession: { routerVoiceChannel: {allowedRoleId, channelId }, sessionConfig: { lobbyChannelId, speedDateDurationMinutes}},
 		config: { voiceLobby: { invite }}, guildInfo } = activeSpeedDateBotDoc;
+
+	// 1. Update speed date Round configurations
+	try {
+		const startTime = moment().toDate();
+		await updatedRoundConfig(guildId, startTime, speedDateDurationMinutes);
+	} catch (e) {
+		console.log("SPEED DATE ROUND - START - FAILED - failed to update round config", {guildId, matchMakerInterval, matchMakerTaskDelay})
+		throw Error(`SPEED DATE ROUND - START - FAILED - failed to update round config ${guildId}, ${e}`)
+	}
+
 	console.log(`Speed Date INVITE MEMBERS for guild ${guildInfo}`);
 	await startDateMatchMakerTaskWithDelay(guildId, matchMakerInterval, matchMakerTaskDelay, matchMakerDurationInSeconds)
 		.catch(e => console.log(e));

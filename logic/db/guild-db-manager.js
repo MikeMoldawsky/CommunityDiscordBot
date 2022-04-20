@@ -50,14 +50,11 @@ async function updatedConfigFieldsForGuild(guildId, imageUrl, inviteTitle, invit
 	await GuildSpeedDateBot.findOneAndUpdate({ guildId }, updateFields);
 }
 
-async function updatedMatchMakerFieldsForGuild(guildId, startTime, durationInSeconds) {
+async function updatedMatchMakerFieldsForGuild(guildId, durationInSeconds) {
 	// TODO - change the ugly implementation
 	const updateFields = {}
-	if(startTime){
-		updateFields['activeSession.matchMaker.startTime'] = startTime;
-	}
 	if(durationInSeconds){
-		updateFields['activeSession.matchMaker.durationInSeconds'] = durationInSeconds;
+		updateFields['activeSession.round.matchMaker.durationInSeconds'] = durationInSeconds;
 	}
 
 	if(_.isEmpty(updateFields)){
@@ -67,6 +64,25 @@ async function updatedMatchMakerFieldsForGuild(guildId, startTime, durationInSec
 	console.log(`Performing configuration update with params: ${JSON.stringify(updateFields)}`)
 	await GuildSpeedDateBot.findOneAndUpdate({ guildId }, updateFields);
 }
+
+async function updatedRoundConfig(guildId, startTime, durationInMinutes) {
+	// TODO - change the ugly implementation
+	const updateFields = {}
+	if(startTime){
+		updateFields['activeSession.round.config.startTime'] = startTime;
+	}
+	if(durationInMinutes){
+		updateFields['activeSession.round.config.durationInMinutes'] = durationInMinutes;
+	}
+
+	if(_.isEmpty(updateFields)){
+		console.log(`Not updating Round Config in DB - nothing to update for guild ${guildId}`);
+		return;
+	}
+	console.log(`Performing Round configuration update with params: ${JSON.stringify(updateFields)}`)
+	await GuildSpeedDateBot.findOneAndUpdate({ guildId }, updateFields);
+}
+
 
 
 
@@ -138,5 +154,6 @@ module.exports = {
 	throwIfActiveSession,
 	updatedConfigFieldsForGuild,
 	deleteActiveSessionForGuild,
-	updatedMatchMakerFieldsForGuild
+	updatedMatchMakerFieldsForGuild,
+	updatedRoundConfig
 };

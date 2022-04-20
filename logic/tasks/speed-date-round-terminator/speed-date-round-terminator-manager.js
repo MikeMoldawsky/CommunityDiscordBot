@@ -51,11 +51,11 @@ async function terminateSpeedDateRound(guildId) {
 		// 1. Cleanup resources - Router Roles etc.
 		console.log(`Starting Cleanup for guild ${guildInfo}`);
 		const guildClient = await client.guilds.fetch(guildId);
-		console.log(`$$$$$$$$$$$$$$$$$$$$ ${JSON.stringify(activeGuildSpeedDateBotDoc)}`);
 		// 2. Create Speed Date Completed Role & Save participants history and add participation role
 		await setMeetingHistoryAndGrantCompletedRolesToSpeedDaters(guildClient, guildInfo, participants, memberMeetingsHistory);
 		await moveSpeedDatersToLobbyAndDeleteChannel(routerVoiceChannel, dates, guildClient);
 		await GuildSpeedDateBot.findOneAndUpdate({guildId}, { memberMeetingsHistory });
+		console.log(`End Speed Date Round - SUCCESS`, {guildId}, e);
 	} catch (e) {
 		console.log(`End Speed Date Round - FAILED`, {guildId}, e);
 		throw Error(`End Speed Date Round - FAILED for guild ${guildId}, ${e}`);

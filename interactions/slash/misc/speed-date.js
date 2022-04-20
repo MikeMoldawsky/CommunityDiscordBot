@@ -13,12 +13,12 @@ const SESSION_END_SUBCOMMAND = 'session-end';
 const ROUND_START_SUBCOMMAND = 'round-start';
 
 // DEFAULT PARAMS
-const DEFAULT_SPEED_DATE_DURATION_MINUTES = 4;
+const DEFAULT_SPEED_DATE_DURATION_MINUTES = 3;
 const DEFAULT_ROOM_CAPACITY = 2;
 // Match Maker
-const MATCH_MAKER_INTERVAL = 5 * 1000
-const MATCH_MAKER_TASK_DELAY = 10 * 1000;
-const MATCH_MAKER_DURATION_SECONDS = 180;
+const MATCH_MAKER_INTERVAL = 10 * 1000 // check for matches every 10 seconds
+const MATCH_MAKER_TASK_DELAY = 5 * 1000; // start matching after 5 seconds
+const MATCH_MAKER_DURATION_SECONDS = 60; // match in the first 60 seconds
 // ROUND TERMINATOR
 const ROUND_TERMINATOR_TASK_INTERVAL = 10 * 1000
 
