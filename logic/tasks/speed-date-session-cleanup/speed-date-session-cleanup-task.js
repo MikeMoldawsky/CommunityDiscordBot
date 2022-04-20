@@ -1,4 +1,4 @@
-const {  cleanUpSpeedDateSessionForGuild } = require("./speed-date-cleanup-manager");
+const {  cleanUpSpeedDateSessionForGuild } = require("./speed-date-session-cleanup-manager");
 
 async function endSpeedDateSessionTask(guildId) {
 	console.log(`End Speed Date Session - START`, {guildId});

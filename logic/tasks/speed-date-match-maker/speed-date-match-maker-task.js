@@ -82,7 +82,7 @@ async function startDateMatchMakerTaskForGuild(guildId, interval){
 }
 
 async function startDateMatchMakerTaskWithDelayForGuild(guildId, matchMakerInterval, matchMakerTaskDelay, matchMakerDurationInSeconds){
-	console.log("Match maker START TASK WITH DELAY", {guildId, matchMakerInterval, matchMakerTaskDelay})
+	console.log("Match maker TASK WITH DELAY - START", {guildId, matchMakerInterval, matchMakerTaskDelay})
 	// 1. Assert active session
 	try {
 		await getGuildWithActiveSpeedDateSessionOrThrow(guildId);
