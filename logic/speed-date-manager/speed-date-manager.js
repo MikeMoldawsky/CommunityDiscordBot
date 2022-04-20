@@ -3,7 +3,8 @@ const { getOrCreateGuildSpeedDateBotDocument, getGuildWithActiveSpeedDateSession
 const { addRoleToChannelMembers } = require("../discord/utils");
 const { createRouterVoiceChannelInvite } = require("../discord/discord-speed-date-manager");
 const { initializeSpeedDateSessionForGuild } = require("../speed-date-bootstraper/speed-date-bootstrapper");
-const { startDateMatchMakerTaskWithDelayForGuild } = require("../tasks/speed-date-match-maker/speed-date-match-maker-task");
+const { startDateMatchMakerTaskWithDelay } = require("../tasks/speed-date-match-maker/speed-date-match-maker-task");
+const { startSpeedDateRoundTerminatorTask } = require("../tasks/speed-date-round-terminator/speed-date-round-terminator-task");
 
 
 async function bootstrapSpeedDateInfrastructureForGuild(guildId, guildName, speedDateDurationMinutes, lobbyChannelId, roomCapacity, creatorId) {
@@ -42,7 +43,7 @@ async function allowMembersJoinLobbyAndGetInvite(guildId, invitedMemberChannelId
 	}
 }
 
-async function startSpeedDatesAndGetInvite(guildId, matchMakerInterval, matchMakerTaskDelay, matchMakerDurationInSeconds){
+async function startSpeedDatesAndGetInvite(guildId, matchMakerInterval, matchMakerTaskDelay, matchMakerDurationInSeconds, dateTerminatorInterval){
 	let activeSpeedDateBotDoc;
 	try {
 		activeSpeedDateBotDoc = await getGuildWithActiveSpeedDateSessionOrThrow(guildId);
@@ -52,7 +53,9 @@ async function startSpeedDatesAndGetInvite(guildId, matchMakerInterval, matchMak
 	const {activeSpeedDateSession: { routerVoiceChannel: {allowedRoleId, channelId }, speedDateSessionConfig: { lobbyChannelId }},
 		config: { voiceLobby: { invite }}, guildInfo } = activeSpeedDateBotDoc;
 	console.log(`Speed Date INVITE MEMBERS for guild ${guildInfo}`);
-	startDateMatchMakerTaskWithDelayForGuild(guildId, matchMakerInterval, matchMakerTaskDelay, matchMakerDurationInSeconds)
+	await startDateMatchMakerTaskWithDelay(guildId, matchMakerInterval, matchMakerTaskDelay, matchMakerDurationInSeconds)
+		.catch(e => console.log(e));
+	await startSpeedDateRoundTerminatorTask(guildId, dateTerminatorInterval)
 		.catch(e => console.log(e));
 	return await allowMembersJoinLobbyAndGetInvite(guildId, lobbyChannelId, channelId, allowedRoleId, invite);
 }

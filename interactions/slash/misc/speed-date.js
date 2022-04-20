@@ -2,20 +2,25 @@ const { SlashCommandBuilder } = require("@discordjs/builders");
 const { updateBotConfigIfNeeded } = require("../../../logic/speed-date-config-manager/speed-date-config-manager");
 const { bootstrapSpeedDateInfrastructureForGuild, startSpeedDatesAndGetInvite } = require("../../../logic/speed-date-manager/speed-date-manager");
 const { playMusicInRouterVoiceChannel } = require("../../../logic/discord/discord-speed-date-manager");
-const { endSpeedDateSessionTask } = require("../../../logic/tasks/speed-date-session-cleanup/speed-date-session-cleanup-task");
 const { getOrCreateGuildSpeedDateBotDocument, throwIfActiveSession } = require("../../../logic/db/guild-db-manager");
+const { endSpeedDateSessionTask } = require("../../../logic/tasks/speed-date-session-cleanup/speed-date-session-cleanup-manager");
 
-// Inputs
+// Sub Commands
+const SESSION_CONFIGURE_SUBCOMMAND = 'session-configure';
+const SESSION_INITIALIZE_SUBCOMMAND = 'session-initialize';
+const SESSION_INVITE_SUBCOMMAND = 'session-invite';
+const SESSION_END_SUBCOMMAND = 'session-end';
+const ROUND_START_SUBCOMMAND = 'round-start';
+
+// DEFAULT PARAMS
 const DEFAULT_SPEED_DATE_DURATION_MINUTES = 4;
 const DEFAULT_ROOM_CAPACITY = 2;
 // Match Maker
 const MATCH_MAKER_INTERVAL = 5 * 1000
-const MATCH_MAKER_TASK_DELAY = 60 * 1000;
+const MATCH_MAKER_TASK_DELAY = 10 * 1000;
 const MATCH_MAKER_DURATION_SECONDS = 180;
-// On Complete
-const ON_COMPLETE_TASK_INTERVAL = 10 * 1000
-
-
+// ROUND TERMINATOR
+const ROUND_TERMINATOR_TASK_INTERVAL = 10 * 1000
 
 async function configureSession(interaction){
 	const guildId = interaction.guild.id;
@@ -63,18 +68,17 @@ async function initializeSession(interaction){
 	}
 }
 
-
 module.exports = {
 	// The data needed to register slash commands to Discord.
 	data: new SlashCommandBuilder()
 		.setName("speed-date")
 		.setDescription(
-			"Let's you configure things like the router lobby invitation, and music"
+			"Helps you CREATE MEETINGS for your community. You'll get a STRONGER and HEALTHIER community!"
 		)
 		.addSubcommand(
-			subCommand => subCommand.setName("configure-session")
+			subCommand => subCommand.setName(SESSION_CONFIGURE_SUBCOMMAND)
 				.setDescription(
-					"Let's you configure things like the router lobby invitation, and music"
+					"Let's you configure things like the speed date lobby invitation, and music etc."
 				)
 				.addStringOption(option => option.setName('invite-image-url').setDescription("The image url of the speed date's router lobby voice channel invite"))
 				.addStringOption(option => option.setName('invite-title').setDescription("The title of the speed date's router lobby voice channel invite"))
@@ -83,9 +87,9 @@ module.exports = {
 				.addIntegerOption(option => option.setName('music-volume').setDescription("The music volume that will be played in the speed date's router lobby voice channel"))
 		)
 		.addSubcommand(
-			subCommand => subCommand.setName("initialize-session")
+			subCommand => subCommand.setName(SESSION_INITIALIZE_SUBCOMMAND)
 				.setDescription(
-					"Creates a voice lobby for routing."
+					"Creates the voice channel lobby for the speed dates session."
 				)
 				.addChannelOption(option => option.setName('lobby').setDescription("The participants channel"))
 				.addIntegerOption((option) =>
@@ -98,15 +102,15 @@ module.exports = {
 						.setDescription("The capacity of each room.")),
 		)
 		.addSubcommand(
-			subCommand => subCommand.setName("start-dates")
+			subCommand => subCommand.setName(ROUND_START_SUBCOMMAND)
 				.setDescription(
-					"Let's you configure things like the router lobby invitation, and music"
+					"Start matching speed-daters from the lobby into private voice channels."
 				)
 		)
 		.addSubcommand(
-			subCommand => subCommand.setName("end-session")
+			subCommand => subCommand.setName(SESSION_END_SUBCOMMAND)
 				.setDescription(
-					"close speed date session"
+					"Ends the speed date session! Be Careful When Using This Command."
 				)
 		),
 
@@ -123,23 +127,23 @@ module.exports = {
 			guildName = interaction.guild.name;
 			console.log(`>>>>>>>>>> EXECUTING COMMAND ${subcommand} - START`, {guildName, guildId});
 			switch (subcommand) {
-				case 'configure-session':
+				case SESSION_CONFIGURE_SUBCOMMAND:
 					await interaction.deferReply({ephemeral: true}); // Slash Commands has only 3 seconds to reply to an interaction.
 					await configureSession(interaction);
 					break;
-				case 'initialize-session':
+				case SESSION_INITIALIZE_SUBCOMMAND:
 					await interaction.deferReply({ephemeral: true}); // Slash Commands has only 3 seconds to reply to an interaction.
 					await initializeSession(interaction);
 					break;
-				case 'start-dates':
-					await interaction.deferReply({ephemeral: false}); // Slash Commands has only 3 seconds to reply to an interaction.
-					const routerVoiceChannelInvite = await startSpeedDatesAndGetInvite(guildId, MATCH_MAKER_INTERVAL, MATCH_MAKER_TASK_DELAY, MATCH_MAKER_DURATION_SECONDS);
-					// TODO: check if we want to send invite on every round
-					await interaction.followUp({ embeds: [routerVoiceChannelInvite], ephemeral: false,});
-					break;
-				case 'end-session':
+				case SESSION_END_SUBCOMMAND:
 					await interaction.deferReply({ephemeral: true}); // Slash Commands has only 3 seconds to reply to an interaction.
 					await endSpeedDateSessionTask(guildId).catch(e => console.log(e));
+					break;
+				case ROUND_START_SUBCOMMAND:
+					await interaction.deferReply({ephemeral: false}); // Slash Commands has only 3 seconds to reply to an interaction.
+					const routerVoiceChannelInvite = await startSpeedDatesAndGetInvite(guildId, MATCH_MAKER_INTERVAL, MATCH_MAKER_TASK_DELAY, MATCH_MAKER_DURATION_SECONDS, ROUND_TERMINATOR_TASK_INTERVAL);
+					// TODO: check if we want to send invite on every round
+					await interaction.followUp({ embeds: [routerVoiceChannelInvite], ephemeral: false,});
 					break;
 				default:
 					throw Error(`Unknown subcommand: ${subcommand}`);

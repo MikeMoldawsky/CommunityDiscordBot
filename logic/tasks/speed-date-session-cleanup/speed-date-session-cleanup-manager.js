@@ -13,20 +13,6 @@ async function deleteLobbyVoiceRouterAndTempRoles(routerVoiceChannel, rooms, gui
 		await guildClient.roles.delete(routerVoiceChannel.allowedRoleId);
 }
 
-async function addCompletedRolesToSpeedDaters(guildClient, guildInfo, participants, memberMeetingsHistory) {
-	console.log(`Completed Speed Date Round role for ${guildInfo}`);
-	const speedDateCompletedRole = await getOrCreateRole(guildInfo.guildId, {
-		name: `speed-dater`,
-		reason: "You deserve a Role as you completed the meeting!",
-		color: "RED"
-	});
-	_.forEach(participants, (meetings, userId) => {
-		const m = guildClient.members.cache.get(userId);
-		m.roles.add(speedDateCompletedRole.id);
-		memberMeetingsHistory[userId] = [..._.get(memberMeetingsHistory, userId, []), ...meetings];
-	});
-}
-
 async function cleanUpSpeedDateSessionForGuild(guildId) {
 	let activeGuildSpeedDateBotDoc;
 	console.log(`CleanUp speed date session - START`, {guildId});
@@ -39,19 +25,12 @@ async function cleanUpSpeedDateSessionForGuild(guildId) {
 	try {
 		const { activeSpeedDateSession:{ routerVoiceChannel, dates, participants} , guildInfo, memberMeetingsHistory } = activeGuildSpeedDateBotDoc;
 		console.log(`Starting Cleanup for guild ${guildInfo}`)
-
 		// 0. CleanUp Active Round in case it was forgotten
 		await endSpeedDateActiveRound(guildId) // TODO: check if it's required - probably good for edge cases
 		// 1. Cleanup resources - Router Roles etc.
-
 		const guildClient = await client.guilds.fetch(guildId);
-		// 2. Create Speed Date Completed Role & Save participants history and add participation role
-		await addCompletedRolesToSpeedDaters(guildClient, guildInfo, participants, memberMeetingsHistory);
 		await deleteLobbyVoiceRouterAndTempRoles(routerVoiceChannel, dates, guildClient);
-
 		// 3. Save that active session is completed - i.e. delete it
-		// TODO - Asaf - do this in single request
-		await GuildSpeedDateBot.findOneAndUpdate({guildId}, {memberMeetingsHistory})
 		await deleteActiveSessionForGuild(guildId);
 	} catch (e) {
 			console.log(`CleanUp speed date session - FAILURE`, {guildId}, e);
@@ -59,6 +38,14 @@ async function cleanUpSpeedDateSessionForGuild(guildId) {
 	}
 }
 
-module.exports = {
-	cleanUpSpeedDateSessionForGuild
+async function endSpeedDateSessionTask(guildId) {
+	console.log(`End Speed Date Session - START`, {guildId});
+	try {
+		await cleanUpSpeedDateSessionForGuild(guildId);
+	} catch (e) {
+		console.log(`End Speed Date Session - FAILED - no active session for Guild`, {guildId}, e);
+		throw Error(`End Speed Date Session - FAILED - no active session for Guild ${guildId}, ${e}`);
+	}
 }
+
+module.exports = { endSpeedDateSessionTask }

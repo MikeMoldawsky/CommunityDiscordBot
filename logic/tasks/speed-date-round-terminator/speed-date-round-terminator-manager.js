@@ -1,6 +1,8 @@
 const client = require("../../../logic/discord/client");
 const _ = require("lodash");
 const { getGuildWithActiveSpeedDateSessionOrThrow } = require("../../db/guild-db-manager");
+const { getOrCreateRole } = require("../../discord/utils");
+const GuildSpeedDateBot = require("../../../logic/db/models/GuildSpeedDateBot");
 
 async function moveSpeedDatersToLobbyAndDeleteChannel(routerVoiceChannel, rooms, guildClient) {
 	await Promise.all(
@@ -18,7 +20,24 @@ async function moveSpeedDatersToLobbyAndDeleteChannel(routerVoiceChannel, rooms,
 }
 
 
-async function endSpeedDateActiveRound(guildId) {
+async function setMeetingHistoryAndGrantCompletedRolesToSpeedDaters(guildClient, guildInfo, participants, memberMeetingsHistory) {
+	console.log(`Completed Speed Date Round - ADDING ROLES`, {guildInfo, participants, memberMeetingsHistory});
+	const speedDateCompletedRole = await getOrCreateRole(guildInfo.guildId, {
+		name: `speed-dater`,
+		reason: "You deserve a Role as you completed the meeting!",
+		color: "RED"
+	});
+	await Promise.all(
+		_.map(participants, async (meetings, userId) => {
+			const m = await guildClient.members.fetch(userId);
+			m.roles.add(speedDateCompletedRole.id);
+			memberMeetingsHistory[userId] = [..._.get(memberMeetingsHistory, userId, []), ...meetings];
+		})
+	);
+}
+
+
+async function terminateSpeedDateRound(guildId) {
 	console.log(`End Speed Date Round - START`, {guildId});
 	let activeGuildSpeedDateBotDoc;
 	try {
@@ -29,16 +48,18 @@ async function endSpeedDateActiveRound(guildId) {
 	}
 	try {
 		const { activeSpeedDateSession:{ routerVoiceChannel, dates, participants} , guildInfo, memberMeetingsHistory } = activeGuildSpeedDateBotDoc;
-		console.log(`Starting Cleanup for guild ${guildInfo}`)
 		// 1. Cleanup resources - Router Roles etc.
+		console.log(`Starting Cleanup for guild ${guildInfo}`);
 		const guildClient = await client.guilds.fetch(guildId);
+		console.log(`$$$$$$$$$$$$$$$$$$$$ ${JSON.stringify(activeGuildSpeedDateBotDoc)}`);
+		// 2. Create Speed Date Completed Role & Save participants history and add participation role
+		await setMeetingHistoryAndGrantCompletedRolesToSpeedDaters(guildClient, guildInfo, participants, memberMeetingsHistory);
 		await moveSpeedDatersToLobbyAndDeleteChannel(routerVoiceChannel, dates, guildClient);
+		await GuildSpeedDateBot.findOneAndUpdate({guildId}, { memberMeetingsHistory });
 	} catch (e) {
 		console.log(`End Speed Date Round - FAILED`, {guildId}, e);
-		throw Error(`End Speed Date Round - FAILED ${guildId}, ${e}`);
+		throw Error(`End Speed Date Round - FAILED for guild ${guildId}, ${e}`);
 	}
 }
 
-module.exports = {
-	endSpeedDateActiveRound
-}
+module.exports = { terminateSpeedDateRound }

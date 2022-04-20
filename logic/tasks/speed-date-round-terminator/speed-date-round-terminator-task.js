@@ -2,54 +2,43 @@ const client = require("../../../logic/discord/client");
 const _ = require("lodash");
 const { getGuildWithActiveSpeedDateSessionOrThrow, updatedMatchMakerFieldsForGuild } = require("../../db/guild-db-manager");
 const moment = require("moment");
+const { terminateSpeedDateRound } = require("./speed-date-round-terminator-manager");
 
-// TODO - try and check when speed date ends.
-
-async function startDateMatchMakerTaskForGuild(guildId, interval){
-	console.log(`Match maker WAKING UP for guild ${guildId}`)
+async function startSpeedDateRoundTerminatorTaskInternal(guildId, interval, number){
+	console.log(`Speed Date Round Terminator TASK - WAKING UP`, {guildId})
 	const currentMoment = moment();
 	let activeGuildBotDoc;
 	try {
 		activeGuildBotDoc = await getGuildWithActiveSpeedDateSessionOrThrow(guildId);
 	} catch (e) {
-		console.log(`Match maker STOP - active session not found - ${activeGuildBotDoc.guildInfo}`)
+		console.log(`Speed Date Round Terminator - STOP - active session not found`, {guildInfo: activeGuildBotDoc.guildInfo})
 		return;
 	}
-	const {activeSpeedDateSession:{ matchMaker } } = activeGuildBotDoc;
+	const { activeSpeedDateSession:{ matchMaker } } = activeGuildBotDoc;
 	const stopMatchingMoment = moment(matchMaker.startTime).add(matchMaker.durationInSeconds, "seconds");
-	if(currentMoment > stopMatchingMoment){
-		await createSpeedDatesMatches(activeGuildBotDoc, true);
-		console.log(`Match maker TASK COMPLETED - ${activeGuildBotDoc.guildInfo}, now: ${currentMoment}, stopMatchTime: ${stopMatchingMoment}`)
+	if(number === 5){
+		console.log(`Speed Date Round Terminator - COMPLETED`, {guildInfo: activeGuildBotDoc.guildInfo, currentMoment, stopMatchingMoment });
 		return;
 	}
-	await createSpeedDatesMatches(activeGuildBotDoc, false)
-	console.log(`Match maker SLEEPING for ${interval} ms - ${activeGuildBotDoc.guildInfo}...`)
-	setTimeout(() => startDateMatchMakerTaskForGuild(guildId, interval), interval);
+	await terminateSpeedDateRound(guildId)
+	console.log(`Speed Date Round Terminator - SLEEPING for ${interval} ms`, {guildInfo: activeGuildBotDoc.guildInfo})
+	setTimeout(() => startSpeedDateRoundTerminatorTaskInternal(guildId, interval, number + 1), interval);
 }
 
-async function startDateMatchMakerTaskWithDelayForGuild(guildId, matchMakerInterval, matchMakerTaskDelay, matchMakerDurationInSeconds){
-	console.log("Match maker START TASK WITH DELAY", {guildId, matchMakerInterval, matchMakerTaskDelay})
+async function startSpeedDateRoundTerminatorTask(guildId, dateTerminatorInterval){
+	console.log("Speed Date Round Terminator TASK - START", {guildId, dateTerminatorInterval})
 	// 1. Assert active session
 	try {
 		await getGuildWithActiveSpeedDateSessionOrThrow(guildId);
 	} catch (e) {
-		console.log("Match maker TASK with DELAY - FAILED - active session not found", {guildId, matchMakerInterval, matchMakerTaskDelay})
-		throw Error(`Match maker TASK with DELAY - FAILED - active session not found for ${guildId}, ${e}`)
+		console.log("Speed Date Round Terminator TASK - FAILED - active session not found", {guildId, dateTerminatorInterval})
+		throw Error(`Speed Date Round Terminator TASK - FAILED - active session not found ${guildId}, ${e}`)
 	}
-	// 1. Update match maker configurations
-	try {
-		const matchMakerStartTime = moment().toDate();
-		await updatedMatchMakerFieldsForGuild(guildId, matchMakerStartTime, matchMakerDurationInSeconds);
-	} catch (e) {
-		console.log("Match maker TASK with DELAY - FAILED - failed to update match maker config", {guildId, matchMakerInterval, matchMakerTaskDelay})
-		throw Error(`Match maker TASK with DELAY - FAILED - failed to update match maker config ${guildId}, ${e}`)
-	}
-	// Starting match maker task in delay to let people enter the lobby and enjoy the music
-	setTimeout(() => startDateMatchMakerTaskForGuild(guildId, matchMakerInterval), matchMakerTaskDelay);
+	await startSpeedDateRoundTerminatorTaskInternal(guildId, dateTerminatorInterval);
 }
 
 
 
 module.exports = {
-	endSpeedDateActiveRound
+	startSpeedDateRoundTerminatorTask
 }

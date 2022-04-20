@@ -81,7 +81,7 @@ async function startDateMatchMakerTaskForGuild(guildId, interval){
 	setTimeout(() => startDateMatchMakerTaskForGuild(guildId, interval), interval);
 }
 
-async function startDateMatchMakerTaskWithDelayForGuild(guildId, matchMakerInterval, matchMakerTaskDelay, matchMakerDurationInSeconds){
+async function startDateMatchMakerTaskWithDelay(guildId, matchMakerInterval, matchMakerTaskDelay, matchMakerDurationInSeconds){
 	console.log("Match maker TASK WITH DELAY - START", {guildId, matchMakerInterval, matchMakerTaskDelay})
 	// 1. Assert active session
 	try {
@@ -105,5 +105,5 @@ async function startDateMatchMakerTaskWithDelayForGuild(guildId, matchMakerInter
 
 
 module.exports = {
-	startDateMatchMakerTaskWithDelayForGuild
+	startDateMatchMakerTaskWithDelay
 }
