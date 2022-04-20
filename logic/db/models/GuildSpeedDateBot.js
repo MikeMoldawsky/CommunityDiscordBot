@@ -13,13 +13,6 @@ const DateSchema = new mongoose.Schema({
 	voiceChannelId: String,
 }, { _id : false })
 
-const SessionConfigSchema = new mongoose.Schema({
-	lobbyChannelId: String,
-	lobbyChannelName: String,
-	speedDateDurationMinutes: Number,
-	roomCapacity: Number
-}, { _id : false })
-
 const RouterVoiceChannelSchema = new mongoose.Schema({
 	allowedRoleId: String,
 	allowedRoleName: String,
@@ -27,24 +20,14 @@ const RouterVoiceChannelSchema = new mongoose.Schema({
 	channelName: String
 }, { _id : false })
 
-const SpeedDateParticipantSchema = new mongoose.Schema({
-	userId: {
-		participant: ParticipantSchema,
-		inviteSent: Boolean
-	}
-}, { _id : false });
-
-const SpeedDateInvitedParticipantsSchema = new mongoose.Schema({
-	userId: SpeedDateParticipantSchema
-}, { _id : false });
-
 const RoundMatchMakerSchema = new mongoose.Schema({
 	durationInSeconds: Number
 }, { _id : false });
 
 const RoundConfigSchema = new mongoose.Schema({
 	startTime: Date,
-	durationInMinutes: Number
+	durationInMinutes: Number,
+	roomCapacity: Number
 }, { _id : false });
 
 const RoundSchema = new mongoose.Schema({
@@ -53,10 +36,8 @@ const RoundSchema = new mongoose.Schema({
 }, { _id : false });
 
 const ActiveSessionSchema = new mongoose.Schema({
-	sessionConfig: SessionConfigSchema,
 	round: RoundSchema,
 	routerVoiceChannel: RouterVoiceChannelSchema,
-	// speedDateInvitedParticipants: SpeedDateInvitedParticipantsSchema,
 	dates: {type: [DateSchema], default: []},
 	participants: {type: Object, default: {}}, // { [participantId]: {} }
 }, { _id : false })

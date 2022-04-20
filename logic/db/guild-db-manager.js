@@ -65,7 +65,7 @@ async function updatedMatchMakerFieldsForGuild(guildId, durationInSeconds) {
 	await GuildSpeedDateBot.findOneAndUpdate({ guildId }, updateFields);
 }
 
-async function updatedRoundConfig(guildId, startTime, durationInMinutes) {
+async function updatedRoundConfig(guildId, startTime, roomCapacity, durationInMinutes) {
 	// TODO - change the ugly implementation
 	const updateFields = {}
 	if(startTime){
@@ -73,6 +73,9 @@ async function updatedRoundConfig(guildId, startTime, durationInMinutes) {
 	}
 	if(durationInMinutes){
 		updateFields['activeSession.round.config.durationInMinutes'] = durationInMinutes;
+	}
+	if(roomCapacity){
+		updateFields['activeSession.round.config.roomCapacity'] = roomCapacity;
 	}
 
 	if(_.isEmpty(updateFields)){
@@ -83,7 +86,20 @@ async function updatedRoundConfig(guildId, startTime, durationInMinutes) {
 	await GuildSpeedDateBot.findOneAndUpdate({ guildId }, updateFields);
 }
 
+async function updatedLobby(guildId, routerVoiceChannel) {
+	// TODO - change the ugly implementation
+	const updateFields = {}
+	if(routerVoiceChannel){
+		updateFields['activeSession.routerVoiceChannel'] = routerVoiceChannel;
+	}
 
+	if(_.isEmpty(updateFields)){
+		console.log(`Not updating Round Config in DB - nothing to update for guild ${guildId}`);
+		return;
+	}
+	console.log(`Performing Round configuration update with params: ${JSON.stringify(updateFields)}`)
+	await GuildSpeedDateBot.findOneAndUpdate({ guildId }, updateFields);
+}
 
 
 async function deleteActiveSessionForGuild(guildId) {
@@ -155,5 +171,6 @@ module.exports = {
 	updatedConfigFieldsForGuild,
 	deleteActiveSessionForGuild,
 	updatedMatchMakerFieldsForGuild,
-	updatedRoundConfig
+	updatedRoundConfig,
+	updatedLobby
 };

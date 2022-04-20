@@ -9,7 +9,7 @@ const moment = require("moment");
 
 async function createSpeedDatesMatchesInternal(guildBotDoc, forceMatch = false) {
 	console.log(`Match maker - SEARCHING DATES - ${guildBotDoc.guildInfo}, forceMatch ${forceMatch}`)
-	const {activeSession: {routerVoiceChannel, sessionConfig, participants, dates},
+	const {activeSession: {routerVoiceChannel, participants, dates, round: {config}},
 		memberMeetingsHistory, guildInfo} = guildBotDoc;
 
 	const guild = await client.guilds.fetch(guildInfo.guildId)
@@ -20,7 +20,7 @@ async function createSpeedDatesMatchesInternal(guildBotDoc, forceMatch = false) 
 		console.log(`Match maker - No Enough Members in Lobby`,  { guildInfo, membersCount: routerMembers.size});
 		return;
 	}
-	const { rooms } = matchRooms(Array.from(routerMembers.keys()), memberMeetingsHistory, sessionConfig.roomCapacity, forceMatch)
+	const { rooms } = matchRooms(Array.from(routerMembers.keys()), memberMeetingsHistory, config.roomCapacity, forceMatch)
 	console.log(`Match maker - Creating ${rooms.length} DATES`, {guildInfo});
 	const maxRoomNum = _.max(_.map(dates, 'number')) || 0
 	const newDates = await Promise.all(
@@ -91,7 +91,7 @@ async function startDateMatchMakerTaskWithDelay(guildId, matchMakerInterval, mat
 		throw Error(`Match maker TASK with DELAY - FAILED - active session not found for ${guildId}, ${e}`)
 	}
 	// 1. Update match maker configurations
-	try {;
+	try {
 		await updatedMatchMakerFieldsForGuild(guildId, matchMakerDurationInSeconds);
 	} catch (e) {
 		console.log("Match maker TASK with DELAY - FAILED - failed to update match maker config", {guildId, matchMakerInterval, matchMakerTaskDelay})

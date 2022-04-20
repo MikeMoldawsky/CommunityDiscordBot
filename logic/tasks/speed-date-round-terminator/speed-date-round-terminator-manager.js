@@ -55,7 +55,7 @@ async function terminateSpeedDateRound(guildId) {
 		await setMeetingHistoryAndGrantCompletedRolesToSpeedDaters(guildClient, guildInfo, participants, memberMeetingsHistory);
 		await moveSpeedDatersToLobbyAndDeleteChannel(routerVoiceChannel, dates, guildClient);
 		await GuildSpeedDateBot.findOneAndUpdate({guildId}, { memberMeetingsHistory });
-		console.log(`End Speed Date Round - SUCCESS`, {guildId}, e);
+		console.log(`End Speed Date Round - SUCCESS`, {guildId});
 	} catch (e) {
 		console.log(`End Speed Date Round - FAILED`, {guildId}, e);
 		throw Error(`End Speed Date Round - FAILED for guild ${guildId}, ${e}`);
