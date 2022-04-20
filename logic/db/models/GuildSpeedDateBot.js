@@ -13,7 +13,7 @@ const DateSchema = new mongoose.Schema({
 	voiceChannelId: String,
 }, { _id : false })
 
-const SpeedDateSessionConfigSchema = new mongoose.Schema({
+const SessionConfigSchema = new mongoose.Schema({
 	lobbyChannelId: String,
 	lobbyChannelName: String,
 	speedDateDurationMinutes: Number,
@@ -44,7 +44,7 @@ const MatchMakerSessionSchema = new mongoose.Schema({
 }, { _id : false });
 
 const ActiveSpeedDateSessionSchema = new mongoose.Schema({
-	speedDateSessionConfig: SpeedDateSessionConfigSchema,
+	sessionConfig: SessionConfigSchema,
 	matchMaker: MatchMakerSessionSchema,
 	routerVoiceChannel: RouterVoiceChannelSchema,
 	// speedDateInvitedParticipants: SpeedDateInvitedParticipantsSchema,

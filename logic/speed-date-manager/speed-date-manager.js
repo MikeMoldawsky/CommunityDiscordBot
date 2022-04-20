@@ -50,7 +50,7 @@ async function startSpeedDatesAndGetInvite(guildId, matchMakerInterval, matchMak
 	} catch (e){
 		console.log("START SPEED DATE ROUND FAILED - active speed date session not found", {guildId}, e);
 	}
-	const {activeSpeedDateSession: { routerVoiceChannel: {allowedRoleId, channelId }, speedDateSessionConfig: { lobbyChannelId }},
+	const {activeSpeedDateSession: { routerVoiceChannel: {allowedRoleId, channelId }, sessionConfig: { lobbyChannelId }},
 		config: { voiceLobby: { invite }}, guildInfo } = activeSpeedDateBotDoc;
 	console.log(`Speed Date INVITE MEMBERS for guild ${guildInfo}`);
 	await startDateMatchMakerTaskWithDelay(guildId, matchMakerInterval, matchMakerTaskDelay, matchMakerDurationInSeconds)

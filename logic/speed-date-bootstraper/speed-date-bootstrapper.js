@@ -9,7 +9,7 @@ async function initializeSpeedDateSessionForGuild(guildSpeedDateBotDoc, guildCli
 		// 0. Persist active session config before creating actual objects (roles, channels etc.)
 		// Helps to avoid a bad state (e.g. if we crashed while creating roles but didn't persist).
 		guildSpeedDateBotDoc.activeSpeedDateSession = {
-			speedDateSessionConfig: {
+			sessionConfig: {
 				lobbyChannelId: lobbyChannelClient.id,
 				lobbyChannelName: lobbyChannelClient.name,
 				speedDateDurationMinutes: speedDateDurationMinutes,

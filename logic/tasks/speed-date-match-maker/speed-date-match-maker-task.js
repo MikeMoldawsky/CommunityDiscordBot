@@ -8,7 +8,7 @@ const moment = require("moment");
 
 
 async function createSpeedDatesMatchesInternal(guildBotDoc, forceMatch = false) {
-	const {activeSpeedDateSession: {routerVoiceChannel, speedDateSessionConfig, participants, dates},
+	const {activeSpeedDateSession: {routerVoiceChannel, sessionConfig, participants, dates},
 		memberMeetingsHistory, guildInfo} = guildBotDoc;
 
 	const guild = await client.guilds.fetch(guildInfo.guildId)
@@ -19,7 +19,7 @@ async function createSpeedDatesMatchesInternal(guildBotDoc, forceMatch = false) 
 		console.log(`Match maker - no enough members for match in Router Lobby`,  { guildInfo, membersCount: routerChannel.members.size});
 		return;
 	}
-	const { rooms } = matchRooms(Array.from(routerMembers.keys()), memberMeetingsHistory, speedDateSessionConfig.roomCapacity, forceMatch)
+	const { rooms } = matchRooms(Array.from(routerMembers.keys()), memberMeetingsHistory, sessionConfig.roomCapacity, forceMatch)
 	console.log(`Match maker Creating ${rooms.length} DATES- ${guildInfo}`);
 	const maxRoomNum = _.max(_.map(dates, 'number')) || 0
 	const newDates = await Promise.all(
