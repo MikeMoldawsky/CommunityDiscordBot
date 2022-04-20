@@ -1,6 +1,6 @@
 const client = require("../../../logic/discord/client");
 const _ = require("lodash");
-const { getGuildWithActiveSpeedDateSessionOrThrow } = require("../../db/guild-db-manager");
+const { getGuildWithActiveSessionOrThrow } = require("../../db/guild-db-manager");
 const { getOrCreateRole } = require("../../discord/utils");
 const GuildSpeedDateBot = require("../../../logic/db/models/GuildSpeedDateBot");
 
@@ -41,13 +41,13 @@ async function terminateSpeedDateRound(guildId) {
 	console.log(`End Speed Date Round - START`, {guildId});
 	let activeGuildSpeedDateBotDoc;
 	try {
-		activeGuildSpeedDateBotDoc = await getGuildWithActiveSpeedDateSessionOrThrow(guildId);
+		activeGuildSpeedDateBotDoc = await getGuildWithActiveSessionOrThrow(guildId);
 	} catch (e) {
 		console.log(`End Speed Date Round - NOOP - no active session found`, {guildId});
 		return;
 	}
 	try {
-		const { activeSpeedDateSession:{ routerVoiceChannel, dates, participants} , guildInfo, memberMeetingsHistory } = activeGuildSpeedDateBotDoc;
+		const { activeSession:{ routerVoiceChannel, dates, participants} , guildInfo, memberMeetingsHistory } = activeGuildSpeedDateBotDoc;
 		// 1. Cleanup resources - Router Roles etc.
 		console.log(`Starting Cleanup for guild ${guildInfo}`);
 		const guildClient = await client.guilds.fetch(guildId);

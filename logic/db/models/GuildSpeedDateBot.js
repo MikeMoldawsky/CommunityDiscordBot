@@ -43,7 +43,7 @@ const MatchMakerSessionSchema = new mongoose.Schema({
 	durationInSeconds: Number
 }, { _id : false });
 
-const ActiveSpeedDateSessionSchema = new mongoose.Schema({
+const ActiveSessionSchema = new mongoose.Schema({
 	sessionConfig: SessionConfigSchema,
 	matchMaker: MatchMakerSessionSchema,
 	routerVoiceChannel: RouterVoiceChannelSchema,
@@ -81,7 +81,7 @@ const GuildInfoSchema = new mongoose.Schema({
 const GuildSpeedDateBotSchema = new mongoose.Schema({
 	guildInfo: GuildInfoSchema,
 	config: ConfigSchema,
-	activeSpeedDateSession: ActiveSpeedDateSessionSchema,
+	activeSession: ActiveSessionSchema,
 	memberMeetingsHistory: {type: Object, default: {}},
 })
 

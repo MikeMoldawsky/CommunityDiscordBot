@@ -1,6 +1,6 @@
 const _ = require("lodash");
 const GuildSpeedDateBot = require("../../../logic/db/models/GuildSpeedDateBot");
-const { deleteActiveSessionForGuild, getGuildWithActiveSpeedDateSessionOrThrow } = require("../../db/guild-db-manager");
+const { deleteActiveSessionForGuild, getGuildWithActiveSessionOrThrow } = require("../../db/guild-db-manager");
 const client = require("../../discord/client");
 const { getOrCreateRole } = require("../../discord/utils");
 const { endSpeedDateActiveRound } = require("../speed-date-round-terminator/speed-date-round-terminator-manager");
@@ -17,13 +17,13 @@ async function cleanUpSpeedDateSessionForGuild(guildId) {
 	let activeGuildSpeedDateBotDoc;
 	console.log(`CleanUp speed date session - START`, {guildId});
 	try {
-		activeGuildSpeedDateBotDoc = await getGuildWithActiveSpeedDateSessionOrThrow(guildId);
+		activeGuildSpeedDateBotDoc = await getGuildWithActiveSessionOrThrow(guildId);
 	} catch (e) {
 		console.log(`CleanUp speed date session - NOOP - no active session found`, {guildId});
 		return;
 	}
 	try {
-		const { activeSpeedDateSession:{ routerVoiceChannel, dates, participants} , guildInfo, memberMeetingsHistory } = activeGuildSpeedDateBotDoc;
+		const { activeSession:{ routerVoiceChannel, dates, participants} , guildInfo, memberMeetingsHistory } = activeGuildSpeedDateBotDoc;
 		console.log(`Starting Cleanup for guild ${guildInfo}`)
 		// 0. CleanUp Active Round in case it was forgotten
 		await endSpeedDateActiveRound(guildId) // TODO: check if it's required - probably good for edge cases

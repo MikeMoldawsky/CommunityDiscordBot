@@ -1,5 +1,5 @@
 const client = require("../discord/client");
-const { getOrCreateGuildSpeedDateBotDocument, getGuildWithActiveSpeedDateSessionOrThrow } = require("../db/guild-db-manager");
+const { getOrCreateGuildSpeedDateBotDocument, getGuildWithActiveSessionOrThrow } = require("../db/guild-db-manager");
 const { addRoleToChannelMembers } = require("../discord/utils");
 const { createRouterVoiceChannelInvite } = require("../discord/discord-speed-date-manager");
 const { initializeSpeedDateSessionForGuild } = require("../speed-date-bootstraper/speed-date-bootstrapper");
@@ -14,7 +14,7 @@ async function bootstrapSpeedDateInfrastructureForGuild(guildId, guildName, spee
 	// 0. Get Or Create Guild Speed Date Document
 	let prevGuildSpeedDateBotDoc = await getOrCreateGuildSpeedDateBotDocument(guildId, guildName);
 	// 1. Active Session check as multiple sessions aren't allowed (should be fixed manually or with bot commands).
-	if(prevGuildSpeedDateBotDoc.activeSpeedDateSession){
+	if(prevGuildSpeedDateBotDoc.activeSession){
 		// TODO: uncomment for dev
 		// await prevGuildSpeedDateBotDoc.delete()
 		// prevGuildSpeedDateBotDoc = await getOrCreateGuildSpeedDateBotDocument(guildId, guildName);
@@ -46,11 +46,11 @@ async function allowMembersJoinLobbyAndGetInvite(guildId, invitedMemberChannelId
 async function startSpeedDatesAndGetInvite(guildId, matchMakerInterval, matchMakerTaskDelay, matchMakerDurationInSeconds, dateTerminatorInterval){
 	let activeSpeedDateBotDoc;
 	try {
-		activeSpeedDateBotDoc = await getGuildWithActiveSpeedDateSessionOrThrow(guildId);
+		activeSpeedDateBotDoc = await getGuildWithActiveSessionOrThrow(guildId);
 	} catch (e){
 		console.log("START SPEED DATE ROUND FAILED - active speed date session not found", {guildId}, e);
 	}
-	const {activeSpeedDateSession: { routerVoiceChannel: {allowedRoleId, channelId }, sessionConfig: { lobbyChannelId }},
+	const {activeSession: { routerVoiceChannel: {allowedRoleId, channelId }, sessionConfig: { lobbyChannelId }},
 		config: { voiceLobby: { invite }}, guildInfo } = activeSpeedDateBotDoc;
 	console.log(`Speed Date INVITE MEMBERS for guild ${guildInfo}`);
 	await startDateMatchMakerTaskWithDelay(guildId, matchMakerInterval, matchMakerTaskDelay, matchMakerDurationInSeconds)

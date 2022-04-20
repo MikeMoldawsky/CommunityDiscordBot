@@ -3,12 +3,12 @@ const GuildSpeedDateBot = require('../../db/models/GuildSpeedDateBot')
 const matchRooms = require('./speed-date-match-maker-manager')
 const {createVoiceChannel} = require('../../vcShuffle')
 const _ = require('lodash')
-const { getGuildWithActiveSpeedDateSessionOrThrow, updatedMatchMakerFieldsForGuild } = require("../../db/guild-db-manager");
+const { getGuildWithActiveSessionOrThrow, updatedMatchMakerFieldsForGuild } = require("../../db/guild-db-manager");
 const moment = require("moment");
 
 
 async function createSpeedDatesMatchesInternal(guildBotDoc, forceMatch = false) {
-	const {activeSpeedDateSession: {routerVoiceChannel, sessionConfig, participants, dates},
+	const {activeSession: {routerVoiceChannel, sessionConfig, participants, dates},
 		memberMeetingsHistory, guildInfo} = guildBotDoc;
 
 	const guild = await client.guilds.fetch(guildInfo.guildId)
@@ -43,8 +43,8 @@ async function createSpeedDatesMatchesInternal(guildBotDoc, forceMatch = false) 
 	);
 
 	await GuildSpeedDateBot.findOneAndUpdate({guildId: guildInfo.guildId}, {
-		'activeSpeedDateSession.participants': participants,
-		'activeSpeedDateSession.dates': [...dates, ...newDates],
+		'activeSession.participants': participants,
+		'activeSession.dates': [...dates, ...newDates],
 	})
 }
 
@@ -64,12 +64,12 @@ async function startDateMatchMakerTaskForGuild(guildId, interval){
 	const currentMoment = moment();
 	let activeGuildBotDoc;
 	try {
-		activeGuildBotDoc = await getGuildWithActiveSpeedDateSessionOrThrow(guildId);
+		activeGuildBotDoc = await getGuildWithActiveSessionOrThrow(guildId);
 	} catch (e) {
 		console.log(`Match maker STOP - active session not found - ${activeGuildBotDoc.guildInfo}`)
 		return;
 	}
-	const {activeSpeedDateSession:{ matchMaker } } = activeGuildBotDoc;
+	const {activeSession:{ matchMaker } } = activeGuildBotDoc;
 	const stopMatchingMoment = moment(matchMaker.startTime).add(matchMaker.durationInSeconds, "seconds");
 	if(currentMoment > stopMatchingMoment){
 		await createSpeedDatesMatches(activeGuildBotDoc, true);
@@ -85,7 +85,7 @@ async function startDateMatchMakerTaskWithDelay(guildId, matchMakerInterval, mat
 	console.log("Match maker TASK WITH DELAY - START", {guildId, matchMakerInterval, matchMakerTaskDelay})
 	// 1. Assert active session
 	try {
-		await getGuildWithActiveSpeedDateSessionOrThrow(guildId);
+		await getGuildWithActiveSessionOrThrow(guildId);
 	} catch (e) {
 		console.log("Match maker TASK with DELAY - FAILED - active session not found", {guildId, matchMakerInterval, matchMakerTaskDelay})
 		throw Error(`Match maker TASK with DELAY - FAILED - active session not found for ${guildId}, ${e}`)

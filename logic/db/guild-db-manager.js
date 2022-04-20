@@ -15,7 +15,7 @@ async function getGuildSpeedDateBotDocumentOrThrow(guildId, guildName = "no-para
 
 async function throwIfActiveSession(guildId) {
 	const guildBotDoc = await getGuildSpeedDateBotDocumentOrThrow(guildId);
-	if (guildBotDoc.activeSpeedDateSession) {
+	if (guildBotDoc.activeSession) {
 		console.log(`There is an active session for guild ${guildBotDoc.guildInfo}`);
 		throw Error(`There is an active session for guild ${guildBotDoc.guildInfo}`);
 	}
@@ -54,10 +54,10 @@ async function updatedMatchMakerFieldsForGuild(guildId, startTime, durationInSec
 	// TODO - change the ugly implementation
 	const updateFields = {}
 	if(startTime){
-		updateFields['activeSpeedDateSession.matchMaker.startTime'] = startTime;
+		updateFields['activeSession.matchMaker.startTime'] = startTime;
 	}
 	if(durationInSeconds){
-		updateFields['activeSpeedDateSession.matchMaker.durationInSeconds'] = durationInSeconds;
+		updateFields['activeSession.matchMaker.durationInSeconds'] = durationInSeconds;
 	}
 
 	if(_.isEmpty(updateFields)){
@@ -73,13 +73,13 @@ async function updatedMatchMakerFieldsForGuild(guildId, startTime, durationInSec
 async function deleteActiveSessionForGuild(guildId) {
 	console.log(`Deleting active session from DB for guild ${guildId}`)
 	await GuildSpeedDateBot.findOneAndUpdate({ guildId }, {
-		'activeSpeedDateSession': null,
+		'activeSession': null,
 	});
 }
 
-async function getGuildWithActiveSpeedDateSessionOrThrow(guildId) {
+async function getGuildWithActiveSessionOrThrow(guildId) {
 	const guildBotDoc = await getGuildSpeedDateBotDocumentOrThrow(guildId);
-	if (!guildBotDoc.activeSpeedDateSession) {
+	if (!guildBotDoc.activeSession) {
 		console.log(`No active session for guild ${guildBotDoc.guildInfo}`);
 		throw Error(`No active session for guild ${guildBotDoc.guildInfo}`);
 	}
@@ -132,7 +132,7 @@ async function getOrCreateGuildSpeedDateBotDocument(guildId, guildName) {
 
 module.exports = {
 	persistAndGetGuildSpeedDateBot,
-	getGuildWithActiveSpeedDateSessionOrThrow,
+	getGuildWithActiveSessionOrThrow,
 	getGuildSpeedDateBotDocumentOrThrow,
 	getOrCreateGuildSpeedDateBotDocument,
 	throwIfActiveSession,
