@@ -1,6 +1,8 @@
 const { SlashCommandBuilder } = require("@discordjs/builders");
 const { updateBotConfigIfNeeded } = require("../../../logic/speed-date-config-manager/speed-date-config-manager");
-const { bootstrapSpeedDateInfrastructureForGuild, startSpeedDatesAndGetInvite } = require("../../../logic/speed-date-manager/speed-date-manager");
+const { bootstrapSpeedDateInfrastructureForGuild, allowMembersJoinLobbyAndGetInvite,
+	startSpeedDateRound
+} = require("../../../logic/speed-date-manager/speed-date-manager");
 const { playMusicInRouterVoiceChannel } = require("../../../logic/discord/discord-speed-date-manager");
 const { getOrCreateGuildSpeedDateBotDocument, throwIfActiveSession } = require("../../../logic/db/guild-db-manager");
 const { endSpeedDateSessionTask } = require("../../../logic/tasks/speed-date-session-cleanup/speed-date-session-cleanup-manager");
@@ -43,13 +45,11 @@ async function configureSession(interaction){
 
 
 async function initializeSession(interaction){
-	let lobbyChannelId, guildId, guildName, speedDateDurationMinutes, roomCapacity;
+	let interactionChannelId, guildId, guildName;
 	try {
 		guildId = interaction.guild.id;
 		guildName = interaction.guild.name;
-		lobbyChannelId = interaction.options.getChannel("lobby") || interaction.channel.id; // TODO: remove default channel ID - it can be dangerous;
-		speedDateDurationMinutes = interaction.options.getInteger("duration") || DEFAULT_SPEED_DATE_DURATION_MINUTES;
-		roomCapacity = interaction.options.getInteger("room-capacity") || DEFAULT_ROOM_CAPACITY;
+		interactionChannelId = interaction.channel.id;
 		// TODO: decide how much time we want - maybe configurable
 		// TODO(mike): add validations over the inputs - e.g. capacity >= 2, guildClient bot found etc...
 		// 0. Let the bot time to work on the interaction
@@ -60,11 +60,47 @@ async function initializeSession(interaction){
 	}
 	try {
 		// 1. Bootstrap infrastructure that is required for speed dating (Roles, Voice Channel Router etc.)
-		await bootstrapSpeedDateInfrastructureForGuild(guildId, guildName, speedDateDurationMinutes, lobbyChannelId, roomCapacity, interaction.user.id);
+		await bootstrapSpeedDateInfrastructureForGuild(guildId, guildName, interactionChannelId, interaction.user.id);
 		await playMusicInRouterVoiceChannel(interaction, guildId);
 	} catch (e){
 		console.log(`Failed to initialize speed dating`, e);
 		throw Error(`Failed to initialize speed dating ${e}`);
+	}
+}
+
+async function allowJoinSessionLobbyAndSendInvite(interaction) {
+	let invitedChannelId, guildId;
+	try {
+		guildId = interaction.guild.id;
+		invitedChannelId = interaction.options.getChannel("invited-channel") || interaction.channel.id;
+	} catch (e) {
+		console.log(`Failed to send invite for session - input errors`, e);
+		throw Error(`Failed to send invite for session - input errors ${e}`);
+	}
+	try {
+		// 1. Allow channel members to join lobby and send invite
+		return await allowMembersJoinLobbyAndGetInvite(guildId, invitedChannelId);
+	} catch (e){
+		console.log(`Failed to send invite for speed dating`, {guildId, e});
+		throw Error(`Failed to send invite for speed dating for guild ${guildId} ${e}`);
+	}
+}
+
+async function startRound(interaction) {
+	let guildId, roomCapacity, speedDateDurationMinutes;
+	try {
+		guildId = interaction.guild.id;
+		roomCapacity = interaction.options.getInteger("room-capacity") || DEFAULT_ROOM_CAPACITY;
+		speedDateDurationMinutes = interaction.options.getInteger("duration") || DEFAULT_SPEED_DATE_DURATION_MINUTES;
+	} catch (e) {
+		console.log(`Failed to start round - input errors`, e);
+		throw Error(`Failed to start round - input errors ${e}`);
+	}
+	try {
+		await startSpeedDateRound(guildId, speedDateDurationMinutes, roomCapacity, MATCH_MAKER_INTERVAL, MATCH_MAKER_TASK_DELAY, MATCH_MAKER_DURATION_SECONDS, ROUND_TERMINATOR_TASK_INTERVAL);
+	} catch (e){
+		console.log(`Failed to start round for speed dating`, {guildId, e});
+		throw Error(`Failed to start round for speed dating for guild ${guildId} ${e}`);
 	}
 }
 
@@ -91,7 +127,19 @@ module.exports = {
 				.setDescription(
 					"Creates the voice channel lobby for the speed dates session."
 				)
-				.addChannelOption(option => option.setName('lobby').setDescription("The participants channel"))
+		)
+		.addSubcommand(
+			subCommand => subCommand.setName(SESSION_INVITE_SUBCOMMAND)
+				.setDescription(
+					"Allow the channel's member to join the speed-date session lobby."
+				)
+				.addChannelOption(option => option.setName('invited-channel').setDescription("The invited channel members")),
+		)
+		.addSubcommand(
+			subCommand => subCommand.setName(ROUND_START_SUBCOMMAND)
+				.setDescription(
+					"Start matching speed-daters from the lobby into private voice channels."
+				)
 				.addIntegerOption((option) =>
 					option
 						.setName("duration")
@@ -99,13 +147,7 @@ module.exports = {
 				.addIntegerOption((option) =>
 					option
 						.setName("room-capacity")
-						.setDescription("The capacity of each room.")),
-		)
-		.addSubcommand(
-			subCommand => subCommand.setName(ROUND_START_SUBCOMMAND)
-				.setDescription(
-					"Start matching speed-daters from the lobby into private voice channels."
-				)
+						.setDescription("The capacity of each room."))
 		)
 		.addSubcommand(
 			subCommand => subCommand.setName(SESSION_END_SUBCOMMAND)
@@ -135,15 +177,18 @@ module.exports = {
 					await interaction.deferReply({ephemeral: true}); // Slash Commands has only 3 seconds to reply to an interaction.
 					await initializeSession(interaction);
 					break;
+				case SESSION_INVITE_SUBCOMMAND:
+					await interaction.deferReply({ephemeral: false}); // Slash Commands has only 3 seconds to reply to an interaction.
+					const lobbyChannelInvite = await allowJoinSessionLobbyAndSendInvite(interaction);
+					await interaction.followUp({ embeds: [lobbyChannelInvite], ephemeral: false,});
+					break;
 				case SESSION_END_SUBCOMMAND:
 					await interaction.deferReply({ephemeral: true}); // Slash Commands has only 3 seconds to reply to an interaction.
 					await endSpeedDateSessionTask(guildId).catch(e => console.log(e));
 					break;
 				case ROUND_START_SUBCOMMAND:
 					await interaction.deferReply({ephemeral: false}); // Slash Commands has only 3 seconds to reply to an interaction.
-					const routerVoiceChannelInvite = await startSpeedDatesAndGetInvite(guildId, MATCH_MAKER_INTERVAL, MATCH_MAKER_TASK_DELAY, MATCH_MAKER_DURATION_SECONDS, ROUND_TERMINATOR_TASK_INTERVAL);
-					// TODO: check if we want to send invite on every round
-					await interaction.followUp({ embeds: [routerVoiceChannelInvite], ephemeral: false,});
+					await startRound(interaction);
 					break;
 				default:
 					throw Error(`Unknown subcommand: ${subcommand}`);

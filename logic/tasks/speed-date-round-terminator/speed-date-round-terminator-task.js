@@ -1,4 +1,3 @@
-const _ = require("lodash");
 const { getGuildWithActiveSessionOrThrow } = require("../../db/guild-db-manager");
 const moment = require("moment");
 const { terminateSpeedDateRound } = require("./speed-date-round-terminator-manager");
@@ -16,7 +15,8 @@ async function startSpeedDateRoundTerminatorTaskInternal(guildId, interval){
 	const terminateRoundMoment = moment(config.startTime).add(config.durationInMinutes, "minutes");
 	const currentMoment = moment();
 	if(currentMoment > terminateRoundMoment){
-		console.log(`Speed Date Round Terminator Task - END SPEED DATE - STARTING... `, {guildInfo: activeGuildBotDoc.guildInfo, roundStartTime: config.startTime, currentMoment, terminateRoundMoment });
+		console.log(`Speed Date Round Terminator Task - END SPEED DATE - STARTING... `, {guildInfo: activeGuildBotDoc.guildInfo, roundStartTime: config.startTime,
+			currentMoment, terminateRoundMoment });
 		await terminateSpeedDateRound(guildId)
 		console.log(`Speed Date Round Terminator Task - END SPEED DATE - SUCCESS. `, {guildInfo: activeGuildBotDoc.guildInfo});
 		return;
