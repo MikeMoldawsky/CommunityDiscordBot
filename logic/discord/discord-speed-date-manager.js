@@ -1,6 +1,6 @@
 const { MessageEmbed } = require("discord.js");
 const { getOrCreateRole } = require("./utils");
-const { getGuildWithActiveSpeedDateSessionOrThrow } = require("../../logic/db/guild-db-manager");
+const { getGuildWithActiveSessionOrThrow } = require("../../logic/db/guild-db-manager");
 const client = require("../../logic/discord/client");
 const music = require("@koenie06/discord.js-music");
 
@@ -74,7 +74,7 @@ async function createRouterVoiceChannelInvite(routerVoiceChannelClient, config) 
 
 async function playMusicInRouterVoiceChannel(interaction, guildId) {
 	try {
-		const { config: {voiceLobby: { music : musicConfig }},  guildInfo, activeSpeedDateSession: { routerVoiceChannel } } = await getGuildWithActiveSpeedDateSessionOrThrow(guildId);
+		const { config: {voiceLobby: { music : musicConfig }},  guildInfo, activeSession: { routerVoiceChannel } } = await getGuildWithActiveSessionOrThrow(guildId);
 		const guildClient = await client.guilds.fetch(guildId);
 		const routerChannel =  await guildClient.channels.fetch(routerVoiceChannel.channelId);
 

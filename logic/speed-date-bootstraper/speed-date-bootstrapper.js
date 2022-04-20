@@ -8,8 +8,8 @@ async function initializeSpeedDateSessionForGuild(guildSpeedDateBotDoc, guildCli
 		console.log(`Initializing speed date session for guild ${guildName} with id ${guildId}`);
 		// 0. Persist active session config before creating actual objects (roles, channels etc.)
 		// Helps to avoid a bad state (e.g. if we crashed while creating roles but didn't persist).
-		guildSpeedDateBotDoc.activeSpeedDateSession = {
-			speedDateSessionConfig: {
+		guildSpeedDateBotDoc.activeSession = {
+			sessionConfig: {
 				lobbyChannelId: lobbyChannelClient.id,
 				lobbyChannelName: lobbyChannelClient.name,
 				speedDateDurationMinutes: speedDateDurationMinutes,
@@ -19,7 +19,7 @@ async function initializeSpeedDateSessionForGuild(guildSpeedDateBotDoc, guildCli
 		guildSpeedDateBotDoc = await persistAndGetGuildSpeedDateBot(guildSpeedDateBotDoc, "speed date session config update");
 		// 1. Creating router voice channel
 		const {routerData, routerChannel} = await createRoleProtectedRouterVoiceChannel(guildClient, guildId, creatorId);
-		guildSpeedDateBotDoc.activeSpeedDateSession.routerVoiceChannel = routerData
+		guildSpeedDateBotDoc.activeSession.routerVoiceChannel = routerData
 		await persistAndGetGuildSpeedDateBot(guildSpeedDateBotDoc, "speed router voice channel update");
 		return routerChannel
 	} catch (e) {

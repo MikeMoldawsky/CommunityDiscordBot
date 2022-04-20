@@ -15,7 +15,7 @@ async function getGuildSpeedDateBotDocumentOrThrow(guildId, guildName = "no-para
 
 async function throwIfActiveSession(guildId) {
 	const guildBotDoc = await getGuildSpeedDateBotDocumentOrThrow(guildId);
-	if (guildBotDoc.activeSpeedDateSession) {
+	if (guildBotDoc.activeSession) {
 		console.log(`There is an active session for guild ${guildBotDoc.guildInfo}`);
 		throw Error(`There is an active session for guild ${guildBotDoc.guildInfo}`);
 	}
@@ -50,14 +50,11 @@ async function updatedConfigFieldsForGuild(guildId, imageUrl, inviteTitle, invit
 	await GuildSpeedDateBot.findOneAndUpdate({ guildId }, updateFields);
 }
 
-async function updatedMatchMakerFieldsForGuild(guildId, startTime, durationInSeconds) {
+async function updatedMatchMakerFieldsForGuild(guildId, durationInSeconds) {
 	// TODO - change the ugly implementation
 	const updateFields = {}
-	if(startTime){
-		updateFields['activeSpeedDateSession.matchMaker.startTime'] = startTime;
-	}
 	if(durationInSeconds){
-		updateFields['activeSpeedDateSession.matchMaker.durationInSeconds'] = durationInSeconds;
+		updateFields['activeSession.round.matchMaker.durationInSeconds'] = durationInSeconds;
 	}
 
 	if(_.isEmpty(updateFields)){
@@ -68,18 +65,37 @@ async function updatedMatchMakerFieldsForGuild(guildId, startTime, durationInSec
 	await GuildSpeedDateBot.findOneAndUpdate({ guildId }, updateFields);
 }
 
+async function updatedRoundConfig(guildId, startTime, durationInMinutes) {
+	// TODO - change the ugly implementation
+	const updateFields = {}
+	if(startTime){
+		updateFields['activeSession.round.config.startTime'] = startTime;
+	}
+	if(durationInMinutes){
+		updateFields['activeSession.round.config.durationInMinutes'] = durationInMinutes;
+	}
+
+	if(_.isEmpty(updateFields)){
+		console.log(`Not updating Round Config in DB - nothing to update for guild ${guildId}`);
+		return;
+	}
+	console.log(`Performing Round configuration update with params: ${JSON.stringify(updateFields)}`)
+	await GuildSpeedDateBot.findOneAndUpdate({ guildId }, updateFields);
+}
+
+
 
 
 async function deleteActiveSessionForGuild(guildId) {
 	console.log(`Deleting active session from DB for guild ${guildId}`)
 	await GuildSpeedDateBot.findOneAndUpdate({ guildId }, {
-		'activeSpeedDateSession': null,
+		'activeSession': null,
 	});
 }
 
-async function getGuildWithActiveSpeedDateSessionOrThrow(guildId) {
+async function getGuildWithActiveSessionOrThrow(guildId) {
 	const guildBotDoc = await getGuildSpeedDateBotDocumentOrThrow(guildId);
-	if (!guildBotDoc.activeSpeedDateSession) {
+	if (!guildBotDoc.activeSession) {
 		console.log(`No active session for guild ${guildBotDoc.guildInfo}`);
 		throw Error(`No active session for guild ${guildBotDoc.guildInfo}`);
 	}
@@ -132,11 +148,12 @@ async function getOrCreateGuildSpeedDateBotDocument(guildId, guildName) {
 
 module.exports = {
 	persistAndGetGuildSpeedDateBot,
-	getGuildWithActiveSpeedDateSessionOrThrow,
+	getGuildWithActiveSessionOrThrow,
 	getGuildSpeedDateBotDocumentOrThrow,
 	getOrCreateGuildSpeedDateBotDocument,
 	throwIfActiveSession,
 	updatedConfigFieldsForGuild,
 	deleteActiveSessionForGuild,
-	updatedMatchMakerFieldsForGuild
+	updatedMatchMakerFieldsForGuild,
+	updatedRoundConfig
 };
