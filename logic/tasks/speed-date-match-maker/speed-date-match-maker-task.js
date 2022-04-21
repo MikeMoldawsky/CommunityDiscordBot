@@ -10,7 +10,7 @@ const moment = require("moment");
 async function createSpeedDatesMatchesInternal(guildBotDoc, forceMatch = false) {
 	console.log(`Match maker - SEARCHING DATES - ${guildBotDoc.guildInfo}, forceMatch ${forceMatch}`)
 	const {activeSession: {initialization: { lobby }, participants, dates, round: {config}},
-		memberMeetingsHistory, guildInfo} = guildBotDoc;
+		datesHistory, guildInfo} = guildBotDoc;
 
 	const guild = await client.guilds.fetch(guildInfo.guildId)
 	const lobbyChannel = await client.channels.fetch(lobby.channelId)
@@ -20,7 +20,7 @@ async function createSpeedDatesMatchesInternal(guildBotDoc, forceMatch = false) 
 		console.log(`Match maker - No Enough Members in Lobby`,  { guildInfo, membersCount: lobbyMembers.size});
 		return;
 	}
-	const { rooms } = matchRooms(Array.from(lobbyMembers.keys()), memberMeetingsHistory, config.roomCapacity, forceMatch)
+	const { rooms } = matchRooms(Array.from(lobbyMembers.keys()), datesHistory, config.roomCapacity, forceMatch)
 	console.log(`Match maker - Creating ${rooms.length} DATES`, {guildInfo});
 	const maxRoomNum = _.max(_.map(dates, 'number')) || 0
 	const newDates = await Promise.all(
