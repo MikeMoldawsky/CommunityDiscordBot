@@ -4,18 +4,22 @@ const _ = require("lodash");
 const DEFAULT_INVITE_IMAGE_URL = "https://www.thebirdstage.com/wp-content/uploads/2016/02/Speed-Dating.jpg";
 const DEFAULT_LOBBY_MUSIC_URL = 'https://soundcloud.com/julian_avila/elevatormusic';
 
+function isNilOrEmpty(obj){
+	return _.isNil(obj) || _.isEmpty(obj);
+}
+
 async function getGuildSpeedDateBotDocumentOrThrow(guildId, guildName = "no-param") {
-	const guildInfo = await GuildSpeedDateBot.findOne({ guildId: guildId }).exec();
-	if (!guildInfo) {
+	const guildBot = await GuildSpeedDateBot.findOne({ guildId: guildId }).exec();
+	if (isNilOrEmpty(guildBot)) {
 		console.log(`GuildInfo for guild ${guildName} with id ${guildId}`);
 		throw Error(`Guild ${guildName} with id ${guildId} should have existing bot configurations`);
 	}
-	return guildInfo;
+	return guildBot;
 }
 
 async function throwIfActiveSession(guildId) {
 	const guildBotDoc = await getGuildSpeedDateBotDocumentOrThrow(guildId);
-	if (guildBotDoc.activeSession) {
+	if (!isNilOrEmpty(guildBotDoc.activeSession)) {
 		console.log(`There is an active session for guild ${guildBotDoc.guildInfo}`);
 		throw Error(`There is an active session for guild ${guildBotDoc.guildInfo}`);
 	}
@@ -86,11 +90,11 @@ async function updatedRoundConfig(guildId, startTime, roomCapacity, durationInMi
 	await GuildSpeedDateBot.findOneAndUpdate({ guildId }, updateFields);
 }
 
-async function updatedLobby(guildId, routerVoiceChannel) {
+async function updatedLobby(guildId, lobby) {
 	// TODO - change the ugly implementation
 	const updateFields = {}
-	if(routerVoiceChannel){
-		updateFields['activeSession.routerVoiceChannel'] = routerVoiceChannel;
+	if(lobby){
+		updateFields['activeSession.initialization.lobby'] = lobby;
 	}
 
 	if(_.isEmpty(updateFields)){
@@ -101,21 +105,44 @@ async function updatedLobby(guildId, routerVoiceChannel) {
 	await GuildSpeedDateBot.findOneAndUpdate({ guildId }, updateFields);
 }
 
-
 async function deleteActiveSessionForGuild(guildId) {
-	console.log(`Deleting active session from DB for guild ${guildId}`)
+	console.log(`Deleting ACTIVE SESSION from DB for guild ${guildId}`)
 	await GuildSpeedDateBot.findOneAndUpdate({ guildId }, {
-		'activeSession': null,
+		'activeSession': {},
+	});
+}
+
+async function deleteActiveRound(guildId) {
+	console.log(`Deleting ACTIVE ROUND from DB for guild ${guildId}`)
+	await GuildSpeedDateBot.findOneAndUpdate({ guildId }, {
+		'activeSession.round': {},
 	});
 }
 
 async function getGuildWithActiveSessionOrThrow(guildId) {
 	const guildBotDoc = await getGuildSpeedDateBotDocumentOrThrow(guildId);
-	if (!guildBotDoc.activeSession) {
+	if (isNilOrEmpty(guildBotDoc.activeSession)) {
 		console.log(`No active session for guild ${guildBotDoc.guildInfo}`);
 		throw Error(`No active session for guild ${guildBotDoc.guildInfo}`);
 	}
 	return guildBotDoc;
+}
+
+async function getSpeedDateBot(guildId){
+	return await GuildSpeedDateBot.findOne({ guildId: guildId }).exec();
+}
+
+async function isActiveSpeedDateRound(guildId) {
+	const guildBot = await getSpeedDateBot(guildId);
+	const round = _.get( guildBot,'activeSession.round' );
+	return !_.isNil(round) && !_.isEmpty(round);
+}
+
+
+async function isActiveSpeedDateSession(guildId) {
+	let guildBot = await getSpeedDateBot(guildId)
+	const round = _.get( guildBot,'activeSession' );
+	return !_.isNil(round) && !_.isEmpty(round);
 }
 
 async function persistAndGetGuildSpeedDateBot(guildInfoDocument, updateReason) {
@@ -153,7 +180,7 @@ async function getOrCreateGuildSpeedDateBotDocument(guildId, guildName) {
 					}
 				}
 			},
-			activeSpeedDate: undefined,
+			activeSpeedDate: {},
 			// speedDatesHistory: [],
 			// participantsHistory: {},
 		});
@@ -170,7 +197,10 @@ module.exports = {
 	throwIfActiveSession,
 	updatedConfigFieldsForGuild,
 	deleteActiveSessionForGuild,
+	deleteActiveRound,
 	updatedMatchMakerFieldsForGuild,
 	updatedRoundConfig,
-	updatedLobby
+	updatedLobby,
+	isActiveSpeedDateRound,
+	isActiveSpeedDateSession,
 };

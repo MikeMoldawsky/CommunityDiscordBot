@@ -13,12 +13,6 @@ const DateSchema = new mongoose.Schema({
 	voiceChannelId: String,
 }, { _id : false })
 
-const RouterVoiceChannelSchema = new mongoose.Schema({
-	allowedRoleId: String,
-	allowedRoleName: String,
-	channelId: String,
-	channelName: String
-}, { _id : false })
 
 const RoundMatchMakerSchema = new mongoose.Schema({
 	durationInSeconds: Number
@@ -35,9 +29,20 @@ const RoundSchema = new mongoose.Schema({
 	matchMaker: RoundMatchMakerSchema,
 }, { _id : false });
 
+const LobbySchema = new mongoose.Schema({
+	allowedRoleId: String,
+	allowedRoleName: String,
+	channelId: String,
+	channelName: String
+}, { _id : false })
+
+const InitializationConfigSchema = new mongoose.Schema({
+	lobby: {type: LobbySchema, default: {}},
+}, { _id : false })
+
 const ActiveSessionSchema = new mongoose.Schema({
-	round: RoundSchema,
-	routerVoiceChannel: RouterVoiceChannelSchema,
+	initialization: {type: InitializationConfigSchema, default: {}},
+	round: {type: RoundSchema, default: {}},
 	dates: {type: [DateSchema], default: []},
 	participants: {type: Object, default: {}}, // { [participantId]: {} }
 }, { _id : false })
@@ -69,9 +74,9 @@ const GuildInfoSchema = new mongoose.Schema({
 }, { _id : false })
 
 const GuildSpeedDateBotSchema = new mongoose.Schema({
-	guildInfo: GuildInfoSchema,
-	config: ConfigSchema,
-	activeSession: ActiveSessionSchema,
+	guildInfo: {type: GuildInfoSchema, default: {}},
+	config: {type: ConfigSchema, default: {}},
+	activeSession: {type: ActiveSessionSchema, default: {}},
 	memberMeetingsHistory: {type: Object, default: {}},
 })
 
