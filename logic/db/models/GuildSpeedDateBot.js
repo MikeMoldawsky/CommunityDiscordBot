@@ -1,7 +1,6 @@
 const mongoose = require('mongoose')
 const db = require('../db')
 
-
 const ParticipantSchema = new mongoose.Schema({
 	id: String,
 	name: String,
@@ -73,11 +72,16 @@ const GuildInfoSchema = new mongoose.Schema({
 	guildName: String,
 }, { _id : false })
 
+const DatesHistorySchema = new mongoose.Schema({
+	memberId: [String] // memberId -> Array of all members that he met with.
+}, { _id : false })
+
+
 const GuildSpeedDateBotSchema = new mongoose.Schema({
 	guildInfo: {type: GuildInfoSchema, default: {}},
 	config: {type: ConfigSchema, default: {}},
 	activeSession: {type: ActiveSessionSchema, default: {}},
-	memberMeetingsHistory: {type: Object, default: {}},
+	datesHistory: {type: DatesHistorySchema, default: {}},
 })
 
 const GuildSpeedDateBot = db.model('GuildSpeedDateBot', GuildSpeedDateBotSchema)
