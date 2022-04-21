@@ -3,19 +3,20 @@ const { getOrCreateRole } = require("./utils");
 const { getGuildWithActiveSessionOrThrow } = require("../../logic/db/guild-db-manager");
 const client = require("../../logic/discord/client");
 const music = require("@koenie06/discord.js-music");
+const { updatedLobby } = require("../db/guild-db-manager");
 
-const ROUTER_VOICE_LOBBY_NAME = "❤️ Speed Date Lobby ❤️";
+const LOBBY_NAME = "❤️ Speed Date Lobby ❤️";
 
-async function getOrCreateProtectedRouterVoiceChannel(guildClient, roleId, creatorId) {
+async function getOrCreateVoiceChannelProtectedByRole(guildClient, roleId, creatorId) {
 	try {
 		// TODO - should NOT find the router by the name but from DB through the ID
-		let routerVoiceChannel = guildClient.channels.cache.find(c => c.name === ROUTER_VOICE_LOBBY_NAME);
-		if(routerVoiceChannel){
-			console.log(`Found existing Router Voice Channel ${ROUTER_VOICE_LOBBY_NAME} for guild ${guildClient.id}`)
-			return routerVoiceChannel
+		let lobbyChannel = guildClient.channels.cache.find(c => c.name === LOBBY_NAME);
+		if(lobbyChannel){
+			console.log(`Found existing Lobby ${LOBBY_NAME} for guild ${guildClient.id}`)
+			return lobbyChannel
 		} else {
-			console.log(`Creating Router Voice Channel ${ROUTER_VOICE_LOBBY_NAME} for guild ${guildClient.id}`)
-			return await guildClient.channels.create(ROUTER_VOICE_LOBBY_NAME, {
+			console.log(`Creating Lobby ${LOBBY_NAME} for guild ${guildClient.id}`)
+			return await guildClient.channels.create(LOBBY_NAME, {
 				type: "GUILD_VOICE",
 				reason: "Staging lobby for speed dating :)",
 				permissionOverwrites: [
@@ -26,41 +27,40 @@ async function getOrCreateProtectedRouterVoiceChannel(guildClient, roleId, creat
 			});
 		}
 	} catch (e) {
-		console.log(`Failed to create Router Voice Channel ${ROUTER_VOICE_LOBBY_NAME} for guild ${guildClient.id}, ${e}`)
-		throw Error(`Failed to create Router Voice Channel ${ROUTER_VOICE_LOBBY_NAME} for guild ${guildClient.id}, ${e}`)
+		console.log(`Failed to create Lobby Voice Channel ${LOBBY_NAME} for guild ${guildClient.id}, ${e}`)
+		throw Error(`Failed to create Lobby Voice Channel ${LOBBY_NAME} for guild ${guildClient.id}, ${e}`)
 	}
 }
 
 
-async function createRoleProtectedRouterVoiceChannel(guild, guildId, creatorId) {
+async function createLobbyProtectByRole(guild, guildId, creatorId) {
 	try {
-		console.log(`Creating Voice Channel Router for Guild ${guildId}`);
-		// Create dedicated role to protect the voice router channel from uninvited users
-		const allowedVoiceRouterRole = await getOrCreateRole(guildId, {
+		console.log(`Creating Lobby for Guild ${guildId}`);
+		// Create dedicated role to protect the lobby from uninvited users
+		const allowedLobbyRole = await getOrCreateRole(guildId, {
 			name: `speed-dating-participant`,
 			reason: "Active speed-dating round participant",
 			color: "GOLD"
 		});
-		// Create voice router channel
-		const routerVoiceChannel = await getOrCreateProtectedRouterVoiceChannel(guild, allowedVoiceRouterRole.id, creatorId);
-		return {
-			routerData: {
-				allowedRoleId: allowedVoiceRouterRole.id,
-				allowedRoleName: allowedVoiceRouterRole.name,
-				channelId: routerVoiceChannel.id,
-				channelName: routerVoiceChannel.name
-			},
-			routerChannel: routerVoiceChannel,
-		};
+		// Create lobby channel
+		const lobbyChannel = await getOrCreateVoiceChannelProtectedByRole(guild, allowedLobbyRole.id, creatorId);
+		const lobby = {
+			allowedRoleId: allowedLobbyRole.id,
+			allowedRoleName: allowedLobbyRole.name,
+			channelId: lobbyChannel.id,
+			channelName: lobbyChannel.name
+		}
+		await updatedLobby(guildId, lobby);
+		return lobbyChannel;
 	} catch (e) {
-		console.log(`Failed to create Voice Router Channel for Guild ${guild.id}`, e);
+		console.log(`Failed to create Lobby for Guild ${guild.id}`, e);
 	}
 }
 
-async function createRouterVoiceChannelInvite(routerVoiceChannelClient, config) {
+async function createLobbyInvite(lobby, config) {
 	try {
-		console.log(`Creating Router Voice Channel invite`);
-		const invite = await routerVoiceChannelClient.createInvite();
+		console.log(`Creating Lobby invite`);
+		const invite = await lobby.createInvite();
 		return new MessageEmbed()
 			.setColor(0x4286f4)
 			.setTitle(config.title || "Your invite to the voice channel")
@@ -68,20 +68,19 @@ async function createRouterVoiceChannelInvite(routerVoiceChannelClient, config) 
 			.setImage(config.image)
 			.setURL(invite.url);
 	} catch (e) {
-		console.log(`Failed to create Router Voice Channel invite`, e)
+		console.log(`Failed to create Lobby invite`, e)
 	}
 }
 
-async function playMusicInRouterVoiceChannel(interaction, guildId) {
+async function playMusicInLobby(interaction, guildId) {
 	try {
-		const { config: {voiceLobby: { music : musicConfig }},  guildInfo, activeSession: { routerVoiceChannel } } = await getGuildWithActiveSessionOrThrow(guildId);
+		const { config: {voiceLobby: { music : musicConfig }},  guildInfo, activeSession: { initialization: { lobby } } } = await getGuildWithActiveSessionOrThrow(guildId);
 		const guildClient = await client.guilds.fetch(guildId);
-		const routerChannel =  await guildClient.channels.fetch(routerVoiceChannel.channelId);
-
+		const lobbyChannel =  await guildClient.channels.fetch(lobby.channelId);
 		console.log(`Staring music for guild ${guildInfo.guildName} with id ${guildId} - ${musicConfig.url}`);
 		await music.play({
 			interaction: interaction,
-			channel: routerChannel,
+			channel: lobbyChannel,
 			song: musicConfig.url || 'https://soundcloud.com/julian_avila/elevatormusic',
 		});
 		await music.volume({
@@ -96,7 +95,7 @@ async function playMusicInRouterVoiceChannel(interaction, guildId) {
 
 
 module.exports = {
-	createRoleProtectedRouterVoiceChannel,
-	createRouterVoiceChannelInvite,
-	playMusicInRouterVoiceChannel
+	createLobbyProtectByRole,
+	createLobbyInvite,
+	playMusicInLobby
 }

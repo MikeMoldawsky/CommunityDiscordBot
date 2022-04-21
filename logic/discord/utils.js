@@ -39,7 +39,6 @@ async function addRoleToChannelMembers(guildClient, channelClient, roleId) {
 			}
 		)
 		await Promise.all(members.map(async m => await m.roles.add(roleId)));
-		return members
 	} catch (e) {
 		console.log(`Failed to add Role ${roleId} for Channel ${channelClient.id} members at Guild ${guildClient.id}`, e);
 	}
