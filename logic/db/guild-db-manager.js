@@ -135,14 +135,13 @@ async function getSpeedDateBot(guildId){
 async function isActiveSpeedDateRound(guildId) {
 	const guildBot = await getSpeedDateBot(guildId);
 	const round = _.get( guildBot,'activeSession.round' );
-	return !_.isNil(round) && !_.isEmpty(round);
+	return !isNilOrEmpty(round);
 }
-
 
 async function isActiveSpeedDateSession(guildId) {
 	let guildBot = await getSpeedDateBot(guildId)
-	const round = _.get( guildBot,'activeSession' );
-	return !_.isNil(round) && !_.isEmpty(round);
+	const activeSession = _.get( guildBot,'activeSession' );
+	return !isNilOrEmpty(activeSession);
 }
 
 async function persistAndGetGuildSpeedDateBot(guildInfoDocument, updateReason) {
