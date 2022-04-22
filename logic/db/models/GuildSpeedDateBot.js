@@ -26,6 +26,7 @@ const RoundConfigSchema = new mongoose.Schema({
 const RoundSchema = new mongoose.Schema({
 	config: RoundConfigSchema,
 	matchMaker: RoundMatchMakerSchema,
+	dates: {type: [DateSchema], default: []},
 }, { _id : false });
 
 const LobbySchema = new mongoose.Schema({
@@ -42,8 +43,6 @@ const InitializationConfigSchema = new mongoose.Schema({
 const ActiveSessionSchema = new mongoose.Schema({
 	initialization: {type: InitializationConfigSchema, default: {}},
 	round: {type: RoundSchema, default: {}},
-	dates: {type: [DateSchema], default: []},
-	participants: {type: Object, default: {}}, // { [participantId]: {} }
 }, { _id : false })
 
 const SpeedDateInviteConfig = new mongoose.Schema({
@@ -72,16 +71,11 @@ const GuildInfoSchema = new mongoose.Schema({
 	guildName: String,
 }, { _id : false })
 
-const DatesHistorySchema = new mongoose.Schema({
-	memberId: [String] // memberId -> Array of all members that he met with.
-}, { _id : false })
-
-
 const GuildSpeedDateBotSchema = new mongoose.Schema({
 	guildInfo: {type: GuildInfoSchema, default: {}},
 	config: {type: ConfigSchema, default: {}},
 	activeSession: {type: ActiveSessionSchema, default: {}},
-	datesHistory: {type: DatesHistorySchema, default: {}},
+	datesHistory: {type: Object, default: {}},
 })
 
 const GuildSpeedDateBot = db.model('GuildSpeedDateBot', GuildSpeedDateBotSchema)

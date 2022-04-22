@@ -7,6 +7,14 @@ const { playMusicInLobby } = require("../../../logic/discord/discord-speed-date-
 const { getOrCreateGuildSpeedDateBotDocument, throwIfActiveSession } = require("../../../logic/db/guild-db-manager");
 const { endSpeedDateSessionTask } = require("../../../logic/tasks/speed-date-session-cleanup/speed-date-session-cleanup-manager");
 const _ = require("lodash");
+const {
+	DEFAULT_SPEED_DATE_DURATION_MINUTES,
+	DEFAULT_ROOM_CAPACITY,
+	MATCH_MAKER_DURATION_SECONDS,
+	MATCH_MAKER_INTERVAL,
+	MATCH_MAKER_TASK_DELAY,
+	ROUND_TERMINATOR_TASK_INTERVAL,
+} = require('../../../logic/config/appconf.dev')
 
 // Sub Commands
 const SESSION_GROUP_COMMAND = "session";
@@ -17,16 +25,6 @@ const SESSION_END_SUBCOMMAND = 'end';
 // Round Commands
 const ROUND_GROUP_COMMAND = 'round';
 const ROUND_START_SUBCOMMAND = 'start';
-
-// DEFAULT PARAMS
-const DEFAULT_SPEED_DATE_DURATION_MINUTES = 3;
-const DEFAULT_ROOM_CAPACITY = 2;
-// Match Maker
-const MATCH_MAKER_INTERVAL = 10 * 1000 // check for matches every 10 seconds
-const MATCH_MAKER_TASK_DELAY = 5 * 1000; // start matching after 5 seconds
-const MATCH_MAKER_DURATION_SECONDS = 60; // match in the first 60 seconds
-// ROUND TERMINATOR
-const ROUND_TERMINATOR_TASK_INTERVAL = 10 * 1000
 
 async function configureSession(interaction){
 	const guildId = interaction.guild.id;

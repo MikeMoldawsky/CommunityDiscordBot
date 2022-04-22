@@ -1,49 +1,69 @@
 const _ = require('lodash')
 
-const matchRoom = (unmatched, rooms, roomCapacity, datesHistory = {}, forceMatch = false) => {
-	if (unmatched.length === 0) {
+const matchRoom = (unmatchedMembers, rooms, datesHistory = {}, roomCapacity, forceMatch = false) => {
+	// if all members have been assigned or only 1 remaining stop recursion
+	if (unmatchedMembers.length <= 1) {
 		return { rooms, datesHistory }
 	}
 
-	const memberOptions = _.sortBy(
-		_.map(_.shuffle(unmatched), m => {
-			return {
-				id: m,
-				options: unmatched.length - (_.has(datesHistory, m) ? datesHistory[m].length : 1),
-			}
-		}),
-		'options'
-	)
+	const membersAvailability = prepareMemberAvailabilityList(unmatchedMembers, datesHistory)
 
-	let options = _.map(memberOptions, 'id')
-	// console.log({ memberOptions, options })
+	const roomMembers = matchRoomMembers(membersAvailability, roomCapacity, forceMatch)
 
+	if (roomMembers.length > 1) {
+		rooms.push(roomMembers);
+	}
+	const newUnmatchedMembers = _.without(unmatchedMembers, ...roomMembers)
+
+	return matchRoom(newUnmatchedMembers, rooms, datesHistory, roomCapacity, forceMatch);
+}
+
+const prepareMemberAvailabilityList = (unmatchedMemberIds, datesHistory) => {
+	// first shuffle for randomization
+	const shuffledMemberIds = _.shuffle(unmatchedMemberIds)
+
+	// filter meeting options for each members
+	const membersAvailability = _.map(shuffledMemberIds, memberId => {
+		const memberDatesHistory = _.get(datesHistory, memberId, [])
+		const availableMembers = _.difference(unmatchedMemberIds, [memberId, ...memberDatesHistory])
+		return {
+			memberId,
+			availableMembers,
+		}
+	})
+
+	// return sorted by options count
+	return _.sortBy(membersAvailability, ({availableMembers}) => availableMembers.length)
+}
+
+const matchRoomMembers = (membersAvailability, roomCapacity, forceMatch) => {
+	let options = _.map(membersAvailability, 'memberId')
+
+	// we start with the first item in the options as this is a member with the least possible options
 	const roomMembers = [_.first(options)]
 	options = _.tail(options)
 
 	for (let i = 0; i < roomCapacity - 1; i++) {
-		const available = _.difference(options, _.flatMap(roomMembers, m => _.get(datesHistory, m, [])))
-		if (available.length > 0) {
-			roomMembers.push(_.last(available))
+		// check availability for already selected room members
+		const roomMembersAvailability = _.map(roomMembers, memberId => _.find(membersAvailability, { memberId }).availableMembers)
+		const availableMatches = _.intersection(...roomMembersAvailability)
+		if (availableMatches.length > 0) {
+			roomMembers.push(_.last(availableMatches))
 			options = _.initial(options)
 		}
-		else if (forceMatch && options.length > 0) {
+		else if (forceMatch) {
 			console.log(`Forcing match for members who have no unique options`)
 			roomMembers.push(_.last(options))
 			options = _.initial(options)
 		}
 	}
 
-	_.forEach(roomMembers, m => {
-		_.set(datesHistory, m, [..._.get(datesHistory, m, []), ..._.without(roomMembers, m)])
-	});
-	rooms.push(roomMembers);
-	return matchRoom(_.without(unmatched, ...roomMembers), rooms, roomCapacity, datesHistory, forceMatch);
+	return roomMembers
 }
 
 const speedDateMatchMakerManager = (members, datesHistory = {}, roomCapacity, forceMatch) => {
-	// console.log('matchRoom', {members, roomCapacity: roomCapacity})
-	return matchRoom(members, [], roomCapacity, datesHistory, forceMatch);
+	// matchRoom will run recursively until there are no more members to match
+	return matchRoom(members, [], datesHistory, roomCapacity, forceMatch);
 }
 
 module.exports = speedDateMatchMakerManager
