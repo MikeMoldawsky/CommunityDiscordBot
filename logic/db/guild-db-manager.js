@@ -108,14 +108,14 @@ async function updatedLobby(guildId, lobby) {
 async function deleteActiveSessionForGuild(guildId) {
 	console.log(`Deleting ACTIVE SESSION from DB for guild ${guildId}`)
 	await GuildSpeedDateBot.findOneAndUpdate({ guildId }, {
-		'activeSession': {},
+		$unset: {'activeSession': 1},
 	});
 }
 
 async function deleteActiveRound(guildId) {
 	console.log(`Deleting ACTIVE ROUND from DB for guild ${guildId}`)
 	await GuildSpeedDateBot.findOneAndUpdate({ guildId }, {
-		'activeSession.round': {},
+		$unset: {'activeSession.round': 1},
 	});
 }
 

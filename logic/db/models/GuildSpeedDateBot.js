@@ -26,7 +26,7 @@ const RoundConfigSchema = new mongoose.Schema({
 const RoundSchema = new mongoose.Schema({
 	config: RoundConfigSchema,
 	matchMaker: RoundMatchMakerSchema,
-	dates: {type: [DateSchema], default: []},
+	dates: {type: [DateSchema]},
 }, { _id : false });
 
 const LobbySchema = new mongoose.Schema({
@@ -42,7 +42,7 @@ const InitializationConfigSchema = new mongoose.Schema({
 
 const ActiveSessionSchema = new mongoose.Schema({
 	initialization: {type: InitializationConfigSchema, default: {}},
-	round: {type: RoundSchema, default: {}},
+	round: {type: RoundSchema},
 }, { _id : false })
 
 const SpeedDateInviteConfig = new mongoose.Schema({
@@ -74,7 +74,7 @@ const GuildInfoSchema = new mongoose.Schema({
 const GuildSpeedDateBotSchema = new mongoose.Schema({
 	guildInfo: {type: GuildInfoSchema, default: {}},
 	config: {type: ConfigSchema, default: {}},
-	activeSession: {type: ActiveSessionSchema, default: {}},
+	activeSession: {type: ActiveSessionSchema},
 	datesHistory: {type: Object, default: {}},
 })
 
