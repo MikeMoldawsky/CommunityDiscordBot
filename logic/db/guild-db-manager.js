@@ -108,14 +108,14 @@ async function updatedLobby(guildId, lobby) {
 async function deleteActiveSessionForGuild(guildId) {
 	console.log(`Deleting ACTIVE SESSION from DB for guild ${guildId}`)
 	await GuildSpeedDateBot.findOneAndUpdate({ guildId }, {
-		'activeSession': {},
+		'activeSession': null,
 	});
 }
 
 async function deleteActiveRound(guildId) {
 	console.log(`Deleting ACTIVE ROUND from DB for guild ${guildId}`)
 	await GuildSpeedDateBot.findOneAndUpdate({ guildId }, {
-		'activeSession.round': {},
+		'activeSession.round': null,
 	});
 }
 
@@ -135,14 +135,13 @@ async function getSpeedDateBot(guildId){
 async function isActiveSpeedDateRound(guildId) {
 	const guildBot = await getSpeedDateBot(guildId);
 	const round = _.get( guildBot,'activeSession.round' );
-	return !_.isNil(round) && !_.isEmpty(round);
+	return !isNilOrEmpty(round);
 }
-
 
 async function isActiveSpeedDateSession(guildId) {
 	let guildBot = await getSpeedDateBot(guildId)
-	const round = _.get( guildBot,'activeSession' );
-	return !_.isNil(round) && !_.isEmpty(round);
+	const activeSession = _.get( guildBot,'activeSession' );
+	return !isNilOrEmpty(activeSession);
 }
 
 async function persistAndGetGuildSpeedDateBot(guildInfoDocument, updateReason) {
