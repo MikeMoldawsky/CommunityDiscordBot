@@ -34,11 +34,12 @@ async function configureSession(interaction){
 	const inviteText = interaction.options.getString("invite-description");
 	const musicUrl = interaction.options.getString("music-url");
 	const musicVolume = interaction.options.getInteger("music-volume");
+	const ignoreUser = interaction.options.getUser("ignore-user");
 	try {
 		// 1. Don't allow configure while active speed dating
 		await getOrCreateGuildSpeedDateBotDocument(guildId, guildName); // if it's the first time you should be able to configure
 		await throwIfActiveSession(guildId)
-		await updateBotConfigIfNeeded(guildId, guildName, inviteImageUrl, inviteTitle, inviteText, musicUrl, musicVolume);
+		await updateBotConfigIfNeeded(guildId, guildName, inviteImageUrl, inviteTitle, inviteText, musicUrl, musicVolume, ignoreUser);
 	} catch (e) {
 		console.log(`Can't update configuration while active speed date for guild ${guildName} with ${guildId}`, e);
 		throw Error(`Failed to configure speed dating. Check if there is an active round..., ${e}`);
@@ -100,6 +101,7 @@ module.exports = {
 	// The data needed to register slash commands to Discord.
 	data: new SlashCommandBuilder()
 		.setName("speed-date")
+		// .setDefaultPermission(false)
 		.setDescription(
 			"Helps you CREATE MEETINGS for your community. You'll get a STRONGER and HEALTHIER community!"
 		)
@@ -115,6 +117,7 @@ module.exports = {
 					.addStringOption(option => option.setName('invite-description').setDescription("The description of the speed date's lobby voice channel invite"))
 					.addStringOption(option => option.setName('music-url').setDescription("The music that will be played in the speed date's lobby voice channel"))
 					.addIntegerOption(option => option.setName('music-volume').setDescription("The music volume that will be played in the speed date's lobby voice channel"))
+					.addUserOption(option => option.setName('ignore-user').setDescription("Add a user that will be ignored when assigning rooms"))
 			)
 			.addSubcommand(
 				subCommand => subCommand.setName(SESSION_INITIALIZE_SUBCOMMAND)

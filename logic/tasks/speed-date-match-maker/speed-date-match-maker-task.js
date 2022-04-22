@@ -12,12 +12,13 @@ async function createSpeedDatesMatchesInternal(guildBotDoc, forceMatch = false) 
 		activeSession: {initialization: { lobby }, round},
 		datesHistory,
 		guildInfo,
+		config: guildConfig,
 	} = guildBotDoc;
 	const {config, dates} = round
 
 	const guild = await client.guilds.fetch(guildInfo.guildId)
 	const lobbyChannel = await client.channels.fetch(lobby.channelId)
-	const lobbyMembers = lobbyChannel.members.filter(m => !m.user.bot)
+	const lobbyMembers = lobbyChannel.members.filter(m => !m.user.bot && !_.includes(guildConfig.ignoreUsers, m.user.id))
 
 	if (lobbyMembers.size < 2){
 		console.log(`Match maker - No Enough Members in Lobby`,  { guildInfo, membersCount: lobbyMembers.size});

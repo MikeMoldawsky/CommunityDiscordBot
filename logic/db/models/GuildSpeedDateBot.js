@@ -58,12 +58,13 @@ const SpeedDateMusicConfig = new mongoose.Schema({
 
 const SpeedDateVoiceLobbyConfig = new mongoose.Schema({
 	invite: SpeedDateInviteConfig,
-	music: SpeedDateMusicConfig
+	music: SpeedDateMusicConfig,
 }, { _id : false })
 
 
 const ConfigSchema = new mongoose.Schema({
-	voiceLobby: SpeedDateVoiceLobbyConfig
+	voiceLobby: SpeedDateVoiceLobbyConfig,
+	ignoreUsers: {type: [String], default: []},
 }, { _id : false })
 
 const GuildInfoSchema = new mongoose.Schema({
