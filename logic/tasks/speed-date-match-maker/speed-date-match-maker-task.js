@@ -6,11 +6,14 @@ const _ = require('lodash')
 const { getGuildWithActiveSessionOrThrow, updatedMatchMakerFieldsForGuild } = require("../../db/guild-db-manager");
 const moment = require("moment");
 
-
 async function createSpeedDatesMatchesInternal(guildBotDoc, forceMatch = false) {
 	console.log(`Match maker - SEARCHING DATES - ${guildBotDoc.guildInfo}, forceMatch ${forceMatch}`)
-	const {activeSession: {initialization: { lobby }, participants, dates, round: {config}},
-		datesHistory, guildInfo} = guildBotDoc;
+	const {
+		activeSession: {initialization: { lobby }, round},
+		datesHistory,
+		guildInfo,
+	} = guildBotDoc;
+	const {config, dates} = round
 
 	const guild = await client.guilds.fetch(guildInfo.guildId)
 	const lobbyChannel = await client.channels.fetch(lobby.channelId)
@@ -31,7 +34,6 @@ async function createSpeedDatesMatchesInternal(guildBotDoc, forceMatch = false) 
 			const roomParticipants = room.map((userId) => {
 				const member = guild.members.cache.get(userId)
 				member.voice.setChannel(vc.id)
-				participants[userId] = room.filter(uid => uid !== userId)
 				return {id: userId, name: member.user.username}
 			})
 
@@ -43,12 +45,12 @@ async function createSpeedDatesMatchesInternal(guildBotDoc, forceMatch = false) 
 		})
 	);
 
+	console.log(`Match maker - Created DATES`, {newDates, guildInfo});
+
 	await GuildSpeedDateBot.findOneAndUpdate({guildId: guildInfo.guildId}, {
-		'activeSession.participants': participants,
-		'activeSession.dates': [...dates, ...newDates],
+		'activeSession.round.dates': [...dates, ...newDates],
 	})
 }
-
 
 async function createSpeedDatesMatches(guildBotDoc, forceMatch = false) {
 	try {

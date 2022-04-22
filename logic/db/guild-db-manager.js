@@ -176,7 +176,7 @@ async function getOrCreateGuildSpeedDateBotDocument(guildId, guildName) {
 					},
 					music: {
 						url: DEFAULT_LOBBY_MUSIC_URL,
-						volume: 3
+						volume: 1
 					}
 				}
 			},
