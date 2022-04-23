@@ -104,14 +104,14 @@ async function addMembersToSession(interaction) {
 		invitedUser = interaction.options.getUser("user");
 	} catch (e) {
 		console.log(`Failed to add members to session - input errors`, e);
-		throw Error(`Failed to send invite to session - input errors ${e}`);
+		throw Error(`Failed to add members to session - input errors ${e}`);
 	}
 	try {
 		// 1. Allow channel members to join lobby and send invite
 		await allowMembersToJoinLobby(guildId, invitedChannel?.id, invitedUser?.id);
 	} catch (e){
-		console.log(`Failed to send invite for speed dating`, {guildId, e});
-		throw Error(`Failed to send invite for speed dating for guild ${guildId} ${e}`);
+		console.log(`Failed to add members for speed dating`, {guildId, e});
+		throw Error(`Failed to add members for speed dating for guild ${guildId} ${e}`);
 	}
 }
 
