@@ -96,7 +96,7 @@ async function createVoiceChannel(guild, roomNumber, memberIds) {
 		permissionOverwrites: [
 			{ id: guild.id, deny: ["CONNECT"] },
 			// { id: guild.id, deny: ["VIEW_CHANNEL", "CONNECT"] },
-			..._.map(memberIds, id => ({ id: id, allow: ["VIEW_CHANNEL", "CONNECT"] }))
+			..._.map(memberIds, id => ({ id: id, allow: ["VIEW_CHANNEL", "CONNECT", "SPEAK"] }))
 		]
 	})
 }
