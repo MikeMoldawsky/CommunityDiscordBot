@@ -1,5 +1,6 @@
 const client = require("./discord/client");
 const Session = require("./db/models/Session");
+const { Permissions } = require('discord.js');
 const _ = require("lodash");
 
 const startSession = async (sessionData) => {
@@ -90,14 +91,16 @@ const startRound = async sessionId => {
 };
 
 async function createVoiceChannel(guild, roomNumber, memberIds) {
+	const permissionOverwrites = [
+		{
+			id: guild.id, deny: [Permissions.FLAGS.CONNECT] },
+		..._.map(memberIds, id => ({ id: id, allow: [Permissions.FLAGS.VIEW_CHANNEL, Permissions.FLAGS.CONNECT, Permissions.FLAGS.SPEAK] })
+		)
+	];
 	return guild.channels.create(`Room#${roomNumber}`, {
 		type: "GUILD_VOICE",
 		reason: "Let's connect and get to know each other :)",
-		permissionOverwrites: [
-			{ id: guild.id, deny: ["CONNECT"] },
-			// { id: guild.id, deny: ["VIEW_CHANNEL", "CONNECT"] },
-			..._.map(memberIds, id => ({ id: id, allow: ["VIEW_CHANNEL", "CONNECT"] }))
-		]
+		permissionOverwrites: permissionOverwrites
 	})
 }
 
