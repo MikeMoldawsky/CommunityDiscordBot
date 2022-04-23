@@ -229,7 +229,7 @@ module.exports = {
 				case ROUND_GROUP_COMMAND:
 					switch (subcommand) {
 						case ROUND_START_SUBCOMMAND:
-							await interaction.deferReply({ephemeral: false}); // Slash Commands has only 3 seconds to reply to an interaction.
+							await interaction.deferReply({ephemeral: true}); // Slash Commands has only 3 seconds to reply to an interaction.
 							await startRound(interaction);
 							break;
 						default:
