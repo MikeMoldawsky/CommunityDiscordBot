@@ -91,7 +91,6 @@ const startRound = async sessionId => {
 };
 
 async function createVoiceChannel(guild, roomNumber, memberIds) {
-	console.log("ALLOW TO SPEAD!!!!!", {roomNumber, memberIds})
 	const permissionOverwrites = [
 		{
 			id: guild.id, deny: [Permissions.FLAGS.CONNECT] },
