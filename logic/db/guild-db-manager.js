@@ -170,10 +170,8 @@ async function isActiveSpeedDateSession(guildId) {
 }
 
 async function isNoBotAdminConfigured(guildId) {
-	console.log("$$$$$$$$$$$$$$")
 	const guildBot = await getSpeedDateBot(guildId);
 	const botAdmins = _.get( guildBot,'config.botAdmins' ) || [];
-	console.log(">>>>>>>>>>")
 	return _.isEmpty(botAdmins);
 }
 
