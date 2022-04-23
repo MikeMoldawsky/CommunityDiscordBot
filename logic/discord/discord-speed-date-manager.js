@@ -5,18 +5,19 @@ const client = require("../../logic/discord/client");
 const music = require("@koenie06/discord.js-music");
 const { updatedLobby } = require("../db/guild-db-manager");
 
-const LOBBY_NAME = "❤️ Speed Date Lobby ❤️";
+const DEFAULT_LOBBY_NAME = "❤️ Speed Date Lobby ❤️";
+const DEFAULT_LOBBY_MUSIC_URL = 'https://soundcloud.com/julian_avila/elevatormusic';
 
 async function getOrCreateVoiceChannelProtectedByRole(guildClient, roleId, creatorId) {
 	try {
 		// TODO - should NOT find the router by the name but from DB through the ID
-		let lobbyChannel = guildClient.channels.cache.find(c => c.name === LOBBY_NAME);
+		let lobbyChannel = guildClient.channels.cache.find(c => c.name === DEFAULT_LOBBY_NAME);
 		if(lobbyChannel){
-			console.log(`Found existing Lobby ${LOBBY_NAME} for guild ${guildClient.id}`)
+			console.log(`Found existing Lobby ${DEFAULT_LOBBY_NAME} for guild ${guildClient.id}`)
 			return lobbyChannel
 		} else {
-			console.log(`Creating Lobby ${LOBBY_NAME} for guild ${guildClient.id}`)
-			return await guildClient.channels.create(LOBBY_NAME, {
+			console.log(`Creating Lobby ${DEFAULT_LOBBY_NAME} for guild ${guildClient.id}`)
+			return await guildClient.channels.create(DEFAULT_LOBBY_NAME, {
 				type: "GUILD_VOICE",
 				reason: "Staging lobby for speed dating :)",
 				permissionOverwrites: [
@@ -27,8 +28,8 @@ async function getOrCreateVoiceChannelProtectedByRole(guildClient, roleId, creat
 			});
 		}
 	} catch (e) {
-		console.log(`Failed to create Lobby Voice Channel ${LOBBY_NAME} for guild ${guildClient.id}, ${e}`)
-		throw Error(`Failed to create Lobby Voice Channel ${LOBBY_NAME} for guild ${guildClient.id}, ${e}`)
+		console.log(`Failed to create Lobby Voice Channel ${DEFAULT_LOBBY_NAME} for guild ${guildClient.id}, ${e}`)
+		throw Error(`Failed to create Lobby Voice Channel ${DEFAULT_LOBBY_NAME} for guild ${guildClient.id}, ${e}`)
 	}
 }
 
@@ -81,7 +82,7 @@ async function playMusicInLobby(interaction, guildId) {
 		await music.play({
 			interaction: interaction,
 			channel: lobbyChannel,
-			song: musicConfig.url || 'https://soundcloud.com/julian_avila/elevatormusic',
+			song: musicConfig.url || DEFAULT_LOBBY_MUSIC_URL,
 		});
 		await music.volume({
 			interaction: interaction,
