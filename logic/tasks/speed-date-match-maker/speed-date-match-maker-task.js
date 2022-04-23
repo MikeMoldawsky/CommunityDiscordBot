@@ -81,6 +81,10 @@ async function startDateMatchMakerTaskForGuild(guildId, interval){
 	}
 	await createSpeedDatesMatches(activeGuildBotDoc, false)
 	console.log(`Match maker TASK - SLEEPING... `, { intervalMs: interval, guildInfo: activeGuildBotDoc.guildInfo})
+	console.log(`Speed Date Round Terminator Task - SLEEPING...`, {guildInfo: activeGuildBotDoc.guildInfo, intervalMs: interval, roundStartTime: config.startTime,
+		currentMoment, stopMatchingMoment, secondsLeft: stopMatchingMoment.diff(currentMoment, 'seconds')  })
+
+
 	setTimeout(() => startDateMatchMakerTaskForGuild(guildId, interval), interval);
 }
 
