@@ -27,6 +27,10 @@ const CONFIGURE_GROUP_SUBCOMMAND = 'configure';
 const CONFIGURE_MUSIC_SUBCOMMAND = 'music';
 const CONFIGURE_INVITE_SUBCOMMAND = 'invite';
 const CONFIGURE_IGNORED_USERS_SUBCOMMAND = 'ignored-users';
+// DEBUG Command
+const DEBUG_GROUP_SUBCOMMAND = 'debug';
+const DEBUG_RESUME_MUSIC_SUBCOMMAND = 'resume-music';
+
 
 async function configureInvite(interaction){
 	const guildId = interaction.guild.id;
@@ -78,10 +82,23 @@ async function initializeSession(interaction){
 		await bootstrapSpeedDateInfrastructureForGuild(guildId, guildName, interaction.user.id);
 		await playMusicInLobby(interaction, guildId);
 	} catch (e){
-		console.log(`Failed to initialize speed dating`, e);
-		throw Error(`Failed to initialize speed dating ${e}`);
+		console.log(`Failed to initialize speed dating`, {guildId, guildName, e});
+		throw Error(`Failed to initialize speed dating for guild ${guildName} ${e}`);
 	}
 }
+
+async function resumeLobbyMusic(interaction){
+	let guildId, guildName;
+	try {
+		guildId = interaction.guild.id;
+		guildName = interaction.guild.name;
+		await playMusicInLobby(interaction, guildId);
+	} catch (e){
+		console.log(`Failed to resume music in lobby`, {guildId, guildName, e});
+		throw Error(`Failed to resume music in lobby ${e}`);
+	}
+}
+
 
 async function getInviteToLobby(interaction) {
 	let guildId;
@@ -211,13 +228,19 @@ module.exports = {
 				.addUserOption(option => option.setName('add').setDescription("Add a user that will be ignored when assigning rooms"))
 				.addUserOption(option => option.setName('remove').setDescription("Remove a user that from being ignored when assigning rooms"))
 			)
+		)
+		.addSubcommandGroup(subCommandGroup => subCommandGroup.setName(DEBUG_GROUP_SUBCOMMAND).setDescription("Speed date session debug error handling")
+			.addSubcommand(
+				subCommand => subCommand.setName(DEBUG_RESUME_MUSIC_SUBCOMMAND)
+					.setDescription(
+						"Resume the lobby music in case the bot exited the room."
+					)
+			)
 		),
-
 	/**
 	 * @description Executes when the interaction is called by interaction handler.
 	 * @param {*} interaction The interaction object of the command.
 	 */
-
 	async execute(interaction) {
 		let groupCommand, subcommand, guildId, guildName;
 		try {
@@ -273,6 +296,16 @@ module.exports = {
 						case CONFIGURE_IGNORED_USERS_SUBCOMMAND:
 							await interaction.deferReply({ephemeral: true}); // Slash Commands has only 3 seconds to reply to an interaction.
 							await configureIgnoredUsers(interaction);
+							break;
+						default:
+							throw Error(`Unknown ${groupCommand} subcommand: ${subcommand}`);
+					}
+					break;
+				case DEBUG_GROUP_SUBCOMMAND:
+					switch (subcommand) {
+						case DEBUG_RESUME_MUSIC_SUBCOMMAND:
+							await interaction.deferReply({ephemeral: true}); // Slash Commands has only 3 seconds to reply to an interaction.
+							await resumeLobbyMusic(interaction);
 							break;
 						default:
 							throw Error(`Unknown ${groupCommand} subcommand: ${subcommand}`);

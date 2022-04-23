@@ -3,11 +3,21 @@ const { deleteActiveSessionForGuild, getGuildWithActiveSessionOrThrow } = requir
 const client = require("../../discord/client");
 const { terminateSpeedDateRound } = require("../speed-date-round-terminator/speed-date-round-terminator-manager");
 
-async function deleteLobbyAndTempRoles(lobby, rooms, guildClient) {
-		// 2. Delete Lobby
-		const lobbyClient = await client.channels.fetch(lobby.channelId);
-		await lobbyClient.delete();
-		// 3. Delete temporary speed-dating role for Lobby
+async function deleteLobbyAndTempRoles(lobby, guildClient) {
+		// 1. Delete Lobby
+		try {
+			console.log("Deleting lobby channel", {lobby, guildId: guildClient.id})
+			const lobbyClient = await client.channels.fetch(lobby.channelId);
+			await lobbyClient.delete();
+			} catch (e) {
+				if (e?.httpStatus === 404) {
+					console.log("Couldn't find lobby it was probably manually deleted", {lobby, guildId: guildClient.id})
+				} else {
+					throw Error(`Couldn't fetch lobby client for guild ${guildClient.id}, ${lobby.channelId}, ${e}`)
+				}
+		}
+		// 2. Delete temporary speed-dating role for Lobby
+		console.log("Deleting ALLOWED LOBBY ROLE", {lobby, guildId: guildClient.id})
 		await guildClient.roles.delete(lobby.allowedRoleId);
 }
 
@@ -21,13 +31,13 @@ async function cleanUpSpeedDateSessionForGuild(guildId) {
 		return;
 	}
 	try {
-		const { activeSession:{ initialization: { lobby }, dates} , guildInfo } = activeGuildSpeedDateBotDoc;
+		const { activeSession:{ initialization: { lobby }} , guildInfo } = activeGuildSpeedDateBotDoc;
 		console.log(`Starting Cleanup for guild ${guildInfo}`)
 		// 0. CleanUp Active Round in case it was forgotten
 		await terminateSpeedDateRound(guildId);
 		// 1. Cleanup resources - Lobby Roles etc.
 		const guildClient = await client.guilds.fetch(guildId);
-		await deleteLobbyAndTempRoles(lobby, dates, guildClient);
+		await deleteLobbyAndTempRoles(lobby, guildClient);
 		// 3. Save that active session is completed - i.e. delete it
 		await deleteActiveSessionForGuild(guildId);
 	} catch (e) {
