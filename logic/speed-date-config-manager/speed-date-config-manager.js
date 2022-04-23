@@ -1,5 +1,5 @@
 const { getOrCreateGuildSpeedDateBotDocument, throwIfActiveSession, updatedConfigFieldsForGuild, isBotAdmin,
-	addAdminUser
+	addAdminUser, isNoBotAdminConfigured
 } = require("../db/guild-db-manager");
 
 async function updateMusicIfNeeded(guildId, guildName, musicUrl, musicVolume){
@@ -68,16 +68,26 @@ async function addAdminUsersIfNeeded(guildId, guildName, adminUser) {
 }
 
 
-async function isAdminUser(guildId, user) {
+async function isAdminUser(guildId, userId) {
 	try {
-		if (!user) {
+		if (!userId) {
 			console.log(`Is admin user wasn't passed for guild ${guildId}...`);
 			return false;
 		}
-		return await isBotAdmin(guildId, user.id);
+		return await isBotAdmin(guildId, userId);
 	} catch (e) {
-		console.log(`Is admin user failed...`, {guildId, user, e});
+		console.log(`Is admin user failed...`, {guildId, userId, e});
 		throw Error(`Is admin user failed for guild ${guildId}, ${e}`);
+	}
+}
+
+async function isNoAdminConfigured(guildId){
+	try {
+		console.log("Checking if bot admin is configured");
+		return await isNoBotAdminConfigured(guildId);
+	} catch (e) {
+		console.log(`Is admin configured failed...`, {guildId, e});
+		throw Error(`Is admin configured failed for guild ${guildId}, ${e}`);
 	}
 }
 
@@ -87,5 +97,6 @@ module.exports = {
 	updateInviteIfNeeded,
 	updateIgnoredUsersIfNeeded,
 	addAdminUsersIfNeeded,
-	isAdminUser
+	isAdminUser,
+	isNoAdminConfigured
 }

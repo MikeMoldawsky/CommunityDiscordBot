@@ -169,6 +169,14 @@ async function isActiveSpeedDateSession(guildId) {
 	return !isNilOrEmpty(activeSession);
 }
 
+async function isNoBotAdminConfigured(guildId) {
+	console.log("$$$$$$$$$$$$$$")
+	const guildBot = await getSpeedDateBot(guildId);
+	const botAdmins = _.get( guildBot,'config.botAdmins' ) || [];
+	console.log(">>>>>>>>>>")
+	return _.isEmpty(botAdmins);
+}
+
 async function isBotAdmin(guildId, userId) {
 	const guildBot = await getSpeedDateBot(guildId);
 	const botAdmins = _.get( guildBot,'config.botAdmins' ) || [];
@@ -234,5 +242,6 @@ module.exports = {
 	isActiveSpeedDateRound,
 	isActiveSpeedDateSession,
 	addAdminUser,
-	isBotAdmin
+	isBotAdmin,
+	isNoBotAdminConfigured
 };

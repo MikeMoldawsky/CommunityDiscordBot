@@ -1,5 +1,7 @@
 const { SlashCommandBuilder } = require("@discordjs/builders");
-const { updateMusicIfNeeded, updateIgnoredUsersIfNeeded, updateInviteIfNeeded, isAdminUser, addAdminUsersIfNeeded } = require("../../../logic/speed-date-config-manager/speed-date-config-manager");
+const { updateMusicIfNeeded, updateIgnoredUsersIfNeeded, updateInviteIfNeeded, isAdminUser, addAdminUsersIfNeeded,
+	isAdminConfigured, isNoAdminConfigured
+} = require("../../../logic/speed-date-config-manager/speed-date-config-manager");
 const { bootstrapSpeedDateInfrastructureForGuild, startSpeedDateRound, getLobbyInvite, allowMembersToJoinLobby
 } = require("../../../logic/speed-date-manager/speed-date-manager");
 const { playMusicInLobby } = require("../../../logic/discord/discord-speed-date-manager");
@@ -152,12 +154,13 @@ async function startRound(interaction) {
 }
 
 async function isBotAdmin(interaction) {
-	let guildId, adminUser;
+	let adminUserId, guildId;
 	try {
+		adminUserId = interaction.user.id
 		guildId = interaction.guild.id;
-		return await isAdminUser(guildId, interaction.user.id);
+		return await isAdminUser(guildId, adminUserId);
 	} catch (e){
-		console.log(`Failed check is admin`, {guildId, adminUser, e});
+		console.log(`Failed check is admin`, {guildId, adminUserId, e});
 		throw Error(`Failed check is admin ${guildId} ${e}`);
 	}
 }
@@ -175,7 +178,14 @@ async function addBotAdmin(interaction) {
 		console.log(`Failed to add admin user for guild ${guildName} with ${guildId}`, e);
 		throw Error(`Failed to add admin user for guild ${guildName} with ${guildId}..., ${e}`);
 	}
+}
 
+function isConfigureAdminCommand(groupCommand, subCommand){
+	return groupCommand === CONFIGURE_GROUP_SUBCOMMAND && subCommand === CONFIGURE_BOT_ADMIN_SUBCOMMAND;
+}
+
+function isEphemeral(groupCommand, subCommand){
+	return !(groupCommand === SESSION_GROUP_COMMAND && subCommand === SESSION_POST_INVITE_SUBCOMMAND);
 }
 
 module.exports = {
@@ -261,7 +271,7 @@ module.exports = {
 					.setDescription(
 						"Let's you configure bot admins."
 					)
-					.addUserOption(option => option.setName('add').setDescription("Add a user that will be able to interact with the bot"))
+					.addUserOption(option => option.setName('add').setDescription("Add a user that will be able to interact with the bot").setRequired(true))
 			)
 		)
 		.addSubcommandGroup(subCommandGroup => subCommandGroup.setName(DEBUG_GROUP_SUBCOMMAND).setDescription("Speed date session debug error handling")
@@ -283,36 +293,44 @@ module.exports = {
 			subcommand = interaction.options.getSubcommand();
 			guildId = interaction.guild.id;
 			guildName = interaction.guild.name;
-			console.log(`>>>>>>>>>> EXECUTING COMMAND - START`, {guildName, guildId, groupCommand, subcommand });
+			const ephemeral = isEphemeral(groupCommand, subcommand);
+			await interaction.deferReply({ ephemeral }); // Slash Commands has only 3 seconds to reply to an interaction.
 
-			if (!await isBotAdmin(interaction)){
-				console.log(`You're not a bot admin...`)
-				await interaction.deferReply({ephemeral: true}); // Slash Commands has only 3 seconds to reply to an interaction.
-				await interaction.followUp({
-					content: `💀 Failed - you're not a bot admin!💀`,
-					ephemeral: true
-				});
-				return;
+			if(await isNoAdminConfigured(guildId)){
+				if(isConfigureAdminCommand(groupCommand, subcommand)){
+					console.log("Configuring admin for the first time");
+				} else {
+					console.log(`You need to configure bot admin...`)
+
+					await interaction.followUp({
+						content: `💀 Please configure Bot admins!💀`,
+						ephemeral: true
+					});
+					return;
+				}
+			} else if (!await isBotAdmin(interaction)) {
+					console.log(`You're not a bot admin...`)
+					await interaction.followUp({
+						content: `💀 Failed - you're not a bot admin!💀`,
+						ephemeral: true
+					});
+					return;
 			}
-
+			console.log(`>>>>>>>>>> EXECUTING COMMAND - START`, {guildName, guildId, groupCommand, subcommand });;
 			switch (groupCommand) {
 				case SESSION_GROUP_COMMAND:
 					switch (subcommand) {
 						case SESSION_INITIALIZE_SUBCOMMAND:
-							await interaction.deferReply({ephemeral: true}); // Slash Commands has only 3 seconds to reply to an interaction.
 							await initializeSession(interaction);
 							break;
 						case SESSION_ADD_MEMBERS_SUBCOMMAND:
-							await interaction.deferReply({ephemeral: true}); // Slash Commands has only 3 seconds to reply to an interaction.
 							await addMembersToSession(interaction);
 							break;
 						case SESSION_POST_INVITE_SUBCOMMAND:
-							await interaction.deferReply({ephemeral: false}); // Slash Commands has only 3 seconds to reply to an interaction.
 							const lobbyChannelInvite = await getInviteToLobby(interaction);
 							await interaction.followUp({ embeds: [lobbyChannelInvite], ephemeral: false,});
 							break;
 						case SESSION_END_SUBCOMMAND:
-							await interaction.deferReply({ephemeral: true}); // Slash Commands has only 3 seconds to reply to an interaction.
 							await endSpeedDateSessionTask(guildId).catch(e => console.log(e));
 							break;
 						default:
@@ -322,7 +340,6 @@ module.exports = {
 				case ROUND_GROUP_COMMAND:
 					switch (subcommand) {
 						case ROUND_START_SUBCOMMAND:
-							await interaction.deferReply({ephemeral: true}); // Slash Commands has only 3 seconds to reply to an interaction.
 							await startRound(interaction);
 							break;
 						default:
@@ -332,19 +349,15 @@ module.exports = {
 				case CONFIGURE_GROUP_SUBCOMMAND:
 					switch (subcommand) {
 						case CONFIGURE_INVITE_SUBCOMMAND:
-							await interaction.deferReply({ephemeral: true}); // Slash Commands has only 3 seconds to reply to an interaction.
 							await configureInvite(interaction);
 							break;
 						case CONFIGURE_BOT_ADMIN_SUBCOMMAND:
-							await interaction.deferReply({ephemeral: true}); // Slash Commands has only 3 seconds to reply to an interaction.
 							await addBotAdmin(interaction);
 							break;
 						case CONFIGURE_MUSIC_SUBCOMMAND:
-							await interaction.deferReply({ephemeral: true}); // Slash Commands has only 3 seconds to reply to an interaction.
 							await configureMusic(interaction);
 							break;
 						case CONFIGURE_IGNORED_USERS_SUBCOMMAND:
-							await interaction.deferReply({ephemeral: true}); // Slash Commands has only 3 seconds to reply to an interaction.
 							await configureIgnoredUsers(interaction);
 							break;
 						default:
@@ -354,7 +367,6 @@ module.exports = {
 				case DEBUG_GROUP_SUBCOMMAND:
 					switch (subcommand) {
 						case DEBUG_RESUME_MUSIC_SUBCOMMAND:
-							await interaction.deferReply({ephemeral: true}); // Slash Commands has only 3 seconds to reply to an interaction.
 							await resumeLobbyMusic(interaction);
 							break;
 						default:
