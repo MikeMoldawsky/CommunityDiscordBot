@@ -13,7 +13,7 @@ const {
 	MATCH_MAKER_INTERVAL,
 	MATCH_MAKER_TASK_DELAY,
 	ROUND_TERMINATOR_TASK_INTERVAL,
-} = require('../../../logic/config/appconf.dev')
+} = require('../../../logic/config/appconf.prod')
 
 // Sub Commands
 const SESSION_GROUP_COMMAND = "session";

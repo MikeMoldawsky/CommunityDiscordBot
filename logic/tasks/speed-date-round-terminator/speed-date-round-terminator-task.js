@@ -21,7 +21,8 @@ async function startSpeedDateRoundTerminatorTaskInternal(guildId, interval){
 		console.log(`Speed Date Round Terminator Task - END SPEED DATE - SUCCESS. `, {guildInfo: activeGuildBotDoc.guildInfo});
 		return;
 	}
-	console.log(`Speed Date Round Terminator Task - SLEEPING...`, {guildInfo: activeGuildBotDoc.guildInfo, intervalMs: interval})
+	console.log(`Speed Date Round Terminator Task - SLEEPING...`, {guildInfo: activeGuildBotDoc.guildInfo, intervalMs: interval, roundStartTime: config.startTime,
+		currentMoment, terminateRoundMoment, secondsLeft: terminateRoundMoment.diff(currentMoment, 'seconds')  })
 	setTimeout(() => startSpeedDateRoundTerminatorTaskInternal(guildId, interval), interval);
 }
 
