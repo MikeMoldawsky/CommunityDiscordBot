@@ -1,5 +1,5 @@
 const { SlashCommandBuilder } = require("@discordjs/builders");
-const { updateBotConfigIfNeeded } = require("../../../logic/speed-date-config-manager/speed-date-config-manager");
+const { updateBotConfigIfNeeded, updateMusicIfNeeded, updateIgnoredUsersIfNeeded, updateInviteIfNeeded } = require("../../../logic/speed-date-config-manager/speed-date-config-manager");
 const { bootstrapSpeedDateInfrastructureForGuild, allowMembersJoinLobbyAndGetInvite,
 	startSpeedDateRound
 } = require("../../../logic/speed-date-manager/speed-date-manager");
@@ -18,31 +18,56 @@ const {
 
 // Sub Commands
 const SESSION_GROUP_COMMAND = "session";
-const SESSION_CONFIGURE_SUBCOMMAND = 'configure';
 const SESSION_INITIALIZE_SUBCOMMAND = 'initialize';
 const SESSION_INVITE_SUBCOMMAND = 'invite';
 const SESSION_END_SUBCOMMAND = 'end';
 // Round Commands
 const ROUND_GROUP_COMMAND = 'round';
 const ROUND_START_SUBCOMMAND = 'start';
+// Configure Command
+const CONFIGURE_GROUP_SUBCOMMAND = 'configure';
+const CONFIGURE_MUSIC_SUBCOMMAND = 'music';
+const CONFIGURE_INVITE_SUBCOMMAND = 'invite';
+const CONFIGURE_IGNORED_USERS_SUBCOMMAND = 'ignored-users';
 
-async function configureSession(interaction){
+async function configureInvite(interaction){
 	const guildId = interaction.guild.id;
 	const guildName = interaction.guild.name;
-	const inviteImageUrl = interaction.options.getString("invite-image-url");
-	const inviteTitle = interaction.options.getString("invite-title");
-	const inviteText = interaction.options.getString("invite-description");
-	const musicUrl = interaction.options.getString("music-url");
-	const musicVolume = interaction.options.getInteger("music-volume");
-	const ignoreUser = interaction.options.getUser("ignore-user");
+	const inviteImageUrl = interaction.options.getString("image-url");
+	const inviteTitle = interaction.options.getString("title");
+	const inviteText = interaction.options.getString("description");
+	const ignoreUser = interaction.options.getUser("user");
 	try {
-		// 1. Don't allow configure while active speed dating
-		await getOrCreateGuildSpeedDateBotDocument(guildId, guildName); // if it's the first time you should be able to configure
-		await throwIfActiveSession(guildId)
-		await updateBotConfigIfNeeded(guildId, guildName, inviteImageUrl, inviteTitle, inviteText, musicUrl, musicVolume, ignoreUser);
+		await updateInviteIfNeeded(guildId, guildName, inviteImageUrl, inviteTitle, inviteText);
 	} catch (e) {
 		console.log(`Can't update configuration while active speed date for guild ${guildName} with ${guildId}`, e);
 		throw Error(`Failed to configure speed dating. Check if there is an active round..., ${e}`);
+	}
+}
+
+async function configureMusic(interaction){
+	const guildId = interaction.guild.id;
+	const guildName = interaction.guild.name;
+	const musicUrl = interaction.options.getString("url");
+	const musicVolume = interaction.options.getInteger("volume");
+	try {
+		await updateMusicIfNeeded(guildId, guildName, musicUrl, musicVolume);
+	} catch (e) {
+		console.log(`Can't update configuration while active speed date for guild ${guildName} with ${guildId}`, e);
+		throw Error(`Failed to configure music speed dating. Check if there is an active round..., ${e}`);
+	}
+}
+
+async function configureIgnoredUsers(interaction){
+	const guildId = interaction.guild.id;
+	const guildName = interaction.guild.name;
+	const ignoreUser = interaction.options.getUser("add");
+	const removeIgnoreUser = interaction.options.getUser("remove");
+	try {
+		await updateIgnoredUsersIfNeeded(guildId, guildName, ignoreUser, removeIgnoreUser);
+	} catch (e) {
+		console.log(`Failed to configure ignored user for guild ${guildName} with ${guildId}`, e);
+		throw Error(`Failed to configure ignored user for guild ${guildName} with ${guildId}..., ${e}`);
 	}
 }
 
@@ -106,19 +131,6 @@ module.exports = {
 			"Helps you CREATE MEETINGS for your community. You'll get a STRONGER and HEALTHIER community!"
 		)
 		.addSubcommandGroup(subCommandGroup => subCommandGroup.setName(SESSION_GROUP_COMMAND).setDescription("Speed date session commands")
-				.addSubcommand(
-
-				subCommand => subCommand.setName(SESSION_CONFIGURE_SUBCOMMAND)
-					.setDescription(
-						"Let's you configure things like the speed date lobby invitation, and music etc."
-					)
-					.addStringOption(option => option.setName('invite-image-url').setDescription("The image url of the speed date's lobby voice channel invite"))
-					.addStringOption(option => option.setName('invite-title').setDescription("The title of the speed date's lobby voice channel invite"))
-					.addStringOption(option => option.setName('invite-description').setDescription("The description of the speed date's lobby voice channel invite"))
-					.addStringOption(option => option.setName('music-url').setDescription("The music that will be played in the speed date's lobby voice channel"))
-					.addIntegerOption(option => option.setName('music-volume').setDescription("The music volume that will be played in the speed date's lobby voice channel"))
-					.addUserOption(option => option.setName('ignore-user').setDescription("Add a user that will be ignored when assigning rooms"))
-			)
 			.addSubcommand(
 				subCommand => subCommand.setName(SESSION_INITIALIZE_SUBCOMMAND)
 					.setDescription(
@@ -154,6 +166,33 @@ module.exports = {
 							.setName("room-capacity")
 							.setDescription("The capacity of each room."))
 			)
+		)
+		.addSubcommandGroup(subCommandGroup => subCommandGroup.setName(CONFIGURE_GROUP_SUBCOMMAND).setDescription("Speed date configure commands")
+			.addSubcommand(
+				subCommand => subCommand.setName(CONFIGURE_MUSIC_SUBCOMMAND)
+					.setDescription(
+						"Let's you configure things the lobby music"
+					)
+					.addStringOption(option => option.setName('url').setDescription("The music that will be played in the speed date's lobby voice channel"))
+					.addIntegerOption(option => option.setName('volume').setDescription("The music volume that will be played in the speed date's lobby voice channel"))
+			)
+				.addSubcommand(
+					subCommand => subCommand.setName(CONFIGURE_INVITE_SUBCOMMAND)
+						.setDescription(
+							"Let's you configure things the lobby invitation."
+						)
+						.addStringOption(option => option.setName('image-url').setDescription("The image url of the speed date's lobby voice channel invite"))
+						.addStringOption(option => option.setName('title').setDescription("The title of the speed date's lobby voice channel invite"))
+						.addStringOption(option => option.setName('description').setDescription("The description of the speed date's lobby voice channel invite"))
+			)
+				.addSubcommand(
+			subCommand => subCommand.setName(CONFIGURE_IGNORED_USERS_SUBCOMMAND)
+				.setDescription(
+					"Let's you configure user related things."
+				)
+				.addUserOption(option => option.setName('add').setDescription("Add a user that will be ignored when assigning rooms"))
+				.addUserOption(option => option.setName('remove').setDescription("Remove a user that from being ignored when assigning rooms"))
+			)
 		),
 
 	/**
@@ -172,10 +211,6 @@ module.exports = {
 			switch (groupCommand) {
 				case SESSION_GROUP_COMMAND:
 					switch (subcommand) {
-						case SESSION_CONFIGURE_SUBCOMMAND:
-							await interaction.deferReply({ephemeral: true}); // Slash Commands has only 3 seconds to reply to an interaction.
-							await configureSession(interaction);
-							break;
 						case SESSION_INITIALIZE_SUBCOMMAND:
 							await interaction.deferReply({ephemeral: true}); // Slash Commands has only 3 seconds to reply to an interaction.
 							await initializeSession(interaction);
@@ -196,8 +231,26 @@ module.exports = {
 				case ROUND_GROUP_COMMAND:
 					switch (subcommand) {
 						case ROUND_START_SUBCOMMAND:
-							await interaction.deferReply({ephemeral: false}); // Slash Commands has only 3 seconds to reply to an interaction.
+							await interaction.deferReply({ephemeral: true}); // Slash Commands has only 3 seconds to reply to an interaction.
 							await startRound(interaction);
+							break;
+						default:
+							throw Error(`Unknown ${groupCommand} subcommand: ${subcommand}`);
+					}
+					break;
+				case CONFIGURE_GROUP_SUBCOMMAND:
+					switch (subcommand) {
+						case CONFIGURE_INVITE_SUBCOMMAND:
+							await interaction.deferReply({ephemeral: true}); // Slash Commands has only 3 seconds to reply to an interaction.
+							await configureInvite(interaction);
+							break;
+						case CONFIGURE_MUSIC_SUBCOMMAND:
+							await interaction.deferReply({ephemeral: true}); // Slash Commands has only 3 seconds to reply to an interaction.
+							await configureMusic(interaction);
+							break;
+						case CONFIGURE_IGNORED_USERS_SUBCOMMAND:
+							await interaction.deferReply({ephemeral: true}); // Slash Commands has only 3 seconds to reply to an interaction.
+							await configureIgnoredUsers(interaction);
 							break;
 						default:
 							throw Error(`Unknown ${groupCommand} subcommand: ${subcommand}`);

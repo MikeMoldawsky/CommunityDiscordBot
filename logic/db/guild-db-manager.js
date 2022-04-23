@@ -25,7 +25,7 @@ async function throwIfActiveSession(guildId) {
 	}
 }
 
-async function updatedConfigFieldsForGuild(guildId, imageUrl, inviteTitle, inviteDescription, musicUrl, musicVolume, ignoreUser) {
+async function updatedConfigFieldsForGuild(guildId, imageUrl, inviteTitle, inviteDescription, musicUrl, musicVolume, ignoreUser, removeIgnoreUser) {
 	// TODO - change the ugly implementation
 	const updateFields = {}
 	const inviteConfigPrefix = 'config.voiceLobby.invite.'
@@ -45,9 +45,13 @@ async function updatedConfigFieldsForGuild(guildId, imageUrl, inviteTitle, invit
 	if(musicVolume){
 		updateFields[musicConfigPrefix + 'volume'] = musicVolume;
 	}
-	if (ignoreUser) {
-		const guildBotDoc = await getGuildSpeedDateBotDocumentOrThrow(guildId);
-		updateFields['config.ignoreUsers'] = [...guildBotDoc.config.ignoreUsers, ignoreUser.id]
+	if (ignoreUser || removeIgnoreUser) {
+		const { config: {ignoreUsers} } = await getGuildSpeedDateBotDocumentOrThrow(guildId);
+		const ignoreUserArray = ignoreUser ? [ignoreUser.id] : [];
+		// add user to ignored list
+		const newIgnoredUsers = _.union(ignoreUsers, ignoreUserArray);
+		// remove user from ignored list
+		updateFields['config.ignoreUsers'] = _.filter(newIgnoredUsers, user => user !== removeIgnoreUser?.id);
 	}
 
 	if(_.isEmpty(updateFields)){
