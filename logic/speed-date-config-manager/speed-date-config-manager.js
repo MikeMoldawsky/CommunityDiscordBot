@@ -42,9 +42,8 @@ async function updateIgnoredUsersIfNeeded(guildId, guildName, ignoreUser, remove
 			console.log(`Not updating IGNORED USERS configurations for guild ${guildName} with ${guildId} - parameters weren't passed...`);
 			return;
 		}
-		// 1. Don't allow configure while active speed dating
 		await getOrCreateGuildSpeedDateBotDocument(guildId, guildName); // if it's the first time you should be able to configure
-		// await throwIfActiveSession(guildId)
+		// await throwIfActiveSession(guildId) - allow update while session
 		await updatedConfigFieldsForGuild(guildId, undefined, undefined, undefined, undefined, undefined, ignoreUser, removeIgnoreUser);
 	} catch (e) {
 		console.log(`Can't update configuration for guild ${guildName} with ${guildId}`, e);
