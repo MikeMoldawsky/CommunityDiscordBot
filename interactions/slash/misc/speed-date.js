@@ -1,10 +1,9 @@
 const { SlashCommandBuilder } = require("@discordjs/builders");
-const { updateBotConfigIfNeeded, updateMusicIfNeeded, updateIgnoredUsersIfNeeded, updateInviteIfNeeded } = require("../../../logic/speed-date-config-manager/speed-date-config-manager");
+const { updateMusicIfNeeded, updateIgnoredUsersIfNeeded, updateInviteIfNeeded } = require("../../../logic/speed-date-config-manager/speed-date-config-manager");
 const { bootstrapSpeedDateInfrastructureForGuild, allowMembersJoinLobbyAndGetInvite,
 	startSpeedDateRound
 } = require("../../../logic/speed-date-manager/speed-date-manager");
 const { playMusicInLobby } = require("../../../logic/discord/discord-speed-date-manager");
-const { getOrCreateGuildSpeedDateBotDocument, throwIfActiveSession } = require("../../../logic/db/guild-db-manager");
 const { endSpeedDateSessionTask } = require("../../../logic/tasks/speed-date-session-cleanup/speed-date-session-cleanup-manager");
 const _ = require("lodash");
 const {
@@ -36,7 +35,6 @@ async function configureInvite(interaction){
 	const inviteImageUrl = interaction.options.getString("image-url");
 	const inviteTitle = interaction.options.getString("title");
 	const inviteText = interaction.options.getString("description");
-	const ignoreUser = interaction.options.getUser("user");
 	try {
 		await updateInviteIfNeeded(guildId, guildName, inviteImageUrl, inviteTitle, inviteText);
 	} catch (e) {
