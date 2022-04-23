@@ -1,8 +1,6 @@
 const client = require("../discord/client");
-const { getOrCreateGuildSpeedDateBotDocument, getGuildWithActiveSessionOrThrow, updatedRoundConfig,
-	isActiveSpeedDateSession
-} = require("../db/guild-db-manager");
-const { addRoleToChannelMembers } = require("../discord/utils");
+const { getGuildWithActiveSessionOrThrow, updatedRoundConfig, isActiveSpeedDateSession } = require("../db/guild-db-manager");
+const { addRoleToMembers } = require("../discord/utils");
 const { createLobbyInvite } = require("../discord/discord-speed-date-manager");
 const { initializeSpeedDateSessionForGuild } = require("../speed-date-bootstraper/speed-date-bootstrapper");
 const { startDateMatchMakerTaskWithDelay } = require("../tasks/speed-date-match-maker/speed-date-match-maker-task");
@@ -19,7 +17,27 @@ async function bootstrapSpeedDateInfrastructureForGuild(guildId, guildName, crea
 	await initializeSpeedDateSessionForGuild(guildId, guildName, creatorId);
 }
 
-async function allowMembersJoinLobbyAndGetInvite(guildId, invitedMemberChannelId) {
+async function allowMembersToJoinLobby(guildId, allowedChannelId, allowedUserId) {
+	let activeSpeedDateBotDoc;
+	try {
+		activeSpeedDateBotDoc = await getGuildWithActiveSessionOrThrow(guildId);
+	} catch (e){
+		console.log("SPEED DATE ROUND - START - FAILED - active speed date session not found", {guildId}, e);
+	}
+	const {activeSession: { initialization: { lobby }}} = activeSpeedDateBotDoc;
+	// Creating clients
+	const guildClient = await client.guilds.fetch(guildId);
+	try {
+		// 1. Allow members to join Lobby Channel
+		console.log(`Speed Date GRANT VIEW LOBBY ROLE to invited members`, {guildId, allowedChannelId, lobbyChannelId: lobby.channelId});
+		await addRoleToMembers(guildClient, allowedChannelId, allowedUserId, lobby.allowedRoleId);
+	} catch (e) {
+		console.log(`ALLOW MEMBER JOIN LOBBY FAILED - ${guildId}`, e);
+		throw new Error(`ALLOW MEMBER JOIN LOBBY FAILED - ${guildId}, ${e}`);
+	}
+}
+
+async function getLobbyInvite(guildId) {
 	let activeSpeedDateBotDoc;
 	try {
 		activeSpeedDateBotDoc = await getGuildWithActiveSessionOrThrow(guildId);
@@ -27,24 +45,14 @@ async function allowMembersJoinLobbyAndGetInvite(guildId, invitedMemberChannelId
 		console.log("SPEED DATE ROUND - START - FAILED - active speed date session not found", {guildId}, e);
 	}
 	const {activeSession: { initialization: { lobby }}, config: { voiceLobby: { invite }} } = activeSpeedDateBotDoc;
-
 	// Creating clients
 	const guildClient = await client.guilds.fetch(guildId);
-	const invitedMemberChannelClient = await guildClient.channels.fetch(invitedMemberChannelId);
 	const lobbyClient = await guildClient.channels.fetch(lobby.channelId);
-	try {
-		// 1. Allow members to join Lobby Channel
-		//TODO: Do we  actually need the members roles?
-		console.log(`Speed Date GRANT VIEW LOBBY ROLE to invited members`, {guildId, invitedMemberChannelId, invitedMemberChannelName: invitedMemberChannelClient.name, lobbyChannelId: lobby.channelId});
-		await addRoleToChannelMembers(guildClient, invitedMemberChannelClient, lobby.allowedRoleId);
-		// 2. Create invite to join Lobby Channel
-		console.log(`Speed Date CREATE LOBBY INVITE`, {guildId});
-		return await createLobbyInvite(lobbyClient, invite);
-	} catch (e) {
-		console.log(`ALLOW MEMBER JOIN LOBBY FAILED - ${guildId}`, e);
-		throw new Error(`ALLOW MEMBER JOIN LOBBY FAILED - ${guildId}, ${e}`);
-	}
+	// 1. Create invite to join Lobby Channel
+	console.log(`Speed Date CREATE LOBBY INVITE`, {guildId});
+	return await createLobbyInvite(lobbyClient, invite);
 }
+
 
 async function startSpeedDateRound(guildId, speedDateDurationMinutes, roomCapacity, matchMakerInterval, matchMakerTaskDelay, matchMakerDurationInSeconds, dateTerminatorInterval){
 	let activeSpeedDateBotDoc;
@@ -75,5 +83,6 @@ async function startSpeedDateRound(guildId, speedDateDurationMinutes, roomCapaci
 module.exports = {
 	bootstrapSpeedDateInfrastructureForGuild,
 	startSpeedDateRound,
-	allowMembersJoinLobbyAndGetInvite
+	allowMembersToJoinLobby,
+	getLobbyInvite
 }

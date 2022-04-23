@@ -1,11 +1,9 @@
 const { SlashCommandBuilder } = require("@discordjs/builders");
 const { updateMusicIfNeeded, updateIgnoredUsersIfNeeded, updateInviteIfNeeded } = require("../../../logic/speed-date-config-manager/speed-date-config-manager");
-const { bootstrapSpeedDateInfrastructureForGuild, allowMembersJoinLobbyAndGetInvite,
-	startSpeedDateRound
+const { bootstrapSpeedDateInfrastructureForGuild, startSpeedDateRound, getLobbyInvite, allowMembersToJoinLobby
 } = require("../../../logic/speed-date-manager/speed-date-manager");
 const { playMusicInLobby } = require("../../../logic/discord/discord-speed-date-manager");
 const { endSpeedDateSessionTask } = require("../../../logic/tasks/speed-date-session-cleanup/speed-date-session-cleanup-manager");
-const _ = require("lodash");
 const {
 	DEFAULT_SPEED_DATE_DURATION_MINUTES,
 	DEFAULT_ROOM_CAPACITY,
@@ -18,7 +16,8 @@ const {
 // Sub Commands
 const SESSION_GROUP_COMMAND = "session";
 const SESSION_INITIALIZE_SUBCOMMAND = 'initialize';
-const SESSION_INVITE_SUBCOMMAND = 'invite';
+const SESSION_ADD_MEMBERS_SUBCOMMAND = 'add-members';
+const SESSION_POST_INVITE_SUBCOMMAND = 'post-invite';
 const SESSION_END_SUBCOMMAND = 'end';
 // Round Commands
 const ROUND_GROUP_COMMAND = 'round';
@@ -84,18 +83,32 @@ async function initializeSession(interaction){
 	}
 }
 
-async function allowJoinSessionLobbyAndSendInvite(interaction) {
-	let invitedChannelId, guildId;
+async function getInviteToLobby(interaction) {
+	let guildId;
 	try {
 		guildId = interaction.guild.id;
-		invitedChannelId = interaction.options.getChannel("invited-channel") || interaction.channel.id;
+		const invitedChannelId = interaction.channel.id;
+		// 1. Allow channel members to join lobby and send invite
+		return await getLobbyInvite(guildId, invitedChannelId);
+	} catch (e){
+		console.log(`Failed to send invite for speed dating`, {guildId, e});
+		throw Error(`Failed to send invite for speed dating for guild ${guildId} ${e}`);
+	}
+}
+
+async function addMembersToSession(interaction) {
+	let invitedChannel, invitedUser, guildId;
+	try {
+		guildId = interaction.guild.id;
+		invitedChannel = interaction.options.getChannel("channel");
+		invitedUser = interaction.options.getUser("user");
 	} catch (e) {
-		console.log(`Failed to send invite for session - input errors`, e);
-		throw Error(`Failed to send invite for session - input errors ${e}`);
+		console.log(`Failed to add members to session - input errors`, e);
+		throw Error(`Failed to send invite to session - input errors ${e}`);
 	}
 	try {
 		// 1. Allow channel members to join lobby and send invite
-		return await allowMembersJoinLobbyAndGetInvite(guildId, invitedChannelId);
+		await allowMembersToJoinLobby(guildId, invitedChannel?.id, invitedUser?.id);
 	} catch (e){
 		console.log(`Failed to send invite for speed dating`, {guildId, e});
 		throw Error(`Failed to send invite for speed dating for guild ${guildId} ${e}`);
@@ -123,7 +136,7 @@ async function startRound(interaction) {
 module.exports = {
 	// The data needed to register slash commands to Discord.
 	data: new SlashCommandBuilder()
-		.setName("speed-date")
+		.setName("dates")
 		// .setDefaultPermission(false)
 		.setDescription(
 			"Helps you CREATE MEETINGS for your community. You'll get a STRONGER and HEALTHIER community!"
@@ -136,11 +149,18 @@ module.exports = {
 					)
 			)
 			.addSubcommand(
-				subCommand => subCommand.setName(SESSION_INVITE_SUBCOMMAND)
+				subCommand => subCommand.setName(SESSION_ADD_MEMBERS_SUBCOMMAND)
 					.setDescription(
 						"Allow the channel's member to join the speed-date session lobby."
 					)
-					.addChannelOption(option => option.setName('invited-channel').setDescription("The invited channel members")),
+					.addChannelOption(option => option.setName('channel').setDescription("The channel to allow for dates"))
+					.addUserOption(option => option.setName('user').setDescription("The user to allow for dates")),
+			)
+			.addSubcommand(
+				subCommand => subCommand.setName(SESSION_POST_INVITE_SUBCOMMAND)
+					.setDescription(
+						"Post the date's session invite in this channel."
+					)
 			)
 			.addSubcommand(
 				subCommand => subCommand.setName(SESSION_END_SUBCOMMAND)
@@ -213,9 +233,13 @@ module.exports = {
 							await interaction.deferReply({ephemeral: true}); // Slash Commands has only 3 seconds to reply to an interaction.
 							await initializeSession(interaction);
 							break;
-						case SESSION_INVITE_SUBCOMMAND:
+						case SESSION_ADD_MEMBERS_SUBCOMMAND:
+							await interaction.deferReply({ephemeral: true}); // Slash Commands has only 3 seconds to reply to an interaction.
+							await addMembersToSession(interaction);
+							break;
+						case SESSION_POST_INVITE_SUBCOMMAND:
 							await interaction.deferReply({ephemeral: false}); // Slash Commands has only 3 seconds to reply to an interaction.
-							const lobbyChannelInvite = await allowJoinSessionLobbyAndSendInvite(interaction);
+							const lobbyChannelInvite = await getInviteToLobby(interaction);
 							await interaction.followUp({ embeds: [lobbyChannelInvite], ephemeral: false,});
 							break;
 						case SESSION_END_SUBCOMMAND:

@@ -22,30 +22,38 @@ async function getOrCreateRole(guildId, roleInfo) {
 	}
 }
 
-async function addRoleToChannelMembers(guildClient, channelClient, roleId) {
+async function addRoleToMembers(guildClient, allowedChannelId, allowedUserId, roleId) {
+	console.log(`Adding Role`, {guildId: guildClient.id, allowedChannelId, allowedUserId, roleId});
+	let members = [];
 	try {
-		console.log(`Adding role ${roleId} to channel ${channelClient} members`);
-		const forcedChannelClient = await channelClient.fetch(true) // TODO(mike): ask Asaf why do we need force fetch?
-		const members = forcedChannelClient.members.filter(
-			member => {
-				const isBot = _.get(member, "user.bot", false)
-				// TODO(mike): talk to Asaf - we had a bug here as presence can be null.
-				// I think that we can give to all the Role to be safe as the creating rooms only happens at router level,
-				// const isOnline = _.get(member, "presence.status") === "online";
-				if(isBot){
-					console.log(`Skipped adding role to user ${member.user}`)
+		if(allowedChannelId){
+			console.log(`Adding role to ALL CHANNEL members`, {allowedChannelId, roleId});
+			const channelClient = await guildClient.channels.fetch(allowedChannelId);
+			const forcedChannelClient = await channelClient.fetch(true) // TODO(mike): ask Asaf why do we need force fetch?
+			members = forcedChannelClient.members.filter(
+				member => {
+					const isBot = _.get(member, "user.bot", false)
+					if(isBot){
+						console.log(`Skipped adding role to user ${member.user}`)
+					}
+					return !isBot;
 				}
-				return !isBot;
-			}
-		)
-		await Promise.all(members.map(async m => await m.roles.add(roleId)));
+			)
+			await Promise.all(members.map(async m => await m.roles.add(roleId)));
+		}
+		if(allowedUserId){
+			console.log(`Adding role to SINGLE MEMBER`, {allowedUserId, roleId});
+			const allowedMember = await guildClient.members.fetch(allowedUserId);
+			await allowedMember.roles.add(roleId);
+		}
 	} catch (e) {
-		console.log(`Failed to add Role ${roleId} for Channel ${channelClient.id} members at Guild ${guildClient.id}`, e);
+		console.log(`Failed to add Role`, {guildId: guildClient.id, allowedChannelId, allowedUserId, roleId} ,e);
+		throw Error(`Failed to add Role for channel members at guild: ${guildClient.id}, channel: ${allowedChannelId} ${e}`);
 	}
 }
 
 
 module.exports = {
 	getOrCreateRole,
-	addRoleToChannelMembers
+	addRoleToMembers
 }
