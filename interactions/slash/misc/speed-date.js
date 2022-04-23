@@ -38,8 +38,8 @@ async function configureInvite(interaction){
 	try {
 		await updateInviteIfNeeded(guildId, guildName, inviteImageUrl, inviteTitle, inviteText);
 	} catch (e) {
-		console.log(`Can't update configuration while active speed date for guild ${guildName} with ${guildId}`, e);
-		throw Error(`Failed to configure speed dating. Check if there is an active round..., ${e}`);
+		console.log(`Can't update invite configuration while active speed date for guild ${guildName} with ${guildId}`, e);
+		throw Error(`Failed to configure invite. Check if there is an active round..., ${e}`);
 	}
 }
 
@@ -51,8 +51,8 @@ async function configureMusic(interaction){
 	try {
 		await updateMusicIfNeeded(guildId, guildName, musicUrl, musicVolume);
 	} catch (e) {
-		console.log(`Can't update configuration while active speed date for guild ${guildName} with ${guildId}`, e);
-		throw Error(`Failed to configure music speed dating. Check if there is an active round..., ${e}`);
+		console.log(`Can't update music configuration while active speed date for guild ${guildName} with ${guildId}`, e);
+		throw Error(`Failed to configure music. Check if there is an active round..., ${e}`);
 	}
 }
 
@@ -229,7 +229,7 @@ module.exports = {
 				case ROUND_GROUP_COMMAND:
 					switch (subcommand) {
 						case ROUND_START_SUBCOMMAND:
-							await interaction.deferReply({ephemeral: true}); // Slash Commands has only 3 seconds to reply to an interaction.
+							await interaction.deferReply({ephemeral: false}); // Slash Commands has only 3 seconds to reply to an interaction.
 							await startRound(interaction);
 							break;
 						default:
