@@ -65,6 +65,7 @@ const SpeedDateVoiceLobbyConfig = new mongoose.Schema({
 const ConfigSchema = new mongoose.Schema({
 	voiceLobby: SpeedDateVoiceLobbyConfig,
 	ignoreUsers: {type: [String], default: []},
+	botAdmins: {type: [String], default: []},
 }, { _id : false })
 
 const GuildInfoSchema = new mongoose.Schema({

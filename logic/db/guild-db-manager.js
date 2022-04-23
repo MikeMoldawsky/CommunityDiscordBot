@@ -62,6 +62,23 @@ async function updatedConfigFieldsForGuild(guildId, imageUrl, inviteTitle, invit
 	await GuildSpeedDateBot.findOneAndUpdate({ guildId }, updateFields);
 }
 
+async function addAdminUser(guildId, addAdminUser){
+	const updateFields = {}
+	if (addAdminUser) {
+		const { config: { botAdmins } } = await getGuildSpeedDateBotDocumentOrThrow(guildId);
+		const addAdminUsersArray = addAdminUser?.id ? [addAdminUser.id] : [];
+		// add user to admin list
+		updateFields['config.botAdmins'] = _.union(botAdmins, addAdminUsersArray);
+	}
+	if(_.isEmpty(updateFields)){
+		console.log(`Nothing to update for guild ${guildId}`);
+		return;
+	}
+	console.log(`Performing configuration update with params: ${JSON.stringify(updateFields)}`)
+	await GuildSpeedDateBot.findOneAndUpdate({ guildId }, updateFields);
+}
+
+
 async function updatedMatchMakerFieldsForGuild(guildId, durationInSeconds) {
 	// TODO - change the ugly implementation
 	const updateFields = {}
@@ -152,6 +169,12 @@ async function isActiveSpeedDateSession(guildId) {
 	return !isNilOrEmpty(activeSession);
 }
 
+async function isBotAdmin(guildId, userId) {
+	const guildBot = await getSpeedDateBot(guildId);
+	const botAdmins = _.get( guildBot,'config.botAdmins' ) || [];
+	return _.isEmpty(botAdmins) ||  _.includes(botAdmins, userId);
+}
+
 async function persistAndGetGuildSpeedDateBot(guildInfoDocument, updateReason) {
 	try{
 		console.log(`Updating DataBase - START`,  { guildInfo: guildInfoDocument.guildInfo, updateReason})
@@ -210,4 +233,6 @@ module.exports = {
 	updatedLobby,
 	isActiveSpeedDateRound,
 	isActiveSpeedDateSession,
+	addAdminUser,
+	isBotAdmin
 };
