@@ -73,13 +73,14 @@ const GuildInfoSchema = new mongoose.Schema({
 	guildName: String,
 }, { _id : false })
 
-const GuildSpeedDateBotSchema = new mongoose.Schema({
+const GuildBotSchema = new mongoose.Schema({
+	_id: String,
 	guildInfo: {type: GuildInfoSchema, default: {}},
 	config: {type: ConfigSchema, default: {}},
 	activeSession: {type: ActiveSessionSchema},
 	datesHistory: {type: Object, default: {}},
 })
 
-const GuildSpeedDateBot = db.model('GuildSpeedDateBot', GuildSpeedDateBotSchema)
+const GuildBotModel = db.model('Guild', GuildBotSchema)
 
-module.exports = GuildSpeedDateBot
+module.exports = GuildBotModel

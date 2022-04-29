@@ -1,20 +1,31 @@
 const client = require("../../../logic/discord/client");
 const _ = require("lodash");
-const { getGuildWithActiveSessionOrThrow, isActiveSpeedDateRound, deleteActiveRound } = require("../../db/guild-db-manager");
+const { getGuildWithActiveSessionOrThrow, isActiveSpeedDateRound, deleteActiveRound, findGuildAndUpdate } = require("../../db/guild-db-manager");
 const { getOrCreateRole } = require("../../discord/utils");
-const GuildSpeedDateBot = require("../../../logic/db/models/GuildSpeedDateBot");
+
+async function moveMembersToLobby(speedDateMembers, guildClient, lobby ) {
+	const guildMemberClient = guildClient.members;
+	await Promise.all(
+		_.map(Array.from(speedDateMembers), async userId => {
+			const user = await guildMemberClient.fetch(userId);
+			return user.voice.setChannel(lobby.channelId);
+		})
+	);
+}
 
 async function moveSpeedDatersToLobbyAndDeleteChannel(lobby, rooms, guildClient) {
 	await Promise.all(
-		_.map(rooms, async ({ voiceChannelId }) => {
-			const voiceChannel = await client.channels.fetch(voiceChannelId);
-			await Promise.all(
-				_.map(Array.from(voiceChannel.members.keys()), async userId => {
-					const user = await guildClient.members.fetch(userId)
-					return user.voice.setChannel(lobby.channelId)
-				})
-			)
-			return voiceChannel.delete();
+		_.map(rooms, async (room) => {
+			const dateVoiceChannel = await client.channels.fetch(room.voiceChannelId);
+			const members = dateVoiceChannel.members.keys();
+			console.log("Moving speed-daters back to lobby", {room, members})
+			try {
+				await moveMembersToLobby(members, guildClient, lobby);
+			} catch (e) {
+				console.log("Failed to move speed-daters back to lobby", {members:members, lobby}, e)
+			}
+			console.log("Deleting speed-daters voice channel room", {room})
+			return dateVoiceChannel.delete();
 		})
 	)
 }
@@ -55,7 +66,7 @@ async function terminateSpeedDateRound(guildId) {
 		// 2. Create Speed Date Completed Role & Save participants history and add participation role
 		await setMeetingHistoryAndGrantCompletedRolesToSpeedDaters(guildClient, guildInfo, dates, datesHistory);
 		await moveSpeedDatersToLobbyAndDeleteChannel(lobby, dates, guildClient);
-		await GuildSpeedDateBot.findOneAndUpdate({guildId}, { datesHistory });
+		await findGuildAndUpdate(guildId, {datesHistory});
 		await deleteActiveRound(guildId);
 		// TODO - remove round
 		console.log(`End Speed Date Round - SUCCESS`, {guildId});
