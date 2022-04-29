@@ -1,10 +1,9 @@
 const client = require('../../discord/client')
-const GuildSpeedDateBot = require('../../db/models/GuildSpeedDateBot')
 const matchRooms = require('./speed-date-match-maker-manager')
-const {createVoiceChannel} = require('../../vcShuffle')
 const _ = require('lodash')
-const { getGuildWithActiveSessionOrThrow, updatedMatchMakerFieldsForGuild } = require("../../db/guild-db-manager");
+const { getGuildWithActiveSessionOrThrow, updatedMatchMakerFieldsForGuild, findGuildAndUpdate } = require("../../db/guild-db-manager");
 const moment = require("moment");
+const { createSpeedDateVoiceChannelRoom } = require("../../discord/discord-speed-date-manager");
 
 async function createSpeedDatesMatchesInternal(guildBotDoc, forceMatch = false) {
 	console.log(`Match maker - SEARCHING DATES - ${guildBotDoc.guildInfo}, forceMatch ${forceMatch}`)
@@ -31,7 +30,7 @@ async function createSpeedDatesMatchesInternal(guildBotDoc, forceMatch = false) 
 		rooms.map(async (room, i) => {
 			const roomNumber = maxRoomNum + i + 1;
 			console.log(`Match maker - CREATING DATE.`, {guildInfo, room});
-			const vc = await createVoiceChannel(guild, roomNumber, room);
+			const vc = await createSpeedDateVoiceChannelRoom(guild, roomNumber, room);
 			const roomParticipants = room.map((userId) => {
 				const member = guild.members.cache.get(userId)
 				member.voice.setChannel(vc.id)
@@ -47,10 +46,10 @@ async function createSpeedDatesMatchesInternal(guildBotDoc, forceMatch = false) 
 	);
 
 	console.log(`Match maker - Created DATES`, {newDates, guildInfo});
-
-	await GuildSpeedDateBot.findOneAndUpdate({guildId: guildInfo.guildId}, {
+	const updatedFields = {
 		'activeSession.round.dates': [...dates, ...newDates],
-	})
+	};
+	await findGuildAndUpdate(guildInfo.guildId, updatedFields);
 }
 
 async function createSpeedDatesMatches(guildBotDoc, forceMatch = false) {

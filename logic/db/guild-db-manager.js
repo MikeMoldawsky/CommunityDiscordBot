@@ -1,4 +1,4 @@
-const GuildSpeedDateBot = require("./models/GuildSpeedDateBot");
+const GuildCommunityBotModel = require("./models/GuildBotModel");
 const _ = require("lodash");
 
 const DEFAULT_INVITE_IMAGE_URL = "https://www.thebirdstage.com/wp-content/uploads/2016/02/Speed-Dating.jpg";
@@ -9,7 +9,7 @@ function isNilOrEmpty(obj){
 }
 
 async function getGuildSpeedDateBotDocumentOrThrow(guildId, guildName = "no-param") {
-	const guildBot = await GuildSpeedDateBot.findOne({ guildId: guildId }).exec();
+	const guildBot = await GuildCommunityBotModel.findById(guildId).exec();
 	if (isNilOrEmpty(guildBot)) {
 		console.log(`GuildInfo for guild ${guildName} with id ${guildId}`);
 		throw Error(`Guild ${guildName} with id ${guildId} should have existing bot configurations`);
@@ -59,7 +59,7 @@ async function updatedConfigFieldsForGuild(guildId, imageUrl, inviteTitle, invit
 		return;
 	}
 	console.log(`Performing configuration update with params: ${JSON.stringify(updateFields)}`)
-	await GuildSpeedDateBot.findOneAndUpdate({ guildId }, updateFields);
+	await GuildCommunityBotModel.findOneAndUpdate({ _id: guildId }, updateFields);
 }
 
 async function addAdminUser(guildId, addAdminUser){
@@ -75,7 +75,7 @@ async function addAdminUser(guildId, addAdminUser){
 		return;
 	}
 	console.log(`Performing configuration update with params: ${JSON.stringify(updateFields)}`)
-	await GuildSpeedDateBot.findOneAndUpdate({ guildId }, updateFields);
+	await GuildCommunityBotModel.findOneAndUpdate({ _id: guildId }, updateFields);
 }
 
 
@@ -91,7 +91,7 @@ async function updatedMatchMakerFieldsForGuild(guildId, durationInSeconds) {
 		return;
 	}
 	console.log(`Performing configuration update with params: ${JSON.stringify(updateFields)}`)
-	await GuildSpeedDateBot.findOneAndUpdate({ guildId }, updateFields);
+	await GuildCommunityBotModel.findOneAndUpdate({ _id: guildId }, updateFields);
 }
 
 async function updatedRoundConfig(guildId, startTime, roomCapacity, durationInMinutes) {
@@ -112,7 +112,7 @@ async function updatedRoundConfig(guildId, startTime, roomCapacity, durationInMi
 		return;
 	}
 	console.log(`Performing Round configuration update with params: ${JSON.stringify(updateFields)}`)
-	await GuildSpeedDateBot.findOneAndUpdate({ guildId }, updateFields);
+	await GuildCommunityBotModel.findOneAndUpdate({ _id: guildId }, updateFields);
 }
 
 async function updatedLobby(guildId, lobby) {
@@ -127,19 +127,19 @@ async function updatedLobby(guildId, lobby) {
 		return;
 	}
 	console.log(`Performing Round configuration update with params: ${JSON.stringify(updateFields)}`)
-	await GuildSpeedDateBot.findOneAndUpdate({ guildId }, updateFields);
+	await GuildCommunityBotModel.findOneAndUpdate({ _id: guildId }, updateFields);
 }
 
 async function deleteActiveSessionForGuild(guildId) {
 	console.log(`Deleting ACTIVE SESSION from DB for guild ${guildId}`)
-	await GuildSpeedDateBot.findOneAndUpdate({ guildId }, {
+	await GuildCommunityBotModel.findOneAndUpdate({ _id: guildId }, {
 		$unset: {'activeSession': 1},
 	});
 }
 
 async function deleteActiveRound(guildId) {
 	console.log(`Deleting ACTIVE ROUND from DB for guild ${guildId}`)
-	await GuildSpeedDateBot.findOneAndUpdate({ guildId }, {
+	await GuildCommunityBotModel.findOneAndUpdate({ _id: guildId }, {
 		$unset: {'activeSession.round': 1},
 	});
 }
@@ -154,7 +154,7 @@ async function getGuildWithActiveSessionOrThrow(guildId) {
 }
 
 async function getSpeedDateBot(guildId){
-	return await GuildSpeedDateBot.findOne({ guildId: guildId }).exec();
+	return await GuildCommunityBotModel.findById(guildId).exec();
 }
 
 async function isActiveSpeedDateRound(guildId) {
@@ -181,24 +181,16 @@ async function isBotAdmin(guildId, userId) {
 	return _.isEmpty(botAdmins) ||  _.includes(botAdmins, userId);
 }
 
-async function persistAndGetGuildSpeedDateBot(guildInfoDocument, updateReason) {
-	try{
-		console.log(`Updating DataBase - START`,  { guildInfo: guildInfoDocument.guildInfo, updateReason})
-		return await guildInfoDocument.save();
-	} catch (e) {
-		console.log(`Updating DataBase - FAILED`,  { guildInfo: guildInfoDocument.guildInfo, updateReason}, e)
-	}
-}
-
 async function getOrCreateGuildSpeedDateBotDocument(guildId, guildName) {
 	try {
-		let guildInfo = await GuildSpeedDateBot.findOne({ guildId: guildId }).exec();
+		let guildInfo = await GuildCommunityBotModel.findById(guildId).exec();
 		if (guildInfo) {
 			console.log(`Found speed date bot configurations for guild ${guildName} with id ${guildId}`);
 			return guildInfo;
 		}
 		console.log(`Creating guildInfo for guild ${guildName} with id ${guildId}`);
-		return await GuildSpeedDateBot.create({
+		const document = {
+			_id: guildId,
 			guildInfo: {
 				guildId: guildId,
 				guildName: guildName,
@@ -217,18 +209,20 @@ async function getOrCreateGuildSpeedDateBotDocument(guildId, guildName) {
 				}
 			},
 			activeSpeedDate: {},
-			// speedDatesHistory: [],
-			// participantsHistory: {},
-		});
+		};
+		const guildCommunityBotModel = new GuildCommunityBotModel(document);
+		return await guildCommunityBotModel.save();
 	} catch (e) {
 		console.log(`Failed to get or create guildInfo for guild ${guildName} with id ${guildId}`, e);
 	}
 }
 
+async function findGuildAndUpdate(guildId,  updatedGuildBotFieldsObject){
+	await GuildCommunityBotModel.findOneAndUpdate({_id: guildId}, updatedGuildBotFieldsObject);
+}
+
 module.exports = {
-	persistAndGetGuildSpeedDateBot,
 	getGuildWithActiveSessionOrThrow,
-	getGuildSpeedDateBotDocumentOrThrow,
 	getOrCreateGuildSpeedDateBotDocument,
 	throwIfActiveSession,
 	updatedConfigFieldsForGuild,
@@ -241,5 +235,6 @@ module.exports = {
 	isActiveSpeedDateSession,
 	addAdminUser,
 	isBotAdmin,
-	isNoBotAdminConfigured
+	isNoBotAdminConfigured,
+	findGuildAndUpdate
 };
