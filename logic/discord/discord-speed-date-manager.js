@@ -1,9 +1,10 @@
-const { MessageEmbed } = require("discord.js");
+const { MessageEmbed, Permissions } = require("discord.js");
 const { getOrCreateRole } = require("./utils");
 const { getGuildWithActiveSessionOrThrow } = require("../../logic/db/guild-db-manager");
 const client = require("../../logic/discord/client");
 const music = require("@koenie06/discord.js-music");
 const { updatedLobby } = require("../db/guild-db-manager");
+const _ = require("lodash");
 
 const DEFAULT_LOBBY_NAME = "❤️ Speed Date Lobby ❤️";
 const DEFAULT_LOBBY_MUSIC_URL = 'https://soundcloud.com/julian_avila/elevatormusic';
@@ -73,6 +74,21 @@ async function createLobbyInvite(lobby, config) {
 	}
 }
 
+async function createSpeedDateVoiceChannelRoom(guild, roomNumber, memberIds) {
+	const permissionOverwrites = [
+		{
+			id: guild.id, deny: [Permissions.FLAGS.CONNECT] },
+		..._.map(memberIds, id => ({ id: id, allow: [Permissions.FLAGS.VIEW_CHANNEL, Permissions.FLAGS.CONNECT, Permissions.FLAGS.SPEAK] })
+		)
+	];
+	return guild.channels.create(`Room#${roomNumber}`, {
+		type: "GUILD_VOICE",
+		reason: "Let's connect and get to know each other :)",
+		permissionOverwrites: permissionOverwrites
+	})
+}
+
+
 async function playMusicInLobby(interaction, guildId) {
 	try {
 		const { config: {voiceLobby: { music : musicConfig }},  guildInfo, activeSession: { initialization: { lobby } } } = await getGuildWithActiveSessionOrThrow(guildId);
@@ -98,5 +114,6 @@ async function playMusicInLobby(interaction, guildId) {
 module.exports = {
 	createLobbyProtectByRole,
 	createLobbyInvite,
-	playMusicInLobby
+	playMusicInLobby,
+	createSpeedDateVoiceChannelRoom
 }
