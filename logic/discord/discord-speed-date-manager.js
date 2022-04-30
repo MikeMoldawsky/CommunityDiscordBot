@@ -1,13 +1,14 @@
 const { MessageEmbed, Permissions } = require("discord.js");
 const { getOrCreateRole } = require("./utils");
-const { getGuildWithActiveSessionOrThrow } = require("../../logic/db/guild-db-manager");
-const client = require("../../logic/discord/client");
-const music = require("@koenie06/discord.js-music");
 const { updatedLobby } = require("../db/guild-db-manager");
+const { playMusic } = require('./discord-music-player')
 const _ = require("lodash");
 
 const DEFAULT_LOBBY_NAME = "❤️ Speed Date Lobby ❤️";
-const DEFAULT_LOBBY_MUSIC_URL = 'https://soundcloud.com/julian_avila/elevatormusic';
+
+function onClientReady() {
+	playMusic()
+}
 
 async function getOrCreateVoiceChannelProtectedByRole(guildClient, roleId, creatorId) {
 	try {
@@ -33,7 +34,6 @@ async function getOrCreateVoiceChannelProtectedByRole(guildClient, roleId, creat
 		throw Error(`Failed to create Lobby Voice Channel ${DEFAULT_LOBBY_NAME} for guild ${guildClient.id}, ${e}`)
 	}
 }
-
 
 async function createLobbyProtectByRole(guild, guildId, creatorId) {
 	try {
@@ -88,32 +88,9 @@ async function createSpeedDateVoiceChannelRoom(guild, roomNumber, memberIds) {
 	})
 }
 
-
-async function playMusicInLobby(interaction, guildId) {
-	try {
-		const { config: {voiceLobby: { music : musicConfig }},  guildInfo, activeSession: { initialization: { lobby } } } = await getGuildWithActiveSessionOrThrow(guildId);
-		const guildClient = await client.guilds.fetch(guildId);
-		const lobbyChannel =  await guildClient.channels.fetch(lobby.channelId);
-		console.log(`Staring music for guild ${guildInfo.guildName} with id ${guildId} - ${musicConfig.url}`);
-		await music.play({
-			interaction: interaction,
-			channel: lobbyChannel,
-			song: musicConfig.url || DEFAULT_LOBBY_MUSIC_URL,
-		});
-		await music.volume({
-			interaction: interaction,
-			volume: musicConfig.volume,
-		});
-	} catch (e) {
-		console.log(`Failed to play music for guild ${guildId}`, e);
-		throw Error(`Failed to play music for guild ${guildId}, ${e}`)
-	}
-}
-
-
 module.exports = {
+	onClientReady,
 	createLobbyProtectByRole,
 	createLobbyInvite,
-	playMusicInLobby,
 	createSpeedDateVoiceChannelRoom
 }

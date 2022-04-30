@@ -12,6 +12,7 @@ const { REST } = require("@discordjs/rest");
 const { Routes } = require("discord-api-types/v9");
 const { token, client_id, test_guild_id } = require("./config.json");
 const client = require('./logic/discord/client')
+const { onClientReady } = require('./logic/discord/discord-speed-date-manager')
 /**
  * From v13, specifying the intents is compulsory.
  * @type {Object}
@@ -96,6 +97,7 @@ const commandJsonData = [
 	}
 })();
 
+client.once('ready', onClientReady)
 /**********************************************************************/
 // Login into your client application with bot's token.
 client.login(token);

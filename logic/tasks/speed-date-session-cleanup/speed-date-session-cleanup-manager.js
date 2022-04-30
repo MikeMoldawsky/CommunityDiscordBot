@@ -2,11 +2,14 @@ const _ = require("lodash");
 const { deleteActiveSessionForGuild, getGuildWithActiveSessionOrThrow } = require("../../db/guild-db-manager");
 const client = require("../../discord/client");
 const { terminateSpeedDateRound } = require("../speed-date-round-terminator/speed-date-round-terminator-manager");
+const { disconnectFromMusic } = require('../../discord/discord-music-player')
 
 async function deleteLobbyAndTempRoles(lobby, guildClient) {
-		// 1. Delete Lobby
 		try {
 			console.log("Deleting lobby channel", {lobby, guildId: guildClient.id})
+			// 0. remove bot from lobby and close connection to music
+			await disconnectFromMusic(guildClient.id)
+			// 1. Delete Lobby
 			const lobbyClient = await client.channels.fetch(lobby.channelId);
 			await lobbyClient.delete();
 			} catch (e) {
