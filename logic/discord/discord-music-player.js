@@ -15,6 +15,21 @@ const client = require('../../logic/discord/client')
 
 let audioPlayer
 
+function playSong(path) {
+	const resource = createAudioResource(
+		createReadStream(path, {
+			inputType: StreamType.OggOpus,
+		}),
+		{
+			metadata: {
+				title: 'Elevator Music'
+			}
+		}
+	);
+
+	audioPlayer.play(resource);
+}
+
 function playMusic() {
 	try {
 		audioPlayer = createAudioPlayer({
@@ -23,17 +38,6 @@ function playMusic() {
 			// },
 		});
 
-		const resource =  createAudioResource(
-			createReadStream(join(__dirname, 'music/elevator-music.ogg'), {
-				inputType: StreamType.OggOpus,
-			}),
-			{
-				metadata: {
-					title: 'Elevator Music'
-				}
-			}
-		);
-
 		audioPlayer.on('error', error => {
 			console.error(`audioPlayer Error: ${error.message} with resource ${error.resource.metadata.title}`);
 		});
@@ -41,7 +45,7 @@ function playMusic() {
 		audioPlayer.on(AudioPlayerStatus.Idle, () => {
 			console.log('audioPlayer - Idle')
 			// restart music
-			audioPlayer.play(resource);
+			playSong(join(__dirname, 'music/elevator-music.ogg'))
 		});
 
 		audioPlayer.on(AudioPlayerStatus.Playing, () => {
@@ -60,7 +64,7 @@ function playMusic() {
 			console.log('audioPlayer - Paused')
 		});
 
-		audioPlayer.play(resource);
+		playSong(join(__dirname, 'music/elevator-music.ogg'))
 	}
 	catch (e) {
 		console.log(`Failed to play music`, e);
