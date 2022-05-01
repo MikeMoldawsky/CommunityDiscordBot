@@ -1,42 +1,33 @@
-const { createReadStream } = require('node:fs');
-const { join } = require('node:path');
 const {
 	createAudioPlayer,
 	createAudioResource,
 	joinVoiceChannel,
 	VoiceConnectionStatus,
 	AudioPlayerStatus,
-	StreamType,
 	getVoiceConnection,
 	entersState,
 } = require('@discordjs/voice');
+const play = require('play-dl')
 const { getGuildWithActiveSessionOrThrow } = require("../../logic/db/guild-db-manager");
 const client = require('../../logic/discord/client')
 
+const DEFAULT_LOBBY_MUSIC_URL = 'https://soundcloud.com/julian_avila/elevatormusic';
+// const DEFAULT_LOBBY_MUSIC_URL = 'https://www.youtube.com/watch?v=Yl3t2pjDYhQ';
+
 let audioPlayer
 
-function playSong(path) {
-	const resource = createAudioResource(
-		createReadStream(path, {
-			inputType: StreamType.OggOpus,
-		}),
-		{
-			metadata: {
-				title: 'Elevator Music'
-			}
-		}
-	);
+async function playSong(url) {
+	let stream = await play.stream(url)
+	let resource = createAudioResource(stream.stream, {
+		inputType: stream.type
+	})
 
 	audioPlayer.play(resource);
 }
 
-function playMusic() {
+function playMusic(url = DEFAULT_LOBBY_MUSIC_URL) {
 	try {
-		audioPlayer = createAudioPlayer({
-			// behaviors: {
-			// 	noSubscriber: NoSubscriberBehavior.Pause,
-			// },
-		});
+		audioPlayer = createAudioPlayer();
 
 		audioPlayer.on('error', error => {
 			console.error(`audioPlayer Error: ${error.message} with resource ${error.resource.metadata.title}`);
@@ -45,7 +36,7 @@ function playMusic() {
 		audioPlayer.on(AudioPlayerStatus.Idle, () => {
 			console.log('audioPlayer - Idle')
 			// restart music
-			playSong(join(__dirname, 'music/elevator-music.ogg'))
+			playSong(url)
 		});
 
 		audioPlayer.on(AudioPlayerStatus.Playing, () => {
@@ -64,7 +55,7 @@ function playMusic() {
 			console.log('audioPlayer - Paused')
 		});
 
-		playSong(join(__dirname, 'music/elevator-music.ogg'))
+		playSong(url)
 	}
 	catch (e) {
 		console.log(`Failed to play music`, e);

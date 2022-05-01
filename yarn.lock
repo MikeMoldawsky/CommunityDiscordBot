@@ -576,7 +576,7 @@
   "resolved" "https://registry.npmjs.org/event-target-shim/-/event-target-shim-5.0.1.tgz"
   "version" "5.0.1"
 
-"ffmpeg-static@^4.2.7 || ^3.0.0 || ^2.4.0":
+"ffmpeg-static@^4.2.7 || ^3.0.0 || ^2.4.0", "ffmpeg-static@^4.4.1":
   "integrity" "sha512-gyGTIf5kgmLDmH7Rwj8vMmNK46bjXKKofHS2gY+LUqoTe/iybVuTuvnhJQR2tZHlKlDG7A/BIH7cRa2jWDKgWw=="
   "resolved" "https://registry.npmjs.org/ffmpeg-static/-/ffmpeg-static-4.4.1.tgz"
   "version" "4.4.1"
@@ -1154,6 +1154,18 @@
   "integrity" "sha512-lY1Q/PiJGC2zOv/z391WOTD+Z02bCgsFfvxoXXf6h7kv9o+WmsmzYqrAwY63sNgOxE4xEdq0WyUnXfKeBrSvYw=="
   "resolved" "https://registry.npmjs.org/picomatch/-/picomatch-2.3.0.tgz"
   "version" "2.3.0"
+
+"play-audio@^0.5.2":
+  "integrity" "sha512-ZAqHUKkQLix2Iga7pPbsf1LpUoBjcpwU93F1l3qBIfxYddQLhxS6GKmS0d3jV8kSVaUbr6NnOEcEMFvuX93SWQ=="
+  "resolved" "https://registry.npmjs.org/play-audio/-/play-audio-0.5.2.tgz"
+  "version" "0.5.2"
+
+"play-dl@^1.9.4":
+  "integrity" "sha512-/NiD3rpZw/5zbtUhF87AQEmHYLBD5QhtCD/9c3b47xvZMxCO3eHLEN5G1h/b/lC1lCp+xj5BpdYefOrIbDhBUQ=="
+  "resolved" "https://registry.npmjs.org/play-dl/-/play-dl-1.9.4.tgz"
+  "version" "1.9.4"
+  dependencies:
+    "play-audio" "^0.5.2"
 
 "prepend-http@^2.0.0":
   "integrity" "sha1-6SQ0v6XqjBn0HN/UAddBo8gZ2Jc="
