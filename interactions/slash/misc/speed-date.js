@@ -315,7 +315,7 @@ module.exports = {
 					});
 					return;
 			}
-			console.log(`>>>>>>>>>> EXECUTING COMMAND - START`, {guildName, guildId, groupCommand, subcommand });;
+			console.log(`>>>>>>>>>> EXECUTING COMMAND - START`, {guildName, guildId, groupCommand, subcommand });
 			switch (groupCommand) {
 				case SESSION_GROUP_COMMAND:
 					switch (subcommand) {

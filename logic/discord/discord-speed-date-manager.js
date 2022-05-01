@@ -18,9 +18,9 @@ async function getOrCreateVoiceChannelProtectedByRole(guildClient, roleId, creat
 				type: "GUILD_VOICE",
 				reason: "Staging lobby for speed dating :)",
 				permissionOverwrites: [
-					{ id: guildClient.id, deny: ["VIEW_CHANNEL", "CONNECT", "SPEAK"] }, // deny
-					{ id: roleId, allow: ["VIEW_CHANNEL", "CONNECT"] }, // allow role
-					{ id: creatorId, allow: ["SPEAK"] }, // allow creator to speak
+					{ id: guildClient.id, deny: [Permissions.FLAGS.VIEW_CHANNEL, Permissions.FLAGS.CONNECT, Permissions.FLAGS.SPEAK] }, // deny
+					{ id: roleId, allow: [Permissions.FLAGS.VIEW_CHANNEL, Permissions.FLAGS.CONNECT] }, // allow role
+					{ id: creatorId, allow: [Permissions.FLAGS.SPEAK, Permissions.FLAGS.PRIORITY_SPEAKER] }, // allow creator to speak
 				]
 			});
 		}
