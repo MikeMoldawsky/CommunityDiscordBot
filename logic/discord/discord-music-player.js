@@ -1,3 +1,4 @@
+const _ = require('lodash')
 const {
 	createAudioPlayer,
 	createAudioResource,
@@ -12,11 +13,13 @@ const { getGuildWithActiveSessionOrThrow } = require("../../logic/db/guild-db-ma
 const client = require('../../logic/discord/client')
 
 const DEFAULT_LOBBY_MUSIC_URL = 'https://soundcloud.com/julian_avila/elevatormusic';
-// const DEFAULT_LOBBY_MUSIC_URL = 'https://www.youtube.com/watch?v=Yl3t2pjDYhQ';
 
-let audioPlayer
+const audioPlayers = {}
 
 async function playSong(url) {
+	const audioPlayer = _.get(audioPlayers, url)
+	if (!audioPlayer) return
+
 	let stream = await play.stream(url)
 	let resource = createAudioResource(stream.stream, {
 		inputType: stream.type
@@ -25,9 +28,9 @@ async function playSong(url) {
 	audioPlayer.play(resource);
 }
 
-function playMusic(url = DEFAULT_LOBBY_MUSIC_URL) {
+function createSongPlayer(url = DEFAULT_LOBBY_MUSIC_URL) {
 	try {
-		audioPlayer = createAudioPlayer();
+		let audioPlayer = createAudioPlayer();
 
 		audioPlayer.on('error', error => {
 			console.error(`audioPlayer Error: ${error.message} with resource ${error.resource.metadata.title}`);
@@ -55,6 +58,8 @@ function playMusic(url = DEFAULT_LOBBY_MUSIC_URL) {
 			console.log('audioPlayer - Paused')
 		});
 
+		audioPlayers[url] = audioPlayer
+
 		playSong(url)
 	}
 	catch (e) {
@@ -63,9 +68,18 @@ function playMusic(url = DEFAULT_LOBBY_MUSIC_URL) {
 	}
 }
 
-async function connectToMusic(guildId) {
+async function playMusicInLobby(guildId) {
 	try	{
 		const { config: {voiceLobby: { music : musicConfig }},  guildInfo, activeSession: { initialization: { lobby } } } = await getGuildWithActiveSessionOrThrow(guildId);
+
+		const url = !!musicConfig.url ? musicConfig.url : DEFAULT_LOBBY_MUSIC_URL
+		const audioPlayer = _.get(audioPlayers, url)
+
+		if (!audioPlayer) {
+			await createSongPlayer(url)
+			return playMusicInLobby(guildId)
+		}
+
 		const guildClient = await client.guilds.fetch(guildId);
 		const lobbyChannel =  await guildClient.channels.fetch(lobby.channelId);
 
@@ -76,12 +90,12 @@ async function connectToMusic(guildId) {
 		});
 
 		connection.on(VoiceConnectionStatus.Ready, () => {
-			console.log('connectToMusic - Ready');
+			console.log('playMusicInLobby - Ready');
 			connection.subscribe(audioPlayer);
 		});
 
 		connection.on(VoiceConnectionStatus.Disconnected, async () => {
-			console.log('connectToMusic - Disconnected');
+			console.log('playMusicInLobby - Disconnected');
 			try {
 				await Promise.race([
 					entersState(connection, VoiceConnectionStatus.Signalling, 5_000),
@@ -91,20 +105,20 @@ async function connectToMusic(guildId) {
 			} catch (error) {
 				// Seems to be a real disconnect
 				await connection.destroy();
-				await connectToMusic(guildId)
+				await playMusicInLobby(guildId)
 			}
 		});
 
 		connection.on(VoiceConnectionStatus.Connecting, () => {
-			console.log('connectToMusic - Connecting');
+			console.log('playMusicInLobby - Connecting');
 		});
 
 		connection.on(VoiceConnectionStatus.Destroyed, () => {
-			console.log('connectToMusic - Destroyed');
+			console.log('playMusicInLobby - Destroyed');
 		});
 
 		connection.on(VoiceConnectionStatus.Signalling, () => {
-			console.log('connectToMusic - Signalling');
+			console.log('playMusicInLobby - Signalling');
 		});
 	}
 	catch (e) {
@@ -113,15 +127,15 @@ async function connectToMusic(guildId) {
 	}
 }
 
-async function disconnectFromMusic(guildId) {
+async function disconnectFromLobby(guildId) {
 	const connection = getVoiceConnection(guildId);
 	if (connection) {
+		// TODO - stop player and remove ref if custom song and no subscribers
 		await connection.destroy()
 	}
 }
 
 module.exports = {
-	playMusic,
-	connectToMusic,
-	disconnectFromMusic,
+	playMusicInLobby,
+	disconnectFromLobby,
 }

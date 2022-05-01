@@ -1,14 +1,9 @@
 const { MessageEmbed, Permissions } = require("discord.js");
 const { getOrCreateRole } = require("./utils");
 const { updatedLobby } = require("../db/guild-db-manager");
-const { playMusic } = require('./discord-music-player')
 const _ = require("lodash");
 
 const DEFAULT_LOBBY_NAME = "❤️ Speed Date Lobby ❤️";
-
-function onClientReady() {
-	playMusic()
-}
 
 async function getOrCreateVoiceChannelProtectedByRole(guildClient, roleId, creatorId) {
 	try {
@@ -89,7 +84,6 @@ async function createSpeedDateVoiceChannelRoom(guild, roomNumber, memberIds) {
 }
 
 module.exports = {
-	onClientReady,
 	createLobbyProtectByRole,
 	createLobbyInvite,
 	createSpeedDateVoiceChannelRoom

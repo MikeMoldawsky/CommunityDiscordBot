@@ -13,7 +13,7 @@ const {
 	MATCH_MAKER_TASK_DELAY,
 	ROUND_TERMINATOR_TASK_INTERVAL,
 } = require('../../../logic/config/appconf.prod')
-const { connectToMusic } = require('../../../logic/discord/discord-music-player')
+const { playMusicInLobby } = require('../../../logic/discord/discord-music-player')
 // Sub Commands
 const SESSION_GROUP_COMMAND = "session";
 const SESSION_INITIALIZE_SUBCOMMAND = 'initialize';
@@ -82,7 +82,7 @@ async function initializeSession(interaction){
 		guildName = interaction.guild.name;
 		// 1. Bootstrap infrastructure that is required for speed dating (Roles, Voice Channel Router etc.)
 		await bootstrapSpeedDateInfrastructureForGuild(guildId, guildName, interaction.user.id);
-		await connectToMusic(guildId)
+		await playMusicInLobby(guildId)
 	} catch (e){
 		console.log(`Failed to initialize speed dating`, {guildId, guildName, e});
 		throw Error(`Failed to initialize speed dating for guild ${guildName} ${e}`);
@@ -94,7 +94,7 @@ async function resumeLobbyMusic(interaction){
 	try {
 		guildId = interaction.guild.id;
 		guildName = interaction.guild.name;
-		await connectToMusic(guildId)
+		await playMusicInLobby(guildId)
 	} catch (e){
 		console.log(`Failed to resume music in lobby`, {guildId, guildName, e});
 		throw Error(`Failed to resume music in lobby ${e}`);
