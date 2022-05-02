@@ -11,22 +11,30 @@ const {
 const play = require('play-dl')
 const { getGuildWithActiveSessionOrThrow } = require("../../logic/db/guild-db-manager");
 const client = require('../../logic/discord/client')
+const { isActiveSpeedDateSession } = require("../db/guild-db-manager");
 
 const DEFAULT_LOBBY_MUSIC_URL = 'https://soundcloud.com/julian_avila/elevatormusic';
 const DEFAULT_MUSIC_VOLUME = 10;
 
 const guildIdToMusicObject = {}
-let i = 0;
 
 
-function createGuildMusicObject(guildId, musicConfig, player, resource){
-	return {
-		musicConfig,
-		player,
-		resource,
-	}
+async function createAudioResourceForGuild(url, adjustedVolume) {
+	const stream = await play.stream(url);
+	const resource = createAudioResource(stream.stream, {
+		inputType: stream.type,
+		inlineVolume: true,
+		metadata: { url, adjustedVolume }
+	});
+	resource.volume.setVolume(adjustedVolume);
+	return resource;
 }
 
+async function createAudioResourceAndPlay(musicConfig, adjustedVolume, url, audioPlayer, guildId) {
+	const resource = await createAudioResourceForGuild(url, adjustedVolume);
+	audioPlayer.play(resource);
+	_.set(guildIdToMusicObject, `${guildId}.resource`, resource);
+}
 
 /*
 @param adjustedVolume:
@@ -36,65 +44,80 @@ function createGuildMusicObject(guildId, musicConfig, player, resource){
  The weired thing is that volume can be above 100%.
  It means that if you pass 1000 you'll be at 10x the maximum volume.
  */
-async function playSong(url, adjustedVolume) {
-	console.log("Playing audit resource on an audio player", {url, volume: adjustedVolume})
-	const audioPlayer = _.get(guildIdToMusicObject, url)
-	if (!audioPlayer) return
-
-	const stream = await play.stream(url)
-	const resource = createAudioResource(stream.stream, {
-		inputType: stream.type,
-		inlineVolume: true
-	})
-
-
-	resource.volume.setVolume(0.01);
-	audioPlayer.play(resource);
+async function updateOrCreateAudioPlayerResourceForGuildIfNeeded(guildId) {
+	const audioPlayer = _.get(guildIdToMusicObject, `${guildId}.player`);
+	const { config: {voiceLobby: { music : musicConfig }},  guildInfo } = await getGuildWithActiveSessionOrThrow(guildId);
+	const activeResource = _.get(guildIdToMusicObject, `${guildId}.resource`);
+	const url = _.get(musicConfig, "url", DEFAULT_LOBBY_MUSIC_URL);
+	const volume = _.get(musicConfig, "volume", DEFAULT_MUSIC_VOLUME);
+	const adjustedVolume = volume/100;
+	if(!activeResource){
+		console.log("Creating new Audio Resource on Audio Player - No Active Resource", { guildInfo, musicConfig, adjustedVolume });
+		await createAudioResourceAndPlay(musicConfig, adjustedVolume, url, audioPlayer, guildId);
+		return;
+	}
+	// Guild has an existing resource
+	if(activeResource.ended){ // check if resource has ended
+		// restart resource
+		console.log("Creating new Audio Resource on Audio Player - Active Resource Ended", {guildInfo, musicConfig, adjustedVolume});
+		await createAudioResourceAndPlay(musicConfig, adjustedVolume, url, audioPlayer, guildId);
+		return;
+	}
+	// Check if resource was changed.
+	const currentResourceMetadata = _.get(activeResource, "metadata");
+	if(currentResourceMetadata?.url !== url){
+		// TODO: should delete current audio resource
+		console.log("Creating new Audio Resource on Audio Player - Music URL was changed", {guildInfo, musicConfig, adjustedVolume});
+		await createAudioResourceAndPlay(musicConfig, adjustedVolume, url, audioPlayer, guildId);
+		return;
+	}
+	// Adjust volume on the same resource if needed
+	if(currentResourceMetadata?.adjustedVolume !== adjustedVolume ){
+		console.log("Setting current Audio Resource to new volume", {guildInfo, musicConfig, adjustedVolume, currentResourceMetadata})
+		activeResource.volume.setVolume(adjustedVolume);
+		activeResource.metadata.adjustedVolume = adjustedVolume;
+	} else {
+		console.log("No changes in guild Audio Resource - NOOP", {guildInfo, musicConfig, adjustedVolume, currentResourceMetadata})
+	}
 }
 
-async function createSongPlayer(guildInfo, musicConfig) {
+function getOrCreateAudioPlayerForGuild(guildInfo) {
+	const audioPlayer = _.get(guildIdToMusicObject, `${guildInfo.guildId}.player`);
+	if(audioPlayer){
+		console.log("Audio player already exists", {guildInfo});
+		return audioPlayer;
+	}
 	try {
-		const url = _.get(musicConfig, "url", DEFAULT_LOBBY_MUSIC_URL);
-		const volume = _.get(musicConfig, "volume", DEFAULT_MUSIC_VOLUME);
-		const adjustedVolume = volume/100;
-
-		console.log("Creating a new Audio Player", {guildInfo, musicConfig, adjustedVolume})
+		console.log("Creating a new Audio Player", {guildInfo})
 		const audioPlayer = createAudioPlayer();
 
 		audioPlayer.on('error', error => {
-			i += 1;
 			console.error(`audioPlayer Error: ${error.message} with resource ${error.resource.metadata.title}`);
 		});
 
-		audioPlayer.on(AudioPlayerStatus.Idle, () => {
-			console.log('audioPlayer - Idle - restarting song...', {guildInfo, musicConfig, adjustedVolume})
+		audioPlayer.on(AudioPlayerStatus.Idle, async () => {
+			console.log('audioPlayer - Idle - restarting song...', {guildInfo})
 			// restart music
-			playSong(url)
+			await updateOrCreateAudioPlayerResourceForGuildIfNeeded(guildInfo.guildId);
 		});
 
 		audioPlayer.on(AudioPlayerStatus.Playing, () => {
-			i += 1;
-			console.log('audioPlayer - Playing', {guildInfo, musicConfig, adjustedVolume})
+			console.log('audioPlayer - Playing', {guildInfo})
 		});
 
 		audioPlayer.on(AudioPlayerStatus.AutoPaused, () => {
-			i += 1;
-			console.log('audioPlayer - AutoPaused', {url,i})
+			console.log('audioPlayer - AutoPaused', {guildInfo})
 		});
 
 		audioPlayer.on(AudioPlayerStatus.Buffering, () => {
-			i += 1;
-			console.log('audioPlayer - Buffering - loading song...', {guildInfo, musicConfig, adjustedVolume})
+			console.log('audioPlayer - Buffering - loading song...', {guildInfo})
 		});
 
 		audioPlayer.on(AudioPlayerStatus.Paused, () => {
-			i += 1;
-			console.log('audioPlayer - Paused', {guildInfo, musicConfig, adjustedVolume})
+			console.log('audioPlayer - Paused', {guildInfo})
 		});
-
-		guildIdToMusicObject[url] = audioPlayer;
-
-		await playSong(url, adjustedVolume);
+		_.set(guildIdToMusicObject, `${guildInfo.guildId}.player`, audioPlayer);
+		return audioPlayer;
 	}
 	catch (e) {
 		console.log(`Failed to play music`, e);
@@ -102,22 +125,22 @@ async function createSongPlayer(guildInfo, musicConfig) {
 	}
 }
 
+async function reloadMusicInLobbyIfInActiveSession(guildId) {
+	const isActiveSession = await isActiveSpeedDateSession(guildId);
+	if(isActiveSession){
+		await playMusicInLobby(guildId);
+		return
+	}
+	console.log(`Guild is not in active session - no need to reload music - NOOP`, {guildId});
+}
+
 async function playMusicInLobby(guildId) {
 	try	{
 		const { config: {voiceLobby: { music : musicConfig }},  guildInfo, activeSession: { initialization: { lobby } } } = await getGuildWithActiveSessionOrThrow(guildId);
-		if(!guildIdToMusicObject[guildId]){
-			console.log("Guild doesn't have a playing music", {musicConfig, })
+	 	const audioPlayer = getOrCreateAudioPlayerForGuild(guildInfo);
+		await updateOrCreateAudioPlayerResourceForGuildIfNeeded(guildId);
 
-		}
-
-		const url = _.get(musicConfig, "url", DEFAULT_LOBBY_MUSIC_URL);
-		const audioPlayer = _.get(guildIdToMusicObject, guildId)
-
-		if (!audioPlayer) {
-			await createSongPlayer(guildInfo, musicConfig)
-			return playMusicInLobby(guildId)
-		}
-		console.log("Connecting Lobby to an audio player", {guildInfo, url})
+		console.log("Connecting Lobby to an audio player", {guildInfo, musicConfig, lobby})
 		const guildClient = await client.guilds.fetch(guildId);
 		const lobbyChannel =  await guildClient.channels.fetch(lobby.channelId);
 
@@ -128,12 +151,12 @@ async function playMusicInLobby(guildId) {
 		});
 
 		connection.on(VoiceConnectionStatus.Ready, () => {
-			console.log('playMusicInLobby - Ready', {guildInfo, url});
+			console.log('playMusicInLobby - Ready', {guildInfo, musicConfig});
 			connection.subscribe(audioPlayer);
 		});
 
 		connection.on(VoiceConnectionStatus.Disconnected, async () => {
-			console.log('playMusicInLobby - Disconnected');
+			console.log('playMusicInLobby - Disconnected', {guildInfo, musicConfig});
 			try {
 				await Promise.race([
 					entersState(connection, VoiceConnectionStatus.Signalling, 5_000),
@@ -177,4 +200,5 @@ async function disconnectFromLobby(guildId) {
 module.exports = {
 	playMusicInLobby,
 	disconnectFromLobby,
+	reloadMusicInLobbyIfInActiveSession,
 }

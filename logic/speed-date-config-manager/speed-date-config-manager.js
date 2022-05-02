@@ -9,9 +9,7 @@ async function updateMusicIfNeeded(guildId, guildName, musicUrl, musicVolume){
 			console.log(`Not updating MUSIC configurations for guild ${guildName} with ${guildId} - parameters weren't passed...`);
 			return;
 		}
-		// 1. Don't allow configure while active speed dating
 		await getOrCreateGuildSpeedDateBotDocument(guildId, guildName); // if it's the first time you should be able to configure
-		await throwIfActiveSession(guildId)
 		await updatedConfigFieldsForGuild(guildId, undefined, undefined, undefined, musicUrl, musicVolume, undefined, undefined);
 	} catch (e) {
 		console.log(`Can't update MUSIC configuration while active speed date for guild ${guildName} with ${guildId}`, e);
@@ -66,7 +64,6 @@ async function addAdminUsersIfNeeded(guildId, guildName, adminUser) {
 		throw Error(`Can't update configuration date for guild ${guildName} with ${guildId}, ${e}`);
 	}
 }
-
 
 async function isAdminUser(guildId, userId) {
 	try {

@@ -12,7 +12,7 @@ const {
 	MATCH_MAKER_TASK_DELAY,
 	ROUND_TERMINATOR_TASK_INTERVAL,
 } = require('../../../logic/config/appconf.prod')
-const { playMusicInLobby } = require('../../../logic/discord/discord-music-player')
+const { playMusicInLobby, reloadMusicInLobbyIfInActiveSession } = require('../../../logic/discord/discord-music-player')
 const { endSpeedDateSession } = require("../../../logic/speed-date-session-terminator/speed-date-session-cleanup-manager");
 // Sub Commands
 const SESSION_GROUP_COMMAND = "session";
@@ -55,6 +55,7 @@ async function configureMusic(interaction){
 	const musicVolume = interaction.options.getInteger("volume");
 	try {
 		await updateMusicIfNeeded(guildId, guildName, musicUrl, musicVolume);
+		await reloadMusicInLobbyIfInActiveSession(guildId);
 	} catch (e) {
 		console.log(`Can't update music configuration while active speed date for guild ${guildName} with ${guildId}`, e);
 		throw Error(`Failed to configure music. Check if there is an active round..., ${e}`);
@@ -94,7 +95,7 @@ async function resumeLobbyMusic(interaction){
 	try {
 		guildId = interaction.guild.id;
 		guildName = interaction.guild.name;
-		await playMusicInLobby(guildId)
+		await reloadMusicInLobbyIfInActiveSession(guildId)
 	} catch (e){
 		console.log(`Failed to resume music in lobby`, {guildId, guildName, e});
 		throw Error(`Failed to resume music in lobby ${e}`);

@@ -3,6 +3,7 @@ const _ = require("lodash");
 
 const DEFAULT_INVITE_IMAGE_URL = "https://www.thebirdstage.com/wp-content/uploads/2016/02/Speed-Dating.jpg";
 const DEFAULT_LOBBY_MUSIC_URL = 'https://soundcloud.com/julian_avila/elevatormusic';
+const DEFAULT_LOBBY_MUSIC_VOLUME = 10;
 
 function isNilOrEmpty(obj){
 	return _.isNil(obj) || _.isEmpty(obj);
@@ -204,7 +205,7 @@ async function getOrCreateGuildSpeedDateBotDocument(guildId, guildName) {
 					},
 					music: {
 						url: DEFAULT_LOBBY_MUSIC_URL,
-						volume: 1
+						volume: DEFAULT_LOBBY_MUSIC_VOLUME
 					}
 				}
 			},
