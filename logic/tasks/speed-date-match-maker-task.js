@@ -1,9 +1,9 @@
-const client = require('../../discord/client')
-const matchRooms = require('./speed-date-match-maker-manager')
+const client = require('../discord/client')
+const matchRooms = require('../speed-date-match-maker/speed-date-match-maker-manager')
 const _ = require('lodash')
-const { getGuildWithActiveSessionOrThrow, updatedMatchMakerFieldsForGuild, findGuildAndUpdate } = require("../../db/guild-db-manager");
+const { getGuildWithActiveSessionOrThrow, updatedMatchMakerFieldsForGuild, findGuildAndUpdate } = require("../db/guild-db-manager");
 const moment = require("moment");
-const { createSpeedDateVoiceChannelRoom } = require("../../discord/discord-speed-date-manager");
+const { createSpeedDateVoiceChannelRoom } = require("../discord/discord-speed-date-manager");
 
 async function createSpeedDatesMatchesInternal(guildBotDoc, forceMatch = false) {
 	console.log(`Match maker - SEARCHING DATES - ${guildBotDoc.guildInfo}, forceMatch ${forceMatch}`)

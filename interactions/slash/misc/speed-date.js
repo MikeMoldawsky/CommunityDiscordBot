@@ -1,10 +1,9 @@
 const { SlashCommandBuilder } = require("@discordjs/builders");
 const { updateMusicIfNeeded, updateIgnoredUsersIfNeeded, updateInviteIfNeeded, isAdminUser, addAdminUsersIfNeeded,
-	isAdminConfigured, isNoAdminConfigured
+	isNoAdminConfigured
 } = require("../../../logic/speed-date-config-manager/speed-date-config-manager");
 const { bootstrapSpeedDateInfrastructureForGuild, startSpeedDateRound, getLobbyInvite, allowMembersToJoinLobby
 } = require("../../../logic/speed-date-manager/speed-date-manager");
-const { endSpeedDateSessionTask } = require("../../../logic/tasks/speed-date-session-cleanup/speed-date-session-cleanup-manager");
 const {
 	DEFAULT_SPEED_DATE_DURATION_MINUTES,
 	DEFAULT_ROOM_CAPACITY,
@@ -14,6 +13,7 @@ const {
 	ROUND_TERMINATOR_TASK_INTERVAL,
 } = require('../../../logic/config/appconf.prod')
 const { playMusicInLobby } = require('../../../logic/discord/discord-music-player')
+const { endSpeedDateSession } = require("../../../logic/speed-date-session-terminator/speed-date-session-cleanup-manager");
 // Sub Commands
 const SESSION_GROUP_COMMAND = "session";
 const SESSION_INITIALIZE_SUBCOMMAND = 'initialize';
@@ -330,7 +330,7 @@ module.exports = {
 							await interaction.followUp({ embeds: [lobbyChannelInvite], ephemeral: false,});
 							break;
 						case SESSION_END_SUBCOMMAND:
-							await endSpeedDateSessionTask(guildId).catch(e => console.log(e));
+							await endSpeedDateSession(guildId).catch(e => console.log(e));
 							break;
 						default:
 							throw Error(`Unknown ${groupCommand} subcommand: ${subcommand}`);
