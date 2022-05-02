@@ -1,8 +1,8 @@
 const _ = require("lodash");
-const { deleteActiveSessionForGuild, getGuildWithActiveSessionOrThrow } = require("../../db/guild-db-manager");
-const client = require("../../discord/client");
+const { deleteActiveSessionForGuild, getGuildWithActiveSessionOrThrow } = require("../db/guild-db-manager");
+const client = require("../discord/client");
 const { terminateSpeedDateRound } = require("../speed-date-round-terminator/speed-date-round-terminator-manager");
-const { disconnectFromLobby } = require('../../discord/discord-music-player')
+const { disconnectFromLobby } = require('../discord/discord-music-player')
 
 async function deleteLobbyAndTempRoles(lobby, guildClient) {
 		try {
@@ -49,7 +49,7 @@ async function cleanUpSpeedDateSessionForGuild(guildId) {
 	}
 }
 
-async function endSpeedDateSessionTask(guildId) {
+async function endSpeedDateSession(guildId) {
 	console.log(`End Speed Date Session - START`, {guildId});
 	try {
 		await cleanUpSpeedDateSessionForGuild(guildId);
@@ -59,4 +59,4 @@ async function endSpeedDateSessionTask(guildId) {
 	}
 }
 
-module.exports = { endSpeedDateSessionTask }
+module.exports = { endSpeedDateSession }

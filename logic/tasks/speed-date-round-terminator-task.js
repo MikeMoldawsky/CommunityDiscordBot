@@ -1,6 +1,6 @@
-const { getGuildWithActiveSessionOrThrow } = require("../../db/guild-db-manager");
+const { getGuildWithActiveSessionOrThrow } = require("../db/guild-db-manager");
 const moment = require("moment");
-const { terminateSpeedDateRound } = require("./speed-date-round-terminator-manager");
+const { terminateSpeedDateRound } = require("../speed-date-round-terminator/speed-date-round-terminator-manager");
 
 async function startSpeedDateRoundTerminatorTaskInternal(guildId, interval){
 	console.log(`Speed Date Round Terminator TASK - WAKING UP`, {guildId})

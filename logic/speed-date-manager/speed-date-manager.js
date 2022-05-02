@@ -3,8 +3,8 @@ const { getGuildWithActiveSessionOrThrow, updatedRoundConfig, isActiveSpeedDateS
 const { addRoleToMembers } = require("../discord/utils");
 const { createLobbyInvite } = require("../discord/discord-speed-date-manager");
 const { initializeSpeedDateSessionForGuild } = require("../speed-date-bootstraper/speed-date-bootstrapper");
-const { startDateMatchMakerTaskWithDelay } = require("../tasks/speed-date-match-maker/speed-date-match-maker-task");
-const { startSpeedDateRoundTerminatorTask } = require("../tasks/speed-date-round-terminator/speed-date-round-terminator-task");
+const { startDateMatchMakerTaskWithDelay } = require("../tasks/speed-date-match-maker-task");
+const { startSpeedDateRoundTerminatorTask } = require("../tasks/speed-date-round-terminator-task");
 const moment = require("moment");
 
 

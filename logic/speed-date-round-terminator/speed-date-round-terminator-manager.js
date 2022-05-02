@@ -1,7 +1,7 @@
-const client = require("../../../logic/discord/client");
+const client = require("../discord/client");
 const _ = require("lodash");
-const { getGuildWithActiveSessionOrThrow, isActiveSpeedDateRound, deleteActiveRound, findGuildAndUpdate } = require("../../db/guild-db-manager");
-const { getOrCreateRole } = require("../../discord/utils");
+const { getGuildWithActiveSessionOrThrow, isActiveSpeedDateRound, deleteActiveRound, findGuildAndUpdate } = require("../db/guild-db-manager");
+const { getOrCreateRole } = require("../discord/utils");
 
 async function moveMembersToLobby(speedDateMembers, guildClient, lobby ) {
 	const guildMemberClient = guildClient.members;
