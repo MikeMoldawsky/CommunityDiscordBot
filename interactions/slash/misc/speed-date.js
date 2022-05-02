@@ -29,9 +29,6 @@ const CONFIGURE_MUSIC_SUBCOMMAND = 'music';
 const CONFIGURE_INVITE_SUBCOMMAND = 'invite';
 const CONFIGURE_IGNORED_USERS_SUBCOMMAND = 'ignored-users';
 const CONFIGURE_BOT_ADMIN_SUBCOMMAND = 'bot-admin';
-// DEBUG Command
-const DEBUG_GROUP_SUBCOMMAND = 'debug';
-const DEBUG_RESUME_MUSIC_SUBCOMMAND = 'resume-music';
 
 
 async function configureInvite(interaction){
@@ -89,19 +86,6 @@ async function initializeSession(interaction){
 		throw Error(`Failed to initialize speed dating for guild ${guildName} ${e}`);
 	}
 }
-
-async function resumeLobbyMusic(interaction){
-	let guildId, guildName;
-	try {
-		guildId = interaction.guild.id;
-		guildName = interaction.guild.name;
-		await reloadMusicInLobbyIfInActiveSession(guildId)
-	} catch (e){
-		console.log(`Failed to resume music in lobby`, {guildId, guildName, e});
-		throw Error(`Failed to resume music in lobby ${e}`);
-	}
-}
-
 
 async function getInviteToLobby(interaction) {
 	let guildId;
@@ -273,14 +257,6 @@ module.exports = {
 					)
 					.addUserOption(option => option.setName('add').setDescription("Add a user that will be able to interact with the bot").setRequired(true))
 			)
-		)
-		.addSubcommandGroup(subCommandGroup => subCommandGroup.setName(DEBUG_GROUP_SUBCOMMAND).setDescription("Speed date session debug error handling")
-			.addSubcommand(
-				subCommand => subCommand.setName(DEBUG_RESUME_MUSIC_SUBCOMMAND)
-					.setDescription(
-						"Resume the lobby music in case the bot exited the room."
-					)
-			)
 		),
 	/**
 	 * @description Executes when the interaction is called by interaction handler.
@@ -359,15 +335,6 @@ module.exports = {
 							break;
 						case CONFIGURE_IGNORED_USERS_SUBCOMMAND:
 							await configureIgnoredUsers(interaction);
-							break;
-						default:
-							throw Error(`Unknown ${groupCommand} subcommand: ${subcommand}`);
-					}
-					break;
-				case DEBUG_GROUP_SUBCOMMAND:
-					switch (subcommand) {
-						case DEBUG_RESUME_MUSIC_SUBCOMMAND:
-							await resumeLobbyMusic(interaction);
 							break;
 						default:
 							throw Error(`Unknown ${groupCommand} subcommand: ${subcommand}`);
