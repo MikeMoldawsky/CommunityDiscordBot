@@ -3,7 +3,7 @@ const { updatedLobby, getOrCreateGuildSpeedDateBotDocument } = require("../db/gu
 const _ = require("lodash");
 const { getOrCreateRole } = require("./utils");
 
-const DEFAULT_LOBBY_NAME = "❤️ Speed Date Lobby ❤️";
+const DEFAULT_LOBBY_NAME = "🫂 Community Glue Lobby 🫂️";
 
 
 async function getOrCreateCommunityBotAdminRoleAndPersistIfNeeded(guildId, guildName) {
