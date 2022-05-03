@@ -6,12 +6,12 @@
 
 // Declare constants which will be used throughout the bot.
 
+require("dotenv").config();
 const fs = require("fs");
 const { Collection} = require("discord.js");
 const { REST } = require("@discordjs/rest");
 const { Routes } = require("discord-api-types/v9");
 const client = require('./logic/discord/client')
-require("dotenv").config();
 /**
  * From v13, specifying the intents is compulsory.
  * @type {Object}
