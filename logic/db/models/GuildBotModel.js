@@ -4,7 +4,8 @@ const db = require('../db')
 // invite defaults
 const DEFAULT_INVITE_IMAGE_URL = "https://audaciouschurch.com/wp-content/uploads/2020/09/Get-to-know-us.png";
 const DEFAULT_INVITE_TITLE = "🫂 Glue With Us 🫂";
-const DEFAULT_INVITE_DESCRIPTION = "Congratulations!\nYou've been invited to the\n Community Glue Event.\nCome and join us.";
+const DEFAULT_INVITE_DESCRIPTION = "Congratulations! You are invited to:\n\nThe Community Glue Event 🫂"
+
 // music defaults
 const DEFAULT_LOBBY_MUSIC_URL = 'https://soundcloud.com/julian_avila/elevatormusic';
 const DEFAULT_LOBBY_MUSIC_VOLUME = 10;
