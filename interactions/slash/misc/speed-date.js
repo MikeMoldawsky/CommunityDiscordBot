@@ -103,7 +103,9 @@ async function startRound(interaction) {
 	let guildId, roomCapacity, speedDateDurationMinutes;
 	try {
 		guildId = interaction.guild.id;
-		roomCapacity = interaction.options.getInteger("room-capacity") || DEFAULT_ROOM_CAPACITY;
+		// TODO - enable this after testing capacity > 2
+		// roomCapacity = interaction.options.getInteger("room-capacity") || DEFAULT_ROOM_CAPACITY;
+		roomCapacity = DEFAULT_ROOM_CAPACITY;
 		speedDateDurationMinutes = interaction.options.getInteger("duration") || DEFAULT_SPEED_DATE_DURATION_MINUTES;
 	} catch (e) {
 		console.log(`Failed to start round - input errors`, e);
@@ -162,10 +164,11 @@ module.exports = {
 							.setName("duration")
 							.setDescription("The meeting duration in minutes.")
 							.setRequired(true))
-					.addIntegerOption((option) =>
-						option
-							.setName("room-capacity")
-							.setDescription("The capacity of each room."))
+					// TODO - enable this after testing capacity > 2
+					// .addIntegerOption((option) =>
+					// 	option
+					// 		.setName("room-capacity")
+					// 		.setDescription("The capacity of each room."))
 			)
 		)
 		.addSubcommandGroup(subCommandGroup => subCommandGroup.setName(CONFIGURE_GROUP_SUBCOMMAND).setDescription("Speed date configure commands")
