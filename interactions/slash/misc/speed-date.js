@@ -188,7 +188,8 @@ module.exports = {
 					.addIntegerOption((option) =>
 						option
 							.setName("duration")
-							.setDescription("The meeting duration in minutes."))
+							.setDescription("The meeting duration in minutes.")
+							.setRequired(true))
 					.addIntegerOption((option) =>
 						option
 							.setName("room-capacity")
