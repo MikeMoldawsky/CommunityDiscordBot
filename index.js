@@ -10,7 +10,6 @@ const fs = require("fs");
 const { Collection} = require("discord.js");
 const { REST } = require("@discordjs/rest");
 const { Routes } = require("discord-api-types/v9");
-const { token, client_id, test_guild_id } = require("./config.json");
 const client = require('./logic/discord/client')
 require("dotenv").config();
 /**
@@ -87,8 +86,8 @@ const commandJsonData = [
 					deploy commands globally, replace the line below with:
 				Routes.applicationCommands(client_id)
 			 */
-			Routes.applicationCommands(process.env.CLIENT_ID),
-			// Routes.applicationGuildCommands(client_id, test_guild_id),
+			Routes.applicationCommands(process.env.DISCORD_CLIENT_ID),
+			// Routes.applicationGuildCommands(process.env.DISCORD_CLIENT_ID, process.env.DISCORD_TEST_GUILD_ID),
 			{ body: commandJsonData }
 		);
 		console.log("Successfully reloaded application Slash Commands to Discord REST API.");
@@ -99,4 +98,4 @@ const commandJsonData = [
 
 /**********************************************************************/
 // Login into your client application with bot's token.
-client.login(process.env.TOKEN);
+client.login(process.env.DISCORD_TOKEN);
