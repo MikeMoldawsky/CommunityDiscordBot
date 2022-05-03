@@ -12,6 +12,12 @@ const { Collection} = require("discord.js");
 const { REST } = require("@discordjs/rest");
 const { Routes } = require("discord-api-types/v9");
 const client = require('./logic/discord/client')
+
+
+console.log(process.env.DISCORD_TOKEN)
+console.log(process.env.DISCORD_CLIENT_ID)
+console.log(process.env.MONGO_URI)
+
 /**
  * From v13, specifying the intents is compulsory.
  * @type {Object}
