@@ -2,9 +2,9 @@ const mongoose = require('mongoose')
 const db = require('../db')
 
 // invite defaults
-const DEFAULT_INVITE_IMAGE_URL = "https://www.thebirdstage.com/wp-content/uploads/2016/02/Speed-Dating.jpg";
-const DEFAULT_INVITE_TITLE = "🎉 Meet With Us 🎉";
-const DEFAULT_INVITE_DESCRIPTION = "Congratulations!\nYou've been invited to the community Meet With Us event.\nJoin Us 💖";
+const DEFAULT_INVITE_IMAGE_URL = "https://audaciouschurch.com/wp-content/uploads/2020/09/Get-to-know-us.png";
+const DEFAULT_INVITE_TITLE = "🫂 Glue With Us 🫂";
+const DEFAULT_INVITE_DESCRIPTION = "Congratulations!\nYou've been invited to the\n Community Glue Event.\nCome and join us.";
 // music defaults
 const DEFAULT_LOBBY_MUSIC_URL = 'https://soundcloud.com/julian_avila/elevatormusic';
 const DEFAULT_LOBBY_MUSIC_VOLUME = 10;
