@@ -12,6 +12,7 @@ const { REST } = require("@discordjs/rest");
 const { Routes } = require("discord-api-types/v9");
 const { token, client_id, test_guild_id } = require("./config.json");
 const client = require('./logic/discord/client')
+require("dotenv").config();
 /**
  * From v13, specifying the intents is compulsory.
  * @type {Object}
@@ -86,7 +87,7 @@ const commandJsonData = [
 					deploy commands globally, replace the line below with:
 				Routes.applicationCommands(client_id)
 			 */
-			Routes.applicationCommands(client_id),
+			Routes.applicationCommands(process.env.CLIENT_ID),
 			// Routes.applicationGuildCommands(client_id, test_guild_id),
 			{ body: commandJsonData }
 		);
@@ -98,4 +99,4 @@ const commandJsonData = [
 
 /**********************************************************************/
 // Login into your client application with bot's token.
-client.login(token);
+client.login(process.env.TOKEN);
