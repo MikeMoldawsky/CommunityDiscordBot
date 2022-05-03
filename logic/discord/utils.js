@@ -3,22 +3,23 @@ const client = require("./client");
 
 
 
-async function getOrCreateRole(guildId, roleInfo) {
+async function getOrCreateRole(guildId, name, reason, color) {
+	const roleInfo = { name, reason, color};
 	try {
-		console.log(`Creating role ${roleInfo.name}`);
+		console.log(`Creating role`, {guildId, roleInfo});
 		const guild = await client.guilds.fetch(guildId);
 		// TODO replace roleName with roleId
 		let role = guild.roles.cache.find(r => r.name === roleInfo.name);
 		if(!role){
 			role = await guild.roles.create(roleInfo);
-			console.log(`Role was created ${roleInfo.name}`);
+			console.log(`Role was created`, {guildId, roleInfo});
 		}
 		else {
-			console.log(`Role already exists ${roleInfo.name}`);
+			console.log(`Role Name already exists`, {guildId, roleInfo});
 		}
 		return role
 	} catch (e) {
-		console.log(`Failed to create Role ${roleInfo} for Guild ${guildId}`);
+		console.log(`Failed to create Role`, {guildId, roleInfo});
 	}
 }
 

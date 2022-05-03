@@ -1,20 +1,20 @@
 const client = require("../discord/client");
 const { getGuildWithActiveSessionOrThrow, updatedRoundConfig, isActiveSpeedDateSession } = require("../db/guild-db-manager");
 const { addRoleToMembers } = require("../discord/utils");
-const { createLobbyInvite } = require("../discord/discord-speed-date-manager");
+const { createLobbyInvite, getOrCreateCommunityBotAdminRoleAndPersistIfNeeded } = require("../discord/discord-speed-date-manager");
 const { initializeSpeedDateSessionForGuild } = require("../speed-date-bootstraper/speed-date-bootstrapper");
 const { startDateMatchMakerTaskWithDelay } = require("../tasks/speed-date-match-maker-task");
 const { startSpeedDateRoundTerminatorTask } = require("../tasks/speed-date-round-terminator-task");
 const moment = require("moment");
 
 
-async function bootstrapSpeedDateInfrastructureForGuild(guildId, guildName, creatorId) {
+async function bootstrapSpeedDateInfrastructureForGuild(guildId, guildName, creatorId, protectLobbyRole, memberRewardRole = undefined) {
 	// 0. Active Session check as multiple sessions aren't allowed (should be fixed manually or with bot commands).
 	if(await isActiveSpeedDateSession(guildId)){
 		console.log(`Active speed date session found - can't start a new session for ${guildId}`);
 		throw Error(`There is an active speed date in progress for ${guildId}.`);
 	}
-	await initializeSpeedDateSessionForGuild(guildId, guildName, creatorId);
+	await initializeSpeedDateSessionForGuild(guildId, guildName, creatorId, protectLobbyRole, memberRewardRole);
 }
 
 async function allowMembersToJoinLobby(guildId, allowedChannelId, allowedUserId) {
@@ -79,10 +79,17 @@ async function startSpeedDateRound(guildId, speedDateDurationMinutes, roomCapaci
 		.catch(e => console.log(e));
 }
 
+async function isCommunityBotAdmin(interactionMember, guildId, guildName){
+	console.log("Checking if guild member is admin", {guildId, guildName, username: interactionMember?.user?.username})
+	const adminRole = await getOrCreateCommunityBotAdminRoleAndPersistIfNeeded(guildId, guildName);
+	return interactionMember.roles.cache.has(adminRole.id);
+}
+
 
 module.exports = {
 	bootstrapSpeedDateInfrastructureForGuild,
 	startSpeedDateRound,
 	allowMembersToJoinLobby,
-	getLobbyInvite
+	getLobbyInvite,
+	isCommunityBotAdmin
 }
