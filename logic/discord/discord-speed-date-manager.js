@@ -1,9 +1,24 @@
 const { MessageEmbed, Permissions } = require("discord.js");
-const { getOrCreateRole } = require("./utils");
-const { updatedLobby } = require("../db/guild-db-manager");
+const { updatedLobby, getOrCreateGuildSpeedDateBotDocument } = require("../db/guild-db-manager");
 const _ = require("lodash");
+const { getOrCreateRole } = require("./utils");
 
 const DEFAULT_LOBBY_NAME = "❤️ Speed Date Lobby ❤️";
+
+
+async function getOrCreateCommunityBotAdminRoleAndPersistIfNeeded(guildId, guildName) {
+	try {
+		console.log("Get Or Create Community Bot Admin Role - Start", { guildId });
+		const adminRole = await getOrCreateRole(guildId, "community-bot-admin", "role to admin the community-bot", "ORANGE");
+		console.log("Get Or Create Community Bot Admin Role - Success", { guildId, adminRoleId: adminRole.id, adminRoleName: adminRole.name});
+		await getOrCreateGuildSpeedDateBotDocument(guildId, guildName, adminRole);
+		return adminRole;
+	} catch (e) {
+		console.log("Get Or Create Community Bot Admin Role - Failed", {guildId, e});
+		throw Error(`Get Or Create Community Bot Admin Role - Failed - guild: ${guildId}, e: ${e}`);
+	}
+}
+
 
 async function getOrCreateVoiceChannelProtectedByRole(guildClient, roleId, creatorId) {
 	try {
@@ -30,27 +45,21 @@ async function getOrCreateVoiceChannelProtectedByRole(guildClient, roleId, creat
 	}
 }
 
-async function createLobbyProtectByRole(guild, guildId, creatorId) {
+async function createLobbyProtectByRole(guildClient, guildId, creatorId, protectLobbyRole) {
 	try {
-		console.log(`Creating Lobby for Guild ${guildId}`);
-		// Create dedicated role to protect the lobby from uninvited users
-		const allowedLobbyRole = await getOrCreateRole(guildId, {
-			name: `speed-dating-participant`,
-			reason: "Active speed-dating round participant",
-			color: "GOLD"
-		});
-		// Create lobby channel
-		const lobbyChannel = await getOrCreateVoiceChannelProtectedByRole(guild, allowedLobbyRole.id, creatorId);
+		console.log("Lobby Creation - START", { guildId, creatorId, allowedRoleId: protectLobbyRole.id, allowedRoleName: protectLobbyRole.name });
+		const lobbyChannel = await getOrCreateVoiceChannelProtectedByRole(guildClient, protectLobbyRole.id, creatorId);
 		const lobby = {
-			allowedRoleId: allowedLobbyRole.id,
-			allowedRoleName: allowedLobbyRole.name,
+			allowedRoleId: protectLobbyRole.id,
+			allowedRoleName: protectLobbyRole.name,
 			channelId: lobbyChannel.id,
 			channelName: lobbyChannel.name
 		}
+		console.log(`Lobby Creation - SUCCESS`, { guildId, creatorId, allowedRoleId: protectLobbyRole.id, allowedRoleName: protectLobbyRole.name });
 		await updatedLobby(guildId, lobby);
 		return lobbyChannel;
 	} catch (e) {
-		console.log(`Failed to create Lobby for Guild ${guild.id}`, e);
+		console.log(`Failed to create Lobby for Guild ${guildClient.id}`, e);
 	}
 }
 
@@ -86,5 +95,6 @@ async function createSpeedDateVoiceChannelRoom(guild, roomNumber, memberIds) {
 module.exports = {
 	createLobbyProtectByRole,
 	createLobbyInvite,
-	createSpeedDateVoiceChannelRoom
+	createSpeedDateVoiceChannelRoom,
+	getOrCreateCommunityBotAdminRoleAndPersistIfNeeded
 }

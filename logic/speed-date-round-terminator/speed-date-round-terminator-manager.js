@@ -18,31 +18,33 @@ async function moveSpeedDatersToLobbyAndDeleteChannel(lobby, rooms, guildClient)
 		_.map(rooms, async (room) => {
 			const dateVoiceChannel = await client.channels.fetch(room.voiceChannelId);
 			const members = dateVoiceChannel.members.keys();
-			console.log("Moving speed-daters back to lobby", {room, members})
+			console.log("Moving speed-daters back to lobby", {room: JSON.stringify(room), members})
 			try {
 				await moveMembersToLobby(members, guildClient, lobby);
 			} catch (e) {
-				console.log("Failed to move speed-daters back to lobby", {members:members, lobby}, e)
+				console.log("Failed to move speed-daters back to lobby", {members, lobby}, e)
 			}
-			console.log("Deleting speed-daters voice channel room", {room})
+			console.log("Deleting speed-daters voice channel room", {room: JSON.stringify(room)})
 			return dateVoiceChannel.delete();
 		})
 	)
 }
 
-async function setMeetingHistoryAndGrantCompletedRolesToSpeedDaters(guildClient, guildInfo, dates, datesHistory) {
-	console.log(`Completed Speed Date Round - ADDING ROLES`, {guildInfo, dates, datesHistory});
-	const speedDateCompletedRole = await getOrCreateRole(guildInfo.guildId, {
-		name: `speed-dater`,
-		reason: "You deserve a Role as you completed the meeting!",
-		color: "RED"
-	});
+async function setMeetingHistoryAndGrantCompletedRolesToSpeedDaters(guildClient, guildInfo, dates, datesHistory, onComplete = undefined) {
+	console.log(`Completed Speed Date Round - ADDING ROLES`, {guildInfo, dates, datesHistory, onComplete});
+	let rewardRoleId;
+	if(!onComplete){
+		const speedDateCompletedRole = await getOrCreateRole(guildInfo.guildId, `speed-dater`, "You deserve a Role as you completed the meeting!", "RED");
+		rewardRoleId = speedDateCompletedRole.id;
+	} else {
+		rewardRoleId = onComplete.rewardRoleId;
+	}
 
 	await Promise.all(
 		_.flatMap(dates, ({participants: dateParticipants}) => {
 			return _.map(dateParticipants, async ({ id: memberId }) => {
 				const member = await guildClient.members.fetch(memberId);
-				member.roles.add(speedDateCompletedRole.id);
+				member.roles.add(rewardRoleId);
 				const memberMeeting = _.without(_.map(dateParticipants, 'id'), memberId)
 				datesHistory[memberId] = [..._.get(datesHistory, memberId, []), ...memberMeeting];
 			})
@@ -59,12 +61,12 @@ async function terminateSpeedDateRound(guildId) {
 	}
 	try {
 		const activeGuildSpeedDateBotDoc = await getGuildWithActiveSessionOrThrow(guildId);
-		const { activeSession:{ initialization: { lobby }, round: { dates }} , guildInfo, datesHistory } = activeGuildSpeedDateBotDoc;
+		const { activeSession:{ initialization: { lobby }, round: { dates }, config: {onComplete}} , guildInfo, datesHistory } = activeGuildSpeedDateBotDoc;
 		// 1. Cleanup resources - Lobby Roles etc.
 		console.log(`Starting Cleanup for guild ${guildInfo}`);
 		const guildClient = await client.guilds.fetch(guildId);
 		// 2. Create Speed Date Completed Role & Save participants history and add participation role
-		await setMeetingHistoryAndGrantCompletedRolesToSpeedDaters(guildClient, guildInfo, dates, datesHistory);
+		await setMeetingHistoryAndGrantCompletedRolesToSpeedDaters(guildClient, guildInfo, dates, datesHistory, onComplete);
 		await moveSpeedDatersToLobbyAndDeleteChannel(lobby, dates, guildClient);
 		await findGuildAndUpdate(guildId, {datesHistory});
 		await deleteActiveRound(guildId);

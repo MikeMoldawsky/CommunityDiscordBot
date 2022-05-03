@@ -1,8 +1,7 @@
 const { SlashCommandBuilder } = require("@discordjs/builders");
-const { updateMusicIfNeeded, updateIgnoredUsersIfNeeded, updateInviteIfNeeded, isAdminUser, addAdminUsersIfNeeded,
-	isNoAdminConfigured
-} = require("../../../logic/speed-date-config-manager/speed-date-config-manager");
-const { bootstrapSpeedDateInfrastructureForGuild, startSpeedDateRound, getLobbyInvite, allowMembersToJoinLobby
+const { updateMusicIfNeeded, updateIgnoredUsersIfNeeded, updateInviteIfNeeded } = require("../../../logic/speed-date-config-manager/speed-date-config-manager");
+const { bootstrapSpeedDateInfrastructureForGuild, startSpeedDateRound, getLobbyInvite, allowMembersToJoinLobby,
+	isCommunityBotAdmin
 } = require("../../../logic/speed-date-manager/speed-date-manager");
 const {
 	DEFAULT_SPEED_DATE_DURATION_MINUTES,
@@ -28,7 +27,6 @@ const CONFIGURE_GROUP_SUBCOMMAND = 'configure';
 const CONFIGURE_MUSIC_SUBCOMMAND = 'music';
 const CONFIGURE_INVITE_SUBCOMMAND = 'invite';
 const CONFIGURE_IGNORED_USERS_SUBCOMMAND = 'ignored-users';
-const CONFIGURE_BOT_ADMIN_SUBCOMMAND = 'bot-admin';
 
 
 async function configureInvite(interaction){
@@ -74,12 +72,14 @@ async function configureIgnoredUsers(interaction){
 
 
 async function initializeSession(interaction){
-	let guildId, guildName;
+	let guildId, guildName, protectLobbyRole, memberRewardRole;
 	try {
 		guildId = interaction.guild.id;
 		guildName = interaction.guild.name;
+		protectLobbyRole = interaction.options.getRole('protect-lobby-role');
+		memberRewardRole = interaction.options.getRole('member-reward-role');
 		// 1. Bootstrap infrastructure that is required for speed dating (Roles, Voice Channel Router etc.)
-		await bootstrapSpeedDateInfrastructureForGuild(guildId, guildName, interaction.user.id);
+		await bootstrapSpeedDateInfrastructureForGuild(guildId, guildName, interaction.user.id, protectLobbyRole, memberRewardRole);
 		await playMusicInLobby(guildId)
 	} catch (e){
 		console.log(`Failed to initialize speed dating`, {guildId, guildName, e});
@@ -137,37 +137,6 @@ async function startRound(interaction) {
 	}
 }
 
-async function isBotAdmin(interaction) {
-	let adminUserId, guildId;
-	try {
-		adminUserId = interaction.user.id
-		guildId = interaction.guild.id;
-		return await isAdminUser(guildId, adminUserId);
-	} catch (e){
-		console.log(`Failed check is admin`, {guildId, adminUserId, e});
-		throw Error(`Failed check is admin ${guildId} ${e}`);
-	}
-}
-
-
-async function addBotAdmin(interaction) {
-	let guildId, addAdminUser, guildName;
-	try {
-		guildId = interaction.guild.id;
-		guildName = interaction.guild.name;
-		addAdminUser = interaction.options.getUser("add");
-		console.log(`Adding Admin user for guild ${guildName} with ${guildId}`, {addAdminUser});
-		await addAdminUsersIfNeeded(guildId, guildName, addAdminUser);
-	} catch (e) {
-		console.log(`Failed to add admin user for guild ${guildName} with ${guildId}`, e);
-		throw Error(`Failed to add admin user for guild ${guildName} with ${guildId}..., ${e}`);
-	}
-}
-
-function isConfigureAdminCommand(groupCommand, subCommand){
-	return groupCommand === CONFIGURE_GROUP_SUBCOMMAND && subCommand === CONFIGURE_BOT_ADMIN_SUBCOMMAND;
-}
-
 function isEphemeral(groupCommand, subCommand){
 	return !(groupCommand === SESSION_GROUP_COMMAND && subCommand === SESSION_POST_INVITE_SUBCOMMAND);
 }
@@ -184,8 +153,10 @@ module.exports = {
 			.addSubcommand(
 				subCommand => subCommand.setName(SESSION_INITIALIZE_SUBCOMMAND)
 					.setDescription(
-						"Creates the voice channel lobby for the speed dates session."
+						"Creates the voice channel lobby for the speed dates session - the lobby is protected by a role."
 					)
+					.addRoleOption(option => option.setName('protect-lobby-role').setDescription("Allows to view & join the lobby.").setRequired(true))
+					.addRoleOption(option => option.setName('member-reward-role').setDescription("Granted to all the members that participated in the session."))
 			)
 			.addSubcommand(
 				subCommand => subCommand.setName(SESSION_ADD_MEMBERS_SUBCOMMAND)
@@ -250,13 +221,6 @@ module.exports = {
 				.addUserOption(option => option.setName('add').setDescription("Add a user that will be ignored when assigning rooms"))
 				.addUserOption(option => option.setName('remove').setDescription("Remove a user that from being ignored when assigning rooms"))
 			)
-			.addSubcommand(
-				subCommand => subCommand.setName(CONFIGURE_BOT_ADMIN_SUBCOMMAND)
-					.setDescription(
-						"Let's you configure bot admins."
-					)
-					.addUserOption(option => option.setName('add').setDescription("Add a user that will be able to interact with the bot").setRequired(true))
-			)
 		),
 	/**
 	 * @description Executes when the interaction is called by interaction handler.
@@ -271,23 +235,10 @@ module.exports = {
 			guildName = interaction.guild.name;
 			const ephemeral = isEphemeral(groupCommand, subcommand);
 			await interaction.deferReply({ ephemeral }); // Slash Commands has only 3 seconds to reply to an interaction.
-
-			if(await isNoAdminConfigured(guildId)){
-				if(isConfigureAdminCommand(groupCommand, subcommand)){
-					console.log("Configuring admin for the first time");
-				} else {
-					console.log(`You need to configure bot admin...`)
-
+			const isBotAdmin = await isCommunityBotAdmin(interaction.member, guildId, guildName);
+			if(!isBotAdmin){
 					await interaction.followUp({
-						content: `💀 Please configure Bot admins!💀`,
-						ephemeral: true
-					});
-					return;
-				}
-			} else if (!await isBotAdmin(interaction)) {
-					console.log(`You're not a bot admin...`)
-					await interaction.followUp({
-						content: `💀 Failed - you're not a bot admin!💀`,
+						content: "💀 Failed - you're not a bot admin!💀",
 						ephemeral: true
 					});
 					return;
@@ -326,9 +277,6 @@ module.exports = {
 					switch (subcommand) {
 						case CONFIGURE_INVITE_SUBCOMMAND:
 							await configureInvite(interaction);
-							break;
-						case CONFIGURE_BOT_ADMIN_SUBCOMMAND:
-							await addBotAdmin(interaction);
 							break;
 						case CONFIGURE_MUSIC_SUBCOMMAND:
 							await configureMusic(interaction);

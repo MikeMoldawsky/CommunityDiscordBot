@@ -1,10 +1,9 @@
-const _ = require("lodash");
 const { deleteActiveSessionForGuild, getGuildWithActiveSessionOrThrow } = require("../db/guild-db-manager");
 const client = require("../discord/client");
 const { terminateSpeedDateRound } = require("../speed-date-round-terminator/speed-date-round-terminator-manager");
 const { disconnectFromLobby } = require('../discord/discord-music-player')
 
-async function deleteLobbyAndTempRoles(lobby, guildClient) {
+async function deleteLobby(lobby, guildClient) {
 		try {
 			console.log("Deleting lobby channel", {lobby, guildId: guildClient.id})
 			// 0. remove bot from lobby and close connection to music
@@ -19,9 +18,6 @@ async function deleteLobbyAndTempRoles(lobby, guildClient) {
 					throw Error(`Couldn't fetch lobby client for guild ${guildClient.id}, ${lobby.channelId}, ${e}`)
 				}
 		}
-		// 2. Delete temporary speed-dating role for Lobby
-		console.log("Deleting ALLOWED LOBBY ROLE", {lobby, guildId: guildClient.id})
-		await guildClient.roles.delete(lobby.allowedRoleId);
 }
 
 async function cleanUpSpeedDateSessionForGuild(guildId) {
@@ -40,7 +36,7 @@ async function cleanUpSpeedDateSessionForGuild(guildId) {
 		await terminateSpeedDateRound(guildId);
 		// 1. Cleanup resources - Lobby Roles etc.
 		const guildClient = await client.guilds.fetch(guildId);
-		await deleteLobbyAndTempRoles(lobby, guildClient);
+		await deleteLobby(lobby, guildClient);
 		// 3. Save that active session is completed - i.e. delete it
 		await deleteActiveSessionForGuild(guildId);
 	} catch (e) {

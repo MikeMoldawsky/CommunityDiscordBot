@@ -1,16 +1,17 @@
 const { createLobbyProtectByRole } = require("../discord/discord-speed-date-manager");
-const { updatedLobby, getOrCreateGuildSpeedDateBotDocument } = require("../db/guild-db-manager");
+const { updatedActiveSessionOnCompleteConfig } = require("../db/guild-db-manager");
 const client = require("../discord/client");
 
-async function initializeSpeedDateSessionForGuild(guildId, guildName, creatorId) {
-	// 0. Initialize DB if needed
-	await getOrCreateGuildSpeedDateBotDocument(guildId, guildName);
+async function initializeSpeedDateSessionForGuild(guildId, guildName, creatorId, protectLobbyRole, memberRewardRole = undefined) {
 	try {
 		// Creating clients
 		const guildClient = await client.guilds.fetch(guildId);
-		console.log(`Initializing speed date session for guild ${guildName} with id ${guildId}`);
+		console.log(`Initializing speed date session`, {guildName, guildId, creatorId, protectLobbyRoleId: protectLobbyRole.id,
+			protectLobbyRoleName: protectLobbyRole.name, memberRewardRoleId: memberRewardRole?.id, memberRewardRoleName: memberRewardRole?.name });
 		// 1. Initialize Speed Date Infrastructure - Lobby etc...
-		return  await createLobbyProtectByRole(guildClient, guildId, creatorId);
+		const lobbyChannel = await createLobbyProtectByRole(guildClient, guildId, creatorId, protectLobbyRole);
+		await updatedActiveSessionOnCompleteConfig(guildId, memberRewardRole);
+		return lobbyChannel;
 	} catch (e) {
 		console.log(`Failed to initializeSpeedDateSession for ${guildName} with id ${guildId}`, e);
 		throw Error(`Failed to initializeSpeedDateSession for ${guildName} with id ${guildId}, ${e}`);

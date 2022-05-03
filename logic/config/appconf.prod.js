@@ -5,7 +5,7 @@ module.exports = {
 	// Match Maker
 	MATCH_MAKER_INTERVAL: 5 * 1000, // check for matches every 10 seconds
 	MATCH_MAKER_TASK_DELAY: 3 * 1000, // start matching after 3 seconds
-	MATCH_MAKER_DURATION_SECONDS: 30, // match in the first 60 seconds
+	MATCH_MAKER_DURATION_SECONDS: 30, // match in the first 30 seconds
 	// ROUND TERMINATOR
 	ROUND_TERMINATOR_TASK_INTERVAL: 10 * 1000,
 }

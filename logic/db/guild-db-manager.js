@@ -1,10 +1,6 @@
 const GuildCommunityBotModel = require("./models/GuildBotModel");
 const _ = require("lodash");
 
-const DEFAULT_INVITE_IMAGE_URL = "https://www.thebirdstage.com/wp-content/uploads/2016/02/Speed-Dating.jpg";
-const DEFAULT_LOBBY_MUSIC_URL = 'https://soundcloud.com/julian_avila/elevatormusic';
-const DEFAULT_LOBBY_MUSIC_VOLUME = 10;
-
 function isNilOrEmpty(obj){
 	return _.isNil(obj) || _.isEmpty(obj);
 }
@@ -55,22 +51,6 @@ async function updatedConfigFieldsForGuild(guildId, imageUrl, inviteTitle, invit
 		updateFields['config.ignoreUsers'] = _.filter(newIgnoredUsers, user => user !== removeIgnoreUser?.id);
 	}
 
-	if(_.isEmpty(updateFields)){
-		console.log(`Nothing to update for guild ${guildId}`);
-		return;
-	}
-	console.log(`Performing configuration update with params: ${JSON.stringify(updateFields)}`)
-	await GuildCommunityBotModel.findOneAndUpdate({ _id: guildId }, updateFields);
-}
-
-async function addAdminUser(guildId, addAdminUser){
-	const updateFields = {}
-	if (addAdminUser) {
-		const { config: { botAdmins } } = await getGuildSpeedDateBotDocumentOrThrow(guildId);
-		const addAdminUsersArray = addAdminUser?.id ? [addAdminUser.id] : [];
-		// add user to admin list
-		updateFields['config.botAdmins'] = _.union(botAdmins, addAdminUsersArray);
-	}
 	if(_.isEmpty(updateFields)){
 		console.log(`Nothing to update for guild ${guildId}`);
 		return;
@@ -131,6 +111,23 @@ async function updatedLobby(guildId, lobby) {
 	await GuildCommunityBotModel.findOneAndUpdate({ _id: guildId }, updateFields);
 }
 
+async function updatedActiveSessionOnCompleteConfig(guildId, memberRewardRole) {
+	// TODO - change the ugly implementation
+	const updateFields = {}
+	if(memberRewardRole){
+		updateFields['activeSession.config.onComplete.rewardRoleId'] = memberRewardRole.id;
+		updateFields['activeSession.config.onComplete.rewardRoleName'] = memberRewardRole.name;
+	}
+
+	if(_.isEmpty(updateFields)){
+		console.log(`Not updating activeSession.config in DB - nothing to update for guild ${guildId}`);
+		return;
+	}
+	console.log(`Performing Active session config update with params: ${JSON.stringify(updateFields)}`)
+	await GuildCommunityBotModel.findOneAndUpdate({ _id: guildId }, updateFields);
+}
+
+
 async function deleteActiveSessionForGuild(guildId) {
 	console.log(`Deleting ACTIVE SESSION from DB for guild ${guildId}`)
 	await GuildCommunityBotModel.findOneAndUpdate({ _id: guildId }, {
@@ -170,19 +167,7 @@ async function isActiveSpeedDateSession(guildId) {
 	return !isNilOrEmpty(activeSession);
 }
 
-async function isNoBotAdminConfigured(guildId) {
-	const guildBot = await getSpeedDateBot(guildId);
-	const botAdmins = _.get( guildBot,'config.botAdmins' ) || [];
-	return _.isEmpty(botAdmins);
-}
-
-async function isBotAdmin(guildId, userId) {
-	const guildBot = await getSpeedDateBot(guildId);
-	const botAdmins = _.get( guildBot,'config.botAdmins' ) || [];
-	return _.isEmpty(botAdmins) ||  _.includes(botAdmins, userId);
-}
-
-async function getOrCreateGuildSpeedDateBotDocument(guildId, guildName) {
+async function getOrCreateGuildSpeedDateBotDocument(guildId, guildName, communityBotAdminRole) {
 	try {
 		let guildInfo = await GuildCommunityBotModel.findById(guildId).exec();
 		if (guildInfo) {
@@ -197,19 +182,11 @@ async function getOrCreateGuildSpeedDateBotDocument(guildId, guildName) {
 				guildName: guildName,
 			},
 			config: {
-				voiceLobby:{
-					invite: {
-						image: DEFAULT_INVITE_IMAGE_URL,
-						title: "🎉 Speed Date Invite 🎉",
-						description: "Congratulations!\nYou've been invited to the community Speed Date event.\nJoin Us 💖"
-					},
-					music: {
-						url: DEFAULT_LOBBY_MUSIC_URL,
-						volume: DEFAULT_LOBBY_MUSIC_VOLUME
-					}
+				admin:{
+					roleId: communityBotAdminRole.id,
+					roleName: communityBotAdminRole.name,
 				}
-			},
-			activeSpeedDate: {},
+			}
 		};
 		const guildCommunityBotModel = new GuildCommunityBotModel(document);
 		return await guildCommunityBotModel.save();
@@ -225,7 +202,6 @@ async function findGuildAndUpdate(guildId,  updatedGuildBotFieldsObject){
 module.exports = {
 	getGuildWithActiveSessionOrThrow,
 	getOrCreateGuildSpeedDateBotDocument,
-	throwIfActiveSession,
 	updatedConfigFieldsForGuild,
 	deleteActiveSessionForGuild,
 	deleteActiveRound,
@@ -234,8 +210,6 @@ module.exports = {
 	updatedLobby,
 	isActiveSpeedDateRound,
 	isActiveSpeedDateSession,
-	addAdminUser,
-	isBotAdmin,
-	isNoBotAdminConfigured,
-	findGuildAndUpdate
+	findGuildAndUpdate,
+	updatedActiveSessionOnCompleteConfig
 };
