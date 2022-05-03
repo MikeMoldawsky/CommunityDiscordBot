@@ -1,6 +1,6 @@
 const { SlashCommandBuilder } = require("@discordjs/builders");
 const { updateMusicIfNeeded, updateIgnoredUsersIfNeeded, updateInviteIfNeeded } = require("../../../logic/speed-date-config-manager/speed-date-config-manager");
-const { bootstrapSpeedDateInfrastructureForGuild, startSpeedDateRound, getLobbyInvite, allowMembersToJoinLobby,
+const { bootstrapSpeedDateInfrastructureForGuild, startSpeedDateRound, getLobbyInvite,
 	isCommunityBotAdmin
 } = require("../../../logic/speed-date-manager/speed-date-manager");
 const {
@@ -16,7 +16,6 @@ const { endSpeedDateSession } = require("../../../logic/speed-date-session-termi
 // Sub Commands
 const SESSION_GROUP_COMMAND = "session";
 const SESSION_INITIALIZE_SUBCOMMAND = 'initialize';
-const SESSION_ADD_MEMBERS_SUBCOMMAND = 'add-members';
 const SESSION_POST_INVITE_SUBCOMMAND = 'post-invite';
 const SESSION_END_SUBCOMMAND = 'end';
 // Round Commands
@@ -100,25 +99,6 @@ async function getInviteToLobby(interaction) {
 	}
 }
 
-async function addMembersToSession(interaction) {
-	let invitedChannel, invitedUser, guildId;
-	try {
-		guildId = interaction.guild.id;
-		invitedChannel = interaction.options.getChannel("channel");
-		invitedUser = interaction.options.getUser("user");
-	} catch (e) {
-		console.log(`Failed to add members to session - input errors`, e);
-		throw Error(`Failed to add members to session - input errors ${e}`);
-	}
-	try {
-		// 1. Allow channel members to join lobby and send invite
-		await allowMembersToJoinLobby(guildId, invitedChannel?.id, invitedUser?.id);
-	} catch (e){
-		console.log(`Failed to add members for speed dating`, {guildId, e});
-		throw Error(`Failed to add members for speed dating for guild ${guildId} ${e}`);
-	}
-}
-
 async function startRound(interaction) {
 	let guildId, roomCapacity, speedDateDurationMinutes;
 	try {
@@ -157,14 +137,6 @@ module.exports = {
 					)
 					.addRoleOption(option => option.setName('protect-lobby-role').setDescription("Allows to view & join the lobby.").setRequired(true))
 					.addRoleOption(option => option.setName('member-reward-role').setDescription("Granted to all the members that participated in the session."))
-			)
-			.addSubcommand(
-				subCommand => subCommand.setName(SESSION_ADD_MEMBERS_SUBCOMMAND)
-					.setDescription(
-						"Allow the channel's member to join the speed-date session lobby."
-					)
-					.addChannelOption(option => option.setName('channel').setDescription("The channel to allow for dates"))
-					.addUserOption(option => option.setName('user').setDescription("The user to allow for dates")),
 			)
 			.addSubcommand(
 				subCommand => subCommand.setName(SESSION_POST_INVITE_SUBCOMMAND)
@@ -250,9 +222,6 @@ module.exports = {
 					switch (subcommand) {
 						case SESSION_INITIALIZE_SUBCOMMAND:
 							await initializeSession(interaction);
-							break;
-						case SESSION_ADD_MEMBERS_SUBCOMMAND:
-							await addMembersToSession(interaction);
 							break;
 						case SESSION_POST_INVITE_SUBCOMMAND:
 							const lobbyChannelInvite = await getInviteToLobby(interaction);

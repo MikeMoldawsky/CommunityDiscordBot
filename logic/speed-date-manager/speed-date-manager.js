@@ -1,6 +1,5 @@
 const client = require("../discord/client");
 const { getGuildWithActiveSessionOrThrow, updatedRoundConfig, isActiveSpeedDateSession } = require("../db/guild-db-manager");
-const { addRoleToMembers } = require("../discord/utils");
 const { createLobbyInvite, getOrCreateCommunityBotAdminRoleAndPersistIfNeeded } = require("../discord/discord-speed-date-manager");
 const { initializeSpeedDateSessionForGuild } = require("../speed-date-bootstraper/speed-date-bootstrapper");
 const { startDateMatchMakerTaskWithDelay } = require("../tasks/speed-date-match-maker-task");
@@ -15,26 +14,6 @@ async function bootstrapSpeedDateInfrastructureForGuild(guildId, guildName, crea
 		throw Error(`There is an active speed date in progress for ${guildId}.`);
 	}
 	await initializeSpeedDateSessionForGuild(guildId, guildName, creatorId, protectLobbyRole, memberRewardRole);
-}
-
-async function allowMembersToJoinLobby(guildId, allowedChannelId, allowedUserId) {
-	let activeSpeedDateBotDoc;
-	try {
-		activeSpeedDateBotDoc = await getGuildWithActiveSessionOrThrow(guildId);
-	} catch (e){
-		console.log("SPEED DATE ROUND - START - FAILED - active speed date session not found", {guildId}, e);
-	}
-	const {activeSession: { initialization: { lobby }}} = activeSpeedDateBotDoc;
-	// Creating clients
-	const guildClient = await client.guilds.fetch(guildId);
-	try {
-		// 1. Allow members to join Lobby Channel
-		console.log(`Speed Date GRANT VIEW LOBBY ROLE to invited members`, {guildId, allowedChannelId, lobbyChannelId: lobby.channelId});
-		await addRoleToMembers(guildClient, allowedChannelId, allowedUserId, lobby.allowedRoleId);
-	} catch (e) {
-		console.log(`ALLOW MEMBER JOIN LOBBY FAILED - ${guildId}`, e);
-		throw new Error(`ALLOW MEMBER JOIN LOBBY FAILED - ${guildId}, ${e}`);
-	}
 }
 
 async function getLobbyInvite(guildId) {
@@ -89,7 +68,6 @@ async function isCommunityBotAdmin(interactionMember, guildId, guildName){
 module.exports = {
 	bootstrapSpeedDateInfrastructureForGuild,
 	startSpeedDateRound,
-	allowMembersToJoinLobby,
 	getLobbyInvite,
 	isCommunityBotAdmin
 }
