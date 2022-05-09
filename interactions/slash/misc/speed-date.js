@@ -126,7 +126,7 @@ function isEphemeral(groupCommand, subCommand){
 module.exports = {
 	// The data needed to register slash commands to Discord.
 	data: new SlashCommandBuilder()
-		.setName("dates")
+		.setName("connecto")
 		// .setDefaultPermission(false)
 		.setDescription(
 			"Helps you CREATE MEETINGS for your community. You'll get a STRONGER and HEALTHIER community!"
