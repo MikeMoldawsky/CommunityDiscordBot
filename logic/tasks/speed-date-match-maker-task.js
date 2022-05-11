@@ -62,29 +62,31 @@ async function createSpeedDatesMatches(guildBotDoc, forceMatch = false) {
 }
 
 async function startDateMatchMakerTaskForGuild(guildId, interval){
-	console.log("Match maker TASK - WAKING UP...", {guildId})
-	const currentMoment = moment();
-	let activeGuildBotDoc;
 	try {
-		activeGuildBotDoc = await getGuildWithActiveSessionOrThrow(guildId);
+		console.log("Match maker TASK - WAKING UP...", {guildId})
+		const currentMoment = moment();
+		let activeGuildBotDoc;
+		try {
+			activeGuildBotDoc = await getGuildWithActiveSessionOrThrow(guildId);
+		} catch (e) {
+			console.log("Match Maker TASK - STOP - active session not found", {guildId})
+			return;
+		}
+		const {activeSession:{ round:{ config,  matchMaker} } } = activeGuildBotDoc;
+		const stopMatchingMoment = moment(config.startTime).add(matchMaker.durationInSeconds, "seconds");
+		if(currentMoment > stopMatchingMoment){
+			await createSpeedDatesMatches(activeGuildBotDoc, true);
+			console.log("Match Maker TASK - COMPLETED", {guildInfo: activeGuildBotDoc.guildInfo, roundStartTime: config.startTime, currentMoment, stopMatchingMoment})
+			return;
+		}
+		await createSpeedDatesMatches(activeGuildBotDoc, false)
+		console.log(`Match maker TASK - SLEEPING... `, { intervalMs: interval, guildInfo: activeGuildBotDoc.guildInfo})
+		console.log(`Match maker Task - SLEEPING...`, {guildInfo: activeGuildBotDoc.guildInfo, intervalMs: interval, roundStartTime: config.startTime,
+			currentMoment, stopMatchingMoment, secondsLeft: stopMatchingMoment.diff(currentMoment, 'seconds')  })
+		setTimeout(() => startDateMatchMakerTaskForGuild(guildId, interval), interval);
 	} catch (e) {
-		console.log("Match Maker TASK - STOP - active session not found", {guildId})
-		return;
+		console.log(`Match Maker Task - Failed Fatal`, {guildId, e})
 	}
-	const {activeSession:{ round:{ config,  matchMaker} } } = activeGuildBotDoc;
-	const stopMatchingMoment = moment(config.startTime).add(matchMaker.durationInSeconds, "seconds");
-	if(currentMoment > stopMatchingMoment){
-		await createSpeedDatesMatches(activeGuildBotDoc, true);
-		console.log("Match Maker TASK - COMPLETED", {guildInfo: activeGuildBotDoc.guildInfo, roundStartTime: config.startTime, currentMoment, stopMatchingMoment})
-		return;
-	}
-	await createSpeedDatesMatches(activeGuildBotDoc, false)
-	console.log(`Match maker TASK - SLEEPING... `, { intervalMs: interval, guildInfo: activeGuildBotDoc.guildInfo})
-	console.log(`Match maker Task - SLEEPING...`, {guildInfo: activeGuildBotDoc.guildInfo, intervalMs: interval, roundStartTime: config.startTime,
-		currentMoment, stopMatchingMoment, secondsLeft: stopMatchingMoment.diff(currentMoment, 'seconds')  })
-
-
-	setTimeout(() => startDateMatchMakerTaskForGuild(guildId, interval), interval);
 }
 
 async function startDateMatchMakerTaskWithDelay(guildId, matchMakerInterval, matchMakerTaskDelay, matchMakerDurationInSeconds){
