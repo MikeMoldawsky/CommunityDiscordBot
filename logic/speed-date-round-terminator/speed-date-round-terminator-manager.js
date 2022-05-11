@@ -14,20 +14,28 @@ async function moveMembersToLobby(speedDateMembers, guildClient, lobby ) {
 }
 
 async function moveSpeedDatersToLobbyAndDeleteChannel(lobby, rooms, guildClient) {
-	await Promise.all(
-		_.map(rooms, async (room) => {
-			const dateVoiceChannel = await client.channels.fetch(room.voiceChannelId);
-			const members = dateVoiceChannel.members.keys();
-			console.log("Moving speed-daters back to lobby", {room: JSON.stringify(room), members})
-			try {
-				await moveMembersToLobby(members, guildClient, lobby);
-			} catch (e) {
-				console.log("Failed to move speed-daters back to lobby", {members, lobby}, e)
-			}
-			console.log("Deleting speed-daters voice channel room", {room: JSON.stringify(room)})
-			return dateVoiceChannel.delete();
-		})
-	)
+	try {
+		await Promise.all(
+			_.map(rooms, async (room) => {
+				try {
+					const dateVoiceChannel = await client.channels.fetch(room.voiceChannelId);
+					const members = dateVoiceChannel.members.keys();
+					try {
+						console.log("Moving speed-daters back to lobby", {room: JSON.stringify(room), members})
+						await moveMembersToLobby(members, guildClient, lobby);
+					} catch (e) {
+						console.log("Failed to move speed-daters back to lobby", {members, lobby}, e)
+					}
+					console.log("Deleting speed-daters voice channel room", {room: JSON.stringify(room)})
+					return dateVoiceChannel.delete();
+				} catch (e) {
+					console.log("Cleanup Round - failed to move ROOM to lobby and delete - FAILED FATAL", {room, lobby, e})
+				}
+			})
+		)
+	} catch (e) {
+		console.log("Cleanup Round - move to move all ROOMS! - FAILED FATAL", {rooms, lobby, e})
+	}
 }
 
 async function setMeetingHistoryAndGrantCompletedRolesToSpeedDaters(guildClient, guildInfo, dates, datesHistory, onComplete = undefined) {
