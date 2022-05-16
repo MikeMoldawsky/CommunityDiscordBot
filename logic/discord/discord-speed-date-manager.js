@@ -9,7 +9,7 @@ const DEFAULT_LOBBY_NAME = "🫂 Community Lobby 🫂️";
 async function getOrCreateCommunityBotAdminRoleAndPersistIfNeeded(guildId, guildName) {
 	try {
 		console.log("Get Or Create Community Bot Admin Role - Start", { guildId });
-		const adminRole = await getOrCreateRole(guildId, "community-bot-admin", "role to admin the community-bot", "ORANGE");
+		const adminRole = await getOrCreateRole(guildId, "connecto-admin", "role to admin the community-bot", "ORANGE");
 		console.log("Get Or Create Community Bot Admin Role - Success", { guildId, adminRoleId: adminRole.id, adminRoleName: adminRole.name});
 		await getOrCreateGuildSpeedDateBotDocument(guildId, guildName, adminRole);
 		return adminRole;

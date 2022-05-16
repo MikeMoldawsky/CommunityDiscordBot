@@ -93,7 +93,6 @@ const CommunityBotAdminConfigSchema = new mongoose.Schema({
 
 const ConfigSchema = new mongoose.Schema({
 	voiceLobby: {type: SpeedDateVoiceLobbyConfig, required: true, default: () => ({})},
-	ignoreUsers: {type: [String], required: true, default: []},
 	admin: {type: CommunityBotAdminConfigSchema, required: true},
 }, { _id : false })
 

@@ -25,8 +25,6 @@ const ROUND_START_SUBCOMMAND = 'start';
 const CONFIGURE_GROUP_SUBCOMMAND = 'configure';
 const CONFIGURE_MUSIC_SUBCOMMAND = 'music';
 const CONFIGURE_INVITE_SUBCOMMAND = 'invite';
-const CONFIGURE_IGNORED_USERS_SUBCOMMAND = 'ignored-users';
-
 
 async function configureInvite(interaction){
 	const guildId = interaction.guild.id;
@@ -55,20 +53,6 @@ async function configureMusic(interaction){
 		throw Error(`Failed to configure music. Check if there is an active round..., ${e}`);
 	}
 }
-
-async function configureIgnoredUsers(interaction){
-	const guildId = interaction.guild.id;
-	const guildName = interaction.guild.name;
-	const ignoreUser = interaction.options.getUser("add");
-	const removeIgnoreUser = interaction.options.getUser("remove");
-	try {
-		await updateIgnoredUsersIfNeeded(guildId, guildName, ignoreUser, removeIgnoreUser);
-	} catch (e) {
-		console.log(`Failed to configure ignored user for guild ${guildName} with ${guildId}`, e);
-		throw Error(`Failed to configure ignored user for guild ${guildName} with ${guildId}..., ${e}`);
-	}
-}
-
 
 async function initializeSession(interaction){
 	let guildId, guildName;
@@ -191,14 +175,6 @@ module.exports = {
 						.addStringOption(option => option.setName('title').setDescription("The title of the speed date's lobby voice channel invite"))
 						.addStringOption(option => option.setName('description').setDescription("The description of the speed date's lobby voice channel invite"))
 			)
-				.addSubcommand(
-			subCommand => subCommand.setName(CONFIGURE_IGNORED_USERS_SUBCOMMAND)
-				.setDescription(
-					"Let's you configure user related things."
-				)
-				.addUserOption(option => option.setName('add').setDescription("Add a user that will be ignored when assigning rooms"))
-				.addUserOption(option => option.setName('remove').setDescription("Remove a user that from being ignored when assigning rooms"))
-			)
 		),
 	/**
 	 * @description Executes when the interaction is called by interaction handler.
@@ -255,9 +231,6 @@ module.exports = {
 							break;
 						case CONFIGURE_MUSIC_SUBCOMMAND:
 							await configureMusic(interaction);
-							break;
-						case CONFIGURE_IGNORED_USERS_SUBCOMMAND:
-							await configureIgnoredUsers(interaction);
 							break;
 						default:
 							throw Error(`Unknown ${groupCommand} subcommand: ${subcommand}`);
