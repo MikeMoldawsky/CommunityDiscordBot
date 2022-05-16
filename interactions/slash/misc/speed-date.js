@@ -71,14 +71,15 @@ async function configureIgnoredUsers(interaction){
 
 
 async function initializeSession(interaction){
-	let guildId, guildName, protectLobbyRole, memberRewardRole;
+	let guildId, guildName;
 	try {
 		guildId = interaction.guild.id;
 		guildName = interaction.guild.name;
-		protectLobbyRole = interaction.options.getRole('protect-lobby-role');
-		memberRewardRole = interaction.options.getRole('member-reward-role');
+		const protectLobbyRole = interaction.options.getRole('protect-lobby-role');
+		const memberRewardRole = interaction.options.getRole('member-reward-role');
+		const keepInLobbyRole = interaction.options.getRole('keep-in-lobby-role');
 		// 1. Bootstrap infrastructure that is required for speed dating (Roles, Voice Channel Router etc.)
-		await bootstrapSpeedDateInfrastructureForGuild(guildId, guildName, interaction.user.id, protectLobbyRole, memberRewardRole);
+		await bootstrapSpeedDateInfrastructureForGuild(guildId, guildName, interaction.user.id, protectLobbyRole, memberRewardRole, keepInLobbyRole);
 		await playMusicInLobby(guildId)
 	} catch (e){
 		console.log(`Failed to initialize speed dating`, {guildId, guildName, e});
@@ -139,6 +140,7 @@ module.exports = {
 					)
 					.addRoleOption(option => option.setName('protect-lobby-role').setDescription("Allows to view & join the lobby.").setRequired(true))
 					.addRoleOption(option => option.setName('member-reward-role').setDescription("Granted to all the members that participated in the session."))
+					.addRoleOption(option => option.setName('keep-in-lobby-role').setDescription("Role that will keep its members in the lobby and not assign them to rooms."))
 			)
 			.addSubcommand(
 				subCommand => subCommand.setName(SESSION_POST_INVITE_SUBCOMMAND)

@@ -45,17 +45,19 @@ async function getOrCreateVoiceChannelProtectedByRole(guildClient, roleId, creat
 	}
 }
 
-async function createLobbyProtectByRole(guildClient, guildId, creatorId, protectLobbyRole) {
+async function createLobbyProtectByRole(guildClient, guildId, creatorId, protectLobbyRole, keepInLobbyRole) {
 	try {
 		console.log("Lobby Creation - START", { guildId, creatorId, allowedRoleId: protectLobbyRole.id, allowedRoleName: protectLobbyRole.name });
 		const lobbyChannel = await getOrCreateVoiceChannelProtectedByRole(guildClient, protectLobbyRole.id, creatorId);
 		const lobby = {
 			allowedRoleId: protectLobbyRole.id,
 			allowedRoleName: protectLobbyRole.name,
+			keepInLobbyRoleId: keepInLobbyRole?.id,
+			keepInLobbyRoleName: keepInLobbyRole?.name,
 			channelId: lobbyChannel.id,
 			channelName: lobbyChannel.name
 		}
-		console.log(`Lobby Creation - SUCCESS`, { guildId, creatorId, allowedRoleId: protectLobbyRole.id, allowedRoleName: protectLobbyRole.name });
+		console.log(`Lobby Creation - SUCCESS`, { guildId, creatorId, allowedRoleId: protectLobbyRole.id, allowedRoleName: protectLobbyRole.name, keepInLobbyRoleId: keepInLobbyRole?.id, keepInLobbyRoleName: keepInLobbyRole?.name });
 		await updatedLobby(guildId, lobby);
 		return lobbyChannel;
 	} catch (e) {

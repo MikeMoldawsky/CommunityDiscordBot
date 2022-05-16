@@ -22,7 +22,7 @@ async function createSpeedDatesMatchesInternal(guildBotDoc, forceMatch = false) 
 	const aloneMemberDates = getMembersAloneInRoom(dates)
 	const membersAloneInRoom = _.keys(aloneMemberDates)
 	const availableMemberIds = [
-		...getLobbyAvailableMembers(lobbyChannel, guildConfig),
+		...getLobbyAvailableMembers(lobbyChannel, lobby),
 		...membersAloneInRoom
 	]
 
@@ -79,9 +79,11 @@ async function createSpeedDatesMatchesInternal(guildBotDoc, forceMatch = false) 
 	await findGuildAndUpdate(guildInfo.guildId, updatedFields);
 }
 
-const getLobbyAvailableMembers = (lobbyChannel, guildConfig) => {
+const getLobbyAvailableMembers = (lobbyChannel, lobbyConfig) => {
 	return Array.from(
-		lobbyChannel.members.filter(m => !m.user.bot && !_.includes(guildConfig.ignoreUsers, m.user.id)).keys()
+		lobbyChannel.members.filter(m => {
+			return !m.user.bot && !m.roles.cache.some(role => role.id === lobbyConfig.keepInLobbyRoleId)
+		}).keys()
 	)
 }
 
