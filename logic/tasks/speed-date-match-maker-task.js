@@ -32,9 +32,9 @@ async function createSpeedDatesMatchesInternal(guildBotDoc, forceMatch = false) 
 
 	const { rooms } = matchRooms(availableMemberIds, datesHistory, config.roomCapacity, forceMatch)
 	console.log(`Match maker - Creating ${rooms.length} DATES`, {guildInfo});
-	const updatedRoomNumbers = []
+	let newDates = dates
 	const maxRoomNum = _.max(_.map(dates, 'number')) || 0
-	const newDates = await Promise.all(
+	await Promise.all(
 		rooms.map(async (room, i) => {
 			let roomNumber = maxRoomNum + i + 1;
 			let voiceChannel
@@ -42,43 +42,31 @@ async function createSpeedDatesMatchesInternal(guildBotDoc, forceMatch = false) 
 			if (_.isEmpty(membersAlreadyInRooms)) {
 				console.log(`Match maker - CREATING DATE.`, {guildInfo, room});
 				voiceChannel = await createSpeedDateVoiceChannelRoom(guild, roomNumber, room);
+				newDates.push({
+					number: roomNumber,
+					participants: addMembersToRoom(guild, room, voiceChannel),
+					voiceChannelId: voiceChannel.id
+				})
 			}
 			else {
 				console.log(`Match maker - ADDING MEMBER TO EXISTING DATE.`, {guildInfo, room});
-				const joinedRoom = aloneMemberDates[membersAlreadyInRooms[0]]
-				roomNumber = joinedRoom.number
+				const joinedRoom = _.find(newDates, ({ number }) => number === aloneMemberDates[membersAlreadyInRooms[0]].number)
 				voiceChannel = await client.channels.fetch(joinedRoom.voiceChannelId)
-				// flag joinedRoom as updated so it will be replaced in DB
-				updatedRoomNumbers.push(joinedRoom.number)
-				if (membersAlreadyInRooms.length === 2) {
-					// both members are alone in their rooms, flag roomToDelete as updated so it will be deleted from DB
-					const roomToDelete = aloneMemberDates[membersAlreadyInRooms[1]]
-					updatedRoomNumbers.push(roomToDelete.number)
-					// TODO - add a room cleanup task to delete empty channels, doing this here will require to await assigning the users which will slow down the system
+				joinedRoom.participants = addMembersToRoom(guild, room, voiceChannel)
 
-					// const vcToDelete = await client.channels.fetch(roomToDelete.voiceChannelId)
-					// setTimeout(() => {
-					// 	vcToDelete.delete()
-					// }, 1000)
+				if (membersAlreadyInRooms.length === 2) {
+					// both members are alone in their rooms
+					const roomToDelete = _.find(newDates, ({ number }) => number === aloneMemberDates[membersAlreadyInRooms[1]].number)
+					roomToDelete.participants = []
 				}
 			}
-
-			return {
-				number: roomNumber,
-				participants: addMembersToRoom(guild, room, voiceChannel),
-				voiceChannelId: voiceChannel.id
-			};
 		})
 	);
 
-	// if members were added to an existing room the room will be in newDates, filter it out from current DB dates
-	const updatedExistingDates = _.filter(dates, date => !_.includes(updatedRoomNumbers, date.number))
-
 	console.log(`Match maker - Created DATES`, {newDates, guildInfo});
-	const updatedFields = {
-		'activeSession.round.dates': [...updatedExistingDates, ...newDates],
-	};
-	await findGuildAndUpdate(guildInfo.guildId, updatedFields);
+	await findGuildAndUpdate(guildInfo.guildId, {
+		'activeSession.round.dates': newDates,
+	});
 }
 
 const getLobbyAvailableMembers = (lobbyChannel, lobbyConfig) => {

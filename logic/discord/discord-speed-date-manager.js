@@ -3,7 +3,7 @@ const { updatedLobby, getOrCreateGuildSpeedDateBotDocument } = require("../db/gu
 const _ = require("lodash");
 const { getOrCreateRole } = require("./utils");
 
-const DEFAULT_LOBBY_NAME = "🫂 Community Lobby 🫂️";
+const DEFAULT_LOBBY_NAME = "🫂 Connecto Lobby 🫂️";
 
 
 async function getOrCreateCommunityBotAdminRoleAndPersistIfNeeded(guildId, guildName) {
@@ -87,7 +87,7 @@ async function createSpeedDateVoiceChannelRoom(guild, roomNumber, memberIds) {
 		..._.map(memberIds, id => ({ id: id, allow: [Permissions.FLAGS.VIEW_CHANNEL, Permissions.FLAGS.CONNECT, Permissions.FLAGS.SPEAK] })
 		)
 	];
-	return guild.channels.create(`Room#${roomNumber}`, {
+	return guild.channels.create(`Connecto Room #${roomNumber}`, {
 		type: "GUILD_VOICE",
 		reason: "Let's connect and get to know each other :)",
 		permissionOverwrites: permissionOverwrites
