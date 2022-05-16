@@ -11,7 +11,6 @@ async function createSpeedDatesMatchesInternal(guildBotDoc, forceMatch = false) 
 		activeSession: {initialization: { lobby }, round},
 		datesHistory,
 		guildInfo,
-		config: guildConfig,
 	} = guildBotDoc;
 	const {config, dates} = round
 
@@ -33,44 +32,47 @@ async function createSpeedDatesMatchesInternal(guildBotDoc, forceMatch = false) 
 
 	const { rooms } = matchRooms(availableMemberIds, datesHistory, config.roomCapacity, forceMatch)
 	console.log(`Match maker - Creating ${rooms.length} DATES`, {guildInfo});
+	const updatedRoomNumbers = []
 	const maxRoomNum = _.max(_.map(dates, 'number')) || 0
 	const newDates = await Promise.all(
 		rooms.map(async (room, i) => {
-			// check if adding to an existing room
-			const intersection = _.intersection(room, membersAloneInRoom)
-			if (!_.isEmpty(intersection)) {
-				console.log(`Match maker - ADDING MEMBER TO EXISTING DATE.`, {guildInfo, room});
-				const inRoomMember = intersection[0]
-				const { date: joinedRoom } = aloneMemberDates[inRoomMember]
-				const vc = await client.channels.fetch(joinedRoom.voiceChannelId)
-				return {
-					number: joinedRoom.number,
-					participants: addMembersToRoom(guild, room, vc),
-					voiceChannelId: vc.id
-				}
+			let roomNumber = maxRoomNum + i + 1;
+			let voiceChannel
+			const membersAlreadyInRooms = _.intersection(room, membersAloneInRoom)
+			if (_.isEmpty(membersAlreadyInRooms)) {
+				console.log(`Match maker - CREATING DATE.`, {guildInfo, room});
+				voiceChannel = await createSpeedDateVoiceChannelRoom(guild, roomNumber, room);
 			}
 			else {
-				const roomNumber = maxRoomNum + i + 1;
-				console.log(`Match maker - CREATING DATE.`, {guildInfo, room});
-				const vc = await createSpeedDateVoiceChannelRoom(guild, roomNumber, room);
-				const roomParticipants = room.map((userId) => {
-					const member = guild.members.cache.get(userId)
-					member.voice.setChannel(vc.id)
-					return {id: userId, name: member.user.username}
-				})
+				console.log(`Match maker - ADDING MEMBER TO EXISTING DATE.`, {guildInfo, room});
+				const joinedRoom = aloneMemberDates[membersAlreadyInRooms[0]]
+				roomNumber = joinedRoom.number
+				voiceChannel = await client.channels.fetch(joinedRoom.voiceChannelId)
+				// flag joinedRoom as updated so it will be replaced in DB
+				updatedRoomNumbers.push(joinedRoom.number)
+				if (membersAlreadyInRooms.length === 2) {
+					// both members are alone in their rooms, flag roomToDelete as updated so it will be deleted from DB
+					const roomToDelete = aloneMemberDates[membersAlreadyInRooms[1]]
+					updatedRoomNumbers.push(roomToDelete.number)
+					// TODO - add a room cleanup task to delete empty channels, doing this here will require to await assigning the users which will slow down the system
 
-				return {
-					number: roomNumber,
-					participants: roomParticipants,
-					voiceChannelId: vc.id
-				};
+					// const vcToDelete = await client.channels.fetch(roomToDelete.voiceChannelId)
+					// setTimeout(() => {
+					// 	vcToDelete.delete()
+					// }, 1000)
+				}
 			}
+
+			return {
+				number: roomNumber,
+				participants: addMembersToRoom(guild, room, voiceChannel),
+				voiceChannelId: voiceChannel.id
+			};
 		})
 	);
 
 	// if members were added to an existing room the room will be in newDates, filter it out from current DB dates
-	const joiningRoomIndices = _.map(aloneMemberDates, ({ index }) => index)
-	const updatedExistingDates = _.filter(dates, (date, i) => !_.includes(joiningRoomIndices, i))
+	const updatedExistingDates = _.filter(dates, date => !_.includes(updatedRoomNumbers, date.number))
 
 	console.log(`Match maker - Created DATES`, {newDates, guildInfo});
 	const updatedFields = {
@@ -87,13 +89,13 @@ const getLobbyAvailableMembers = (lobbyChannel, lobbyConfig) => {
 	)
 }
 
-const getMembersAloneInRoom = (dates) => {
-	return dates.reduce((aloneMemberDates, date, i) => {
+const getMembersAloneInRoom = dates => {
+	return dates.reduce((aloneMemberDates, date) => {
 		const voiceChannel = client.channels.cache.get(date.voiceChannelId)
 		return _.size(voiceChannel.members) === 1
 			? {
 				...aloneMemberDates,
-				[voiceChannel.members.first().user.id]: { date, index: i },
+				[voiceChannel.members.first().user.id]: date,
 			}
 			: aloneMemberDates
 	}, {})
@@ -106,8 +108,6 @@ const addMembersToRoom = (guild, members, vc) => {
 		return {id: userId, name: member.user.username}
 	})
 }
-
-
 
 async function createSpeedDatesMatches(guildBotDoc, forceMatch = false) {
 	try {
