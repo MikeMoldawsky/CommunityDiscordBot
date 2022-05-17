@@ -3,13 +3,13 @@ const { updatedLobby, getOrCreateGuildSpeedDateBotDocument } = require("../db/gu
 const _ = require("lodash");
 const { getOrCreateRole } = require("./utils");
 
-const DEFAULT_LOBBY_NAME = "🫂 Community Lobby 🫂️";
+const DEFAULT_LOBBY_NAME = "🫂 Connecto Lobby 🫂️";
 
 
 async function getOrCreateCommunityBotAdminRoleAndPersistIfNeeded(guildId, guildName) {
 	try {
 		console.log("Get Or Create Community Bot Admin Role - Start", { guildId });
-		const adminRole = await getOrCreateRole(guildId, "community-bot-admin", "role to admin the community-bot", "ORANGE");
+		const adminRole = await getOrCreateRole(guildId, "connecto-admin", "role to admin the community-bot", "ORANGE");
 		console.log("Get Or Create Community Bot Admin Role - Success", { guildId, adminRoleId: adminRole.id, adminRoleName: adminRole.name});
 		await getOrCreateGuildSpeedDateBotDocument(guildId, guildName, adminRole);
 		return adminRole;
@@ -45,17 +45,19 @@ async function getOrCreateVoiceChannelProtectedByRole(guildClient, roleId, creat
 	}
 }
 
-async function createLobbyProtectByRole(guildClient, guildId, creatorId, protectLobbyRole) {
+async function createLobbyProtectByRole(guildClient, guildId, creatorId, protectLobbyRole, keepInLobbyRole) {
 	try {
 		console.log("Lobby Creation - START", { guildId, creatorId, allowedRoleId: protectLobbyRole.id, allowedRoleName: protectLobbyRole.name });
 		const lobbyChannel = await getOrCreateVoiceChannelProtectedByRole(guildClient, protectLobbyRole.id, creatorId);
 		const lobby = {
 			allowedRoleId: protectLobbyRole.id,
 			allowedRoleName: protectLobbyRole.name,
+			keepInLobbyRoleId: keepInLobbyRole?.id,
+			keepInLobbyRoleName: keepInLobbyRole?.name,
 			channelId: lobbyChannel.id,
 			channelName: lobbyChannel.name
 		}
-		console.log(`Lobby Creation - SUCCESS`, { guildId, creatorId, allowedRoleId: protectLobbyRole.id, allowedRoleName: protectLobbyRole.name });
+		console.log(`Lobby Creation - SUCCESS`, { guildId, creatorId, allowedRoleId: protectLobbyRole.id, allowedRoleName: protectLobbyRole.name, keepInLobbyRoleId: keepInLobbyRole?.id, keepInLobbyRoleName: keepInLobbyRole?.name });
 		await updatedLobby(guildId, lobby);
 		return lobbyChannel;
 	} catch (e) {
@@ -85,7 +87,7 @@ async function createSpeedDateVoiceChannelRoom(guild, roomNumber, memberIds) {
 		..._.map(memberIds, id => ({ id: id, allow: [Permissions.FLAGS.VIEW_CHANNEL, Permissions.FLAGS.CONNECT, Permissions.FLAGS.SPEAK] })
 		)
 	];
-	return guild.channels.create(`Room#${roomNumber}`, {
+	return guild.channels.create(`Connecto Room #${roomNumber}`, {
 		type: "GUILD_VOICE",
 		reason: "Let's connect and get to know each other :)",
 		permissionOverwrites: permissionOverwrites

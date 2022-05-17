@@ -42,7 +42,7 @@ async function setMeetingHistoryAndGrantCompletedRolesToSpeedDaters(guildClient,
 	console.log(`Completed Speed Date Round - ADDING ROLES`, {guildInfo, dates, datesHistory, onComplete});
 	let rewardRoleId;
 	if(!onComplete){
-		const speedDateCompletedRole = await getOrCreateRole(guildInfo.guildId, `speed-dater`, "You deserve a Role as you completed the meeting!", "RED");
+		const speedDateCompletedRole = await getOrCreateRole(guildInfo.guildId, `connecto-veteran`, "You deserve a Role as you completed a Connecto round!", "RED");
 		rewardRoleId = speedDateCompletedRole.id;
 	} else {
 		rewardRoleId = onComplete.rewardRoleId;

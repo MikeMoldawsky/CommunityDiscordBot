@@ -25,8 +25,6 @@ const ROUND_START_SUBCOMMAND = 'start';
 const CONFIGURE_GROUP_SUBCOMMAND = 'configure';
 const CONFIGURE_MUSIC_SUBCOMMAND = 'music';
 const CONFIGURE_INVITE_SUBCOMMAND = 'invite';
-const CONFIGURE_IGNORED_USERS_SUBCOMMAND = 'ignored-users';
-
 
 async function configureInvite(interaction){
 	const guildId = interaction.guild.id;
@@ -56,29 +54,16 @@ async function configureMusic(interaction){
 	}
 }
 
-async function configureIgnoredUsers(interaction){
-	const guildId = interaction.guild.id;
-	const guildName = interaction.guild.name;
-	const ignoreUser = interaction.options.getUser("add");
-	const removeIgnoreUser = interaction.options.getUser("remove");
-	try {
-		await updateIgnoredUsersIfNeeded(guildId, guildName, ignoreUser, removeIgnoreUser);
-	} catch (e) {
-		console.log(`Failed to configure ignored user for guild ${guildName} with ${guildId}`, e);
-		throw Error(`Failed to configure ignored user for guild ${guildName} with ${guildId}..., ${e}`);
-	}
-}
-
-
 async function initializeSession(interaction){
-	let guildId, guildName, protectLobbyRole, memberRewardRole;
+	let guildId, guildName;
 	try {
 		guildId = interaction.guild.id;
 		guildName = interaction.guild.name;
-		protectLobbyRole = interaction.options.getRole('protect-lobby-role');
-		memberRewardRole = interaction.options.getRole('member-reward-role');
+		const protectLobbyRole = interaction.options.getRole('protect-lobby-role');
+		const memberRewardRole = interaction.options.getRole('member-reward-role');
+		const keepInLobbyRole = interaction.options.getRole('keep-in-lobby-role');
 		// 1. Bootstrap infrastructure that is required for speed dating (Roles, Voice Channel Router etc.)
-		await bootstrapSpeedDateInfrastructureForGuild(guildId, guildName, interaction.user.id, protectLobbyRole, memberRewardRole);
+		await bootstrapSpeedDateInfrastructureForGuild(guildId, guildName, interaction.user.id, protectLobbyRole, memberRewardRole, keepInLobbyRole);
 		await playMusicInLobby(guildId)
 	} catch (e){
 		console.log(`Failed to initialize speed dating`, {guildId, guildName, e});
@@ -139,6 +124,7 @@ module.exports = {
 					)
 					.addRoleOption(option => option.setName('protect-lobby-role').setDescription("Allows to view & join the lobby.").setRequired(true))
 					.addRoleOption(option => option.setName('member-reward-role').setDescription("Granted to all the members that participated in the session."))
+					.addRoleOption(option => option.setName('keep-in-lobby-role').setDescription("Role that will keep its members in the lobby and not assign them to rooms."))
 			)
 			.addSubcommand(
 				subCommand => subCommand.setName(SESSION_POST_INVITE_SUBCOMMAND)
@@ -188,14 +174,6 @@ module.exports = {
 						.addStringOption(option => option.setName('image-url').setDescription("The image url of the speed date's lobby voice channel invite"))
 						.addStringOption(option => option.setName('title').setDescription("The title of the speed date's lobby voice channel invite"))
 						.addStringOption(option => option.setName('description').setDescription("The description of the speed date's lobby voice channel invite"))
-			)
-				.addSubcommand(
-			subCommand => subCommand.setName(CONFIGURE_IGNORED_USERS_SUBCOMMAND)
-				.setDescription(
-					"Let's you configure user related things."
-				)
-				.addUserOption(option => option.setName('add').setDescription("Add a user that will be ignored when assigning rooms"))
-				.addUserOption(option => option.setName('remove').setDescription("Remove a user that from being ignored when assigning rooms"))
 			)
 		),
 	/**
@@ -253,9 +231,6 @@ module.exports = {
 							break;
 						case CONFIGURE_MUSIC_SUBCOMMAND:
 							await configureMusic(interaction);
-							break;
-						case CONFIGURE_IGNORED_USERS_SUBCOMMAND:
-							await configureIgnoredUsers(interaction);
 							break;
 						default:
 							throw Error(`Unknown ${groupCommand} subcommand: ${subcommand}`);

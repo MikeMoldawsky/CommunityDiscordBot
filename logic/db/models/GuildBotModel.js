@@ -44,6 +44,8 @@ const RoundSchema = new mongoose.Schema({
 const LobbySchema = new mongoose.Schema({
 	allowedRoleId: {type: String, required: true},
 	allowedRoleName: {type: String, required: true},
+	keepInLobbyRoleId: {type: String},
+	keepInLobbyRoleName: {type: String},
 	channelId: {type: String, required: true},
 	channelName: {type: String, required: true}
 }, { _id : false })
@@ -91,7 +93,6 @@ const CommunityBotAdminConfigSchema = new mongoose.Schema({
 
 const ConfigSchema = new mongoose.Schema({
 	voiceLobby: {type: SpeedDateVoiceLobbyConfig, required: true, default: () => ({})},
-	ignoreUsers: {type: [String], required: true, default: []},
 	admin: {type: CommunityBotAdminConfigSchema, required: true},
 }, { _id : false })
 
