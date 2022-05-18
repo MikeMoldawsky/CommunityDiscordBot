@@ -35,7 +35,19 @@ async function getOrCreateVoiceChannelProtectedByRole(guildClient, roleId, creat
 				permissionOverwrites: [
 					{ id: guildClient.id, deny: [Permissions.FLAGS.VIEW_CHANNEL, Permissions.FLAGS.CONNECT, Permissions.FLAGS.SPEAK] }, // deny
 					{ id: roleId, allow: [Permissions.FLAGS.VIEW_CHANNEL, Permissions.FLAGS.CONNECT] }, // allow role
-					{ id: creatorId, allow: [Permissions.FLAGS.SPEAK, Permissions.FLAGS.PRIORITY_SPEAKER] }, // allow creator to speak
+					{ id: creatorId, allow: [ // allow creator to speak
+						Permissions.FLAGS.VIEW_CHANNEL,
+						Permissions.FLAGS.CONNECT,
+						Permissions.FLAGS.SPEAK,
+						Permissions.FLAGS.PRIORITY_SPEAKER
+					] },
+					{ id: process.env.DISCORD_CLIENT_ID, allow: [ // Connecto permissions
+						Permissions.FLAGS.VIEW_CHANNEL,
+						Permissions.FLAGS.CONNECT,
+						Permissions.FLAGS.SPEAK,
+						Permissions.FLAGS.MUTE_MEMBERS,
+						Permissions.FLAGS.MOVE_MEMBERS
+					]},
 				]
 			});
 		}
@@ -82,10 +94,9 @@ async function createLobbyInvite(lobby, config) {
 
 async function createSpeedDateVoiceChannelRoom(guild, roomNumber, memberIds) {
 	const permissionOverwrites = [
-		{
-			id: guild.id, deny: [Permissions.FLAGS.CONNECT] },
-		..._.map(memberIds, id => ({ id: id, allow: [Permissions.FLAGS.VIEW_CHANNEL, Permissions.FLAGS.CONNECT, Permissions.FLAGS.SPEAK] })
-		)
+		{ id: guild.id, deny: [Permissions.FLAGS.CONNECT] },
+		{ id: process.env.DISCORD_CLIENT_ID, allow: [Permissions.FLAGS.VIEW_CHANNEL, Permissions.FLAGS.CONNECT, Permissions.FLAGS.MOVE_MEMBERS] },
+		..._.map(memberIds, id => ({ id: id, allow: [Permissions.FLAGS.VIEW_CHANNEL, Permissions.FLAGS.CONNECT, Permissions.FLAGS.SPEAK] }))
 	];
 	return guild.channels.create(`Connecto Room #${roomNumber}`, {
 		type: "GUILD_VOICE",
