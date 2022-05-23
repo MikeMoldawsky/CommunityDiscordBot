@@ -39,7 +39,6 @@ async function getOrCreateVoiceChannelProtectedByRole(guildClient, roleId, creat
 						Permissions.FLAGS.VIEW_CHANNEL,
 						Permissions.FLAGS.CONNECT,
 						Permissions.FLAGS.SPEAK,
-						Permissions.FLAGS.PRIORITY_SPEAKER
 					] },
 					{ id: process.env.DISCORD_CLIENT_ID, allow: [ // Connecto permissions
 						Permissions.FLAGS.VIEW_CHANNEL,
