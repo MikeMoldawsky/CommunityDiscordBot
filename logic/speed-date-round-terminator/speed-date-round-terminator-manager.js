@@ -34,7 +34,7 @@ async function moveSpeedDatersToLobbyAndDeleteChannel(lobby, rooms, guildClient)
 			})
 		)
 	} catch (e) {
-		console.log("Cleanup Round - move to move all ROOMS! - FAILED FATAL", {rooms, lobby, e})
+		console.log("Cleanup Round - failed to move all ROOMS! - FAILED FATAL", {rooms, lobby, e})
 	}
 }
 
