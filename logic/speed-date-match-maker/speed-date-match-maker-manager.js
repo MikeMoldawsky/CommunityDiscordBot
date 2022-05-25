@@ -1,6 +1,6 @@
 const _ = require('lodash')
 
-const matchRoom = (unmatchedMembers, rooms, datesHistory = {}, roomCapacity, forceMatch = false) => {
+const matchRoom = (unmatchedMembers, rooms, datesHistory = {}, roomCapacity) => {
 	// if all members have been assigned or only 1 remaining stop recursion
 	if (unmatchedMembers.length <= 1) {
 		return { rooms, datesHistory }
@@ -8,14 +8,14 @@ const matchRoom = (unmatchedMembers, rooms, datesHistory = {}, roomCapacity, for
 
 	const membersAvailability = prepareMemberAvailabilityList(unmatchedMembers, datesHistory)
 
-	const roomMembers = matchRoomMembers(membersAvailability, roomCapacity, forceMatch)
+	const roomMembers = matchRoomMembers(membersAvailability, roomCapacity)
 
 	if (roomMembers.length > 1) {
 		rooms.push(roomMembers);
 	}
 	const newUnmatchedMembers = _.without(unmatchedMembers, ...roomMembers)
 
-	return matchRoom(newUnmatchedMembers, rooms, datesHistory, roomCapacity, forceMatch);
+	return matchRoom(newUnmatchedMembers, rooms, datesHistory, roomCapacity);
 }
 
 const prepareMemberAvailabilityList = (unmatchedMemberIds, datesHistory) => {
@@ -36,7 +36,7 @@ const prepareMemberAvailabilityList = (unmatchedMemberIds, datesHistory) => {
 	return _.sortBy(membersAvailability, ({availableMembers}) => availableMembers.length)
 }
 
-const matchRoomMembers = (membersAvailability, roomCapacity, forceMatch) => {
+const matchRoomMembers = (membersAvailability, roomCapacity) => {
 	let options = _.map(membersAvailability, 'memberId')
 
 	// we start with the first item in the options as this is a member with the least possible options
@@ -51,7 +51,7 @@ const matchRoomMembers = (membersAvailability, roomCapacity, forceMatch) => {
 			roomMembers.push(_.last(availableMatches))
 			options = _.initial(options)
 		}
-		else if (forceMatch) {
+		else {
 			console.log(`Forcing match for members who have no unique options`)
 			roomMembers.push(_.last(options))
 			options = _.initial(options)
@@ -61,9 +61,9 @@ const matchRoomMembers = (membersAvailability, roomCapacity, forceMatch) => {
 	return roomMembers
 }
 
-const speedDateMatchMakerManager = (members, datesHistory = {}, roomCapacity, forceMatch) => {
+const speedDateMatchMakerManager = (members, datesHistory = {}, roomCapacity) => {
 	// matchRoom will run recursively until there are no more members to match
-	return matchRoom(members, [], datesHistory, roomCapacity, forceMatch);
+	return matchRoom(members, [], datesHistory, roomCapacity);
 }
 
 module.exports = speedDateMatchMakerManager
