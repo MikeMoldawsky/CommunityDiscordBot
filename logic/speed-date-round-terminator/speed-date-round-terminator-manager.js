@@ -105,7 +105,7 @@ async function cleanupSpeedDateRound(guildId) {
 		console.log(`Starting Cleanup for guild ${guildInfo}`);
 		const guildClient = await client.guilds.fetch(guildId);
 		const deletedVoiceChannelIds = await moveSpeedDatersToLobbyAndDeleteChannel(lobby, dates, guildClient, (room, members) => members.size <= 1);
-		// remove deleted rooms from DB
+		// 2. Remove deleted rooms from DB
 		await findGuildAndUpdate(guildId, {
 			'activeSession.round.dates': _.filter(dates, d => !_.includes(deletedVoiceChannelIds, d.voiceChannelId)),
 		});
