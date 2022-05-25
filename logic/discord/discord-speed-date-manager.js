@@ -3,6 +3,7 @@ const { updatedLobby, getOrCreateGuildSpeedDateBotDocument } = require("../db/gu
 const _ = require("lodash");
 const { getOrCreateRole } = require("./utils");
 const getRandomEmoji = require("../utils/get-random-emoji");
+const client = require("./client");
 
 
 const DEFAULT_LOBBY_NAME = "Connecto Lobby";
@@ -114,9 +115,51 @@ async function createSpeedDateVoiceChannelRoom(guild, roomNumber, memberIds) {
 	})
 }
 
+async function moveMembersToLobby(speedDateMembers, guildClient, lobby ) {
+	const guildMemberClient = guildClient.members;
+	await Promise.all(
+		_.map(Array.from(speedDateMembers), async userId => {
+			const user = await guildMemberClient.fetch(userId);
+			return user.voice.setChannel(lobby.channelId);
+		})
+	);
+}
+
+async function moveSpeedDatersToLobbyAndDeleteChannel(lobby, rooms, guildClient, deleteCondition) {
+	try {
+		const deletedVoiceChannelIds = await Promise.all(
+			_.map(rooms, async (room) => {
+				try {
+					const dateVoiceChannel = await client.channels.fetch(room.voiceChannelId);
+					const members = dateVoiceChannel.members.keys();
+					if (!_.isFunction(deleteCondition) || deleteCondition(room, dateVoiceChannel.members)) {
+						try {
+							console.log("Moving speed-daters back to lobby", {room: JSON.stringify(room), members})
+							await moveMembersToLobby(members, guildClient, lobby);
+						} catch (e) {
+							console.log("Failed to move speed-daters back to lobby", {members, lobby}, e)
+						}
+						console.log("Deleting speed-daters voice channel room", {room: JSON.stringify(room)})
+						dateVoiceChannel.delete();
+						return room.voiceChannelId
+					}
+				} catch (e) {
+					console.log("Cleanup Round - failed to move ROOM to lobby and delete - FAILED FATAL", {room, lobby, e})
+				}
+				return null
+			})
+		)
+		return _.filter(deletedVoiceChannelIds, _.identity)
+	} catch (e) {
+		console.log("Cleanup Round - failed to move all ROOMS! - FAILED FATAL", {rooms, lobby, e})
+		return []
+	}
+}
+
 module.exports = {
 	createLobbyProtectByRole,
 	createLobbyInvite,
 	createSpeedDateVoiceChannelRoom,
-	getOrCreateCommunityBotAdminRoleAndPersistIfNeeded
+	getOrCreateCommunityBotAdminRoleAndPersistIfNeeded,
+	moveSpeedDatersToLobbyAndDeleteChannel,
 }

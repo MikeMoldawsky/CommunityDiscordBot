@@ -1,5 +1,6 @@
 const client = require('../discord/client')
 const getRandomRoomMembers = require('../speed-date-match-maker/speed-date-match-maker-manager')
+const { cleanupSpeedDateRound } = require('../speed-date-round-cleanup/speed-date-round-cleanup-manager')
 const _ = require('lodash')
 const { getGuildWithActiveSessionOrThrow, updatedMatchMakerFieldsForGuild, findGuildAndUpdate } = require("../db/guild-db-manager");
 const moment = require("moment");
@@ -86,6 +87,7 @@ async function startDateMatchMakerTaskForGuild(guildId, interval){
 		}
 		const {activeSession:{ round:{ config,  matchMaker} } } = activeGuildBotDoc;
 		const stopMatchingMoment = moment(config.startTime).add(matchMaker.durationInSeconds, "seconds");
+		await cleanupSpeedDateRound(guildId)
 		await createSpeedDatesMatches(activeGuildBotDoc)
 		if(currentMoment > stopMatchingMoment){
 			console.log("Match Maker TASK - COMPLETED", {guildInfo: activeGuildBotDoc.guildInfo, roundStartTime: config.startTime, currentMoment, stopMatchingMoment})
