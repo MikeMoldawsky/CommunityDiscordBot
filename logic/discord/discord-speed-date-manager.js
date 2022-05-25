@@ -2,8 +2,10 @@ const { MessageEmbed, Permissions } = require("discord.js");
 const { updatedLobby, getOrCreateGuildSpeedDateBotDocument } = require("../db/guild-db-manager");
 const _ = require("lodash");
 const { getOrCreateRole } = require("./utils");
+const getRandomEmoji = require("../utils/get-random-emoji");
 
-const DEFAULT_LOBBY_NAME = "🫂 Connecto Lobby 🫂️";
+
+const DEFAULT_LOBBY_NAME = "Connecto Lobby";
 
 
 async function getOrCreateCommunityBotAdminRoleAndPersistIfNeeded(guildId, guildName) {
@@ -97,7 +99,7 @@ async function createSpeedDateVoiceChannelRoom(guild, roomNumber, memberIds) {
 		{ id: process.env.DISCORD_CLIENT_ID, allow: [Permissions.FLAGS.VIEW_CHANNEL, Permissions.FLAGS.CONNECT, Permissions.FLAGS.MOVE_MEMBERS] },
 		..._.map(memberIds, id => ({ id: id, allow: [Permissions.FLAGS.VIEW_CHANNEL, Permissions.FLAGS.CONNECT, Permissions.FLAGS.SPEAK] }))
 	];
-	return guild.channels.create(`Connecto Room #${roomNumber}`, {
+	return guild.channels.create(`Connecto Room ${getRandomEmoji('Animals & Nature')}`, {
 		type: "GUILD_VOICE",
 		reason: "Let's connect and get to know each other :)",
 		permissionOverwrites: permissionOverwrites
