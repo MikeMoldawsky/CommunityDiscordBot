@@ -13,28 +13,34 @@ async function moveMembersToLobby(speedDateMembers, guildClient, lobby ) {
 	);
 }
 
-async function moveSpeedDatersToLobbyAndDeleteChannel(lobby, rooms, guildClient) {
+async function moveSpeedDatersToLobbyAndDeleteChannel(lobby, rooms, guildClient, deleteCondition) {
 	try {
-		await Promise.all(
+		const deletedVoiceChannelIds = await Promise.all(
 			_.map(rooms, async (room) => {
 				try {
 					const dateVoiceChannel = await client.channels.fetch(room.voiceChannelId);
 					const members = dateVoiceChannel.members.keys();
-					try {
-						console.log("Moving speed-daters back to lobby", {room: JSON.stringify(room), members})
-						await moveMembersToLobby(members, guildClient, lobby);
-					} catch (e) {
-						console.log("Failed to move speed-daters back to lobby", {members, lobby}, e)
+					if (!_.isFunction(deleteCondition) || deleteCondition(room, dateVoiceChannel.members)) {
+						try {
+							console.log("Moving speed-daters back to lobby", {room: JSON.stringify(room), members})
+							await moveMembersToLobby(members, guildClient, lobby);
+						} catch (e) {
+							console.log("Failed to move speed-daters back to lobby", {members, lobby}, e)
+						}
+						console.log("Deleting speed-daters voice channel room", {room: JSON.stringify(room)})
+						dateVoiceChannel.delete();
+						return room.voiceChannelId
 					}
-					console.log("Deleting speed-daters voice channel room", {room: JSON.stringify(room)})
-					return dateVoiceChannel.delete();
 				} catch (e) {
 					console.log("Cleanup Round - failed to move ROOM to lobby and delete - FAILED FATAL", {room, lobby, e})
 				}
+				return null
 			})
 		)
+		return _.filter(deletedVoiceChannelIds, _.identity)
 	} catch (e) {
 		console.log("Cleanup Round - failed to move all ROOMS! - FAILED FATAL", {rooms, lobby, e})
+		return []
 	}
 }
 
@@ -78,7 +84,6 @@ async function terminateSpeedDateRound(guildId) {
 		await moveSpeedDatersToLobbyAndDeleteChannel(lobby, dates, guildClient);
 		await findGuildAndUpdate(guildId, {datesHistory});
 		await deleteActiveRound(guildId);
-		// TODO - remove round
 		console.log(`End Speed Date Round - SUCCESS`, {guildId});
 	} catch (e) {
 		console.log(`End Speed Date Round - FAILED`, {guildId}, e);
@@ -86,4 +91,29 @@ async function terminateSpeedDateRound(guildId) {
 	}
 }
 
-module.exports = { terminateSpeedDateRound }
+async function cleanupSpeedDateRound(guildId) {
+	console.log(`Cleanup Speed Date Round - START`, {guildId});
+	const isActiveRound = await isActiveSpeedDateRound(guildId);
+	if (!isActiveRound){
+		console.log(`End Speed Date Round - NOOP - no active session found`, {guildId});
+		return;
+	}
+	try {
+		const activeGuildSpeedDateBotDoc = await getGuildWithActiveSessionOrThrow(guildId);
+		const { activeSession:{ initialization: { lobby }, round: { dates }, config: {onComplete}} , guildInfo, datesHistory } = activeGuildSpeedDateBotDoc;
+		// 1. Cleanup rooms with one member and empty rooms
+		console.log(`Starting Cleanup for guild ${guildInfo}`);
+		const guildClient = await client.guilds.fetch(guildId);
+		const deletedVoiceChannelIds = await moveSpeedDatersToLobbyAndDeleteChannel(lobby, dates, guildClient, (room, members) => members.size <= 1);
+		// remove deleted rooms from DB
+		await findGuildAndUpdate(guildId, {
+			'activeSession.round.dates': _.filter(dates, d => !_.includes(deletedVoiceChannelIds, d.voiceChannelId)),
+		});
+		console.log(`Cleanup Speed Date Round - SUCCESS`, {guildId});
+	} catch (e) {
+		console.log(`Cleanup Speed Date Round - FAILED`, {guildId}, e);
+		throw Error(`Cleanup Speed Date Round - FAILED for guild ${guildId}, ${e}`);
+	}
+}
+
+module.exports = { terminateSpeedDateRound, cleanupSpeedDateRound }
