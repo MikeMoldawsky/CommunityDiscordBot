@@ -72,7 +72,7 @@ async function createSpeedDatesMatchesInternal(guildBotDoc, forceMatch = false) 
 const getLobbyAvailableMembers = (lobbyChannel, lobbyConfig) => {
 	return Array.from(
 		lobbyChannel.members.filter(m => {
-			return !m.user.bot && !m.roles.cache.some(role => role.id === lobbyConfig.keepInLobbyRoleId)
+			return m.user.id !== process.env.DISCORD_CLIENT_ID && !m.roles.cache.some(role => role.id === lobbyConfig.keepInLobbyRoleId)
 		}).keys()
 	)
 }
