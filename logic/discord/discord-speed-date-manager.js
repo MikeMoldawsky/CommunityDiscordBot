@@ -3,7 +3,6 @@ const { updatedLobby, getOrCreateGuildSpeedDateBotDocument } = require("../db/gu
 const _ = require("lodash");
 const { getOrCreateRole } = require("./utils");
 const getRandomEmoji = require("../utils/get-random-emoji");
-const client = require("./client");
 
 
 const DEFAULT_LOBBY_NAME = "Connecto Lobby";
@@ -130,7 +129,7 @@ async function moveSpeedDatersToLobbyAndDeleteChannel(lobby, rooms, guildClient,
 		const deletedVoiceChannelIds = await Promise.all(
 			_.map(rooms, async (room) => {
 				try {
-					const dateVoiceChannel = await client.channels.fetch(room.voiceChannelId);
+					const dateVoiceChannel = await guildClient.channels.fetch(room.voiceChannelId);
 					const members = dateVoiceChannel.members.keys();
 					if (!_.isFunction(deleteCondition) || deleteCondition(room, dateVoiceChannel.members)) {
 						try {
