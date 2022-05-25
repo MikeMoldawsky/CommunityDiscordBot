@@ -37,18 +37,26 @@ async function getOrCreateVoiceChannelProtectedByRole(guildClient, roleId, creat
 				permissionOverwrites: [
 					{ id: guildClient.id, deny: [Permissions.FLAGS.VIEW_CHANNEL, Permissions.FLAGS.CONNECT, Permissions.FLAGS.SPEAK] }, // deny
 					{ id: roleId, allow: [Permissions.FLAGS.VIEW_CHANNEL, Permissions.FLAGS.CONNECT] }, // allow role
-					{ id: creatorId, allow: [ // allow creator to speak
-						Permissions.FLAGS.VIEW_CHANNEL,
-						Permissions.FLAGS.CONNECT,
-						Permissions.FLAGS.SPEAK,
-					] },
-					{ id: process.env.DISCORD_CLIENT_ID, allow: [ // Connecto permissions
-						Permissions.FLAGS.VIEW_CHANNEL,
-						Permissions.FLAGS.CONNECT,
-						Permissions.FLAGS.SPEAK,
-						Permissions.FLAGS.MUTE_MEMBERS,
-						Permissions.FLAGS.MOVE_MEMBERS
-					]},
+					{
+						id: creatorId,
+						allow: [ // allow creator to speak
+							Permissions.FLAGS.VIEW_CHANNEL,
+							Permissions.FLAGS.CONNECT,
+							Permissions.FLAGS.SPEAK,
+							Permissions.FLAGS.MUTE_MEMBERS,
+							Permissions.FLAGS.MOVE_MEMBERS,
+						]
+					},
+					{
+						id: process.env.DISCORD_CLIENT_ID,
+						allow: [ // Connecto permissions
+							Permissions.FLAGS.VIEW_CHANNEL,
+							Permissions.FLAGS.CONNECT,
+							Permissions.FLAGS.SPEAK,
+							Permissions.FLAGS.MUTE_MEMBERS,
+							Permissions.FLAGS.MOVE_MEMBERS
+						]
+					},
 				]
 			});
 		}
