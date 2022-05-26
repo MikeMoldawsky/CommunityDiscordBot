@@ -37,18 +37,26 @@ async function getOrCreateVoiceChannelProtectedByRole(guildClient, roleId, creat
 				permissionOverwrites: [
 					{ id: guildClient.id, deny: [Permissions.FLAGS.VIEW_CHANNEL, Permissions.FLAGS.CONNECT, Permissions.FLAGS.SPEAK] }, // deny
 					{ id: roleId, allow: [Permissions.FLAGS.VIEW_CHANNEL, Permissions.FLAGS.CONNECT] }, // allow role
-					{ id: creatorId, allow: [ // allow creator to speak
-						Permissions.FLAGS.VIEW_CHANNEL,
-						Permissions.FLAGS.CONNECT,
-						Permissions.FLAGS.SPEAK,
-					] },
-					{ id: process.env.DISCORD_CLIENT_ID, allow: [ // Connecto permissions
-						Permissions.FLAGS.VIEW_CHANNEL,
-						Permissions.FLAGS.CONNECT,
-						Permissions.FLAGS.SPEAK,
-						Permissions.FLAGS.MUTE_MEMBERS,
-						Permissions.FLAGS.MOVE_MEMBERS
-					]},
+					{
+						id: creatorId,
+						allow: [ // allow creator to speak
+							Permissions.FLAGS.VIEW_CHANNEL,
+							Permissions.FLAGS.CONNECT,
+							Permissions.FLAGS.SPEAK,
+							Permissions.FLAGS.MUTE_MEMBERS,
+							Permissions.FLAGS.MOVE_MEMBERS,
+						]
+					},
+					{
+						id: process.env.DISCORD_CLIENT_ID,
+						allow: [ // Connecto permissions
+							Permissions.FLAGS.VIEW_CHANNEL,
+							Permissions.FLAGS.CONNECT,
+							Permissions.FLAGS.SPEAK,
+							Permissions.FLAGS.MUTE_MEMBERS,
+							Permissions.FLAGS.MOVE_MEMBERS
+						]
+					},
 				]
 			});
 		}
@@ -106,9 +114,51 @@ async function createSpeedDateVoiceChannelRoom(guild, roomNumber, memberIds) {
 	})
 }
 
+async function moveMembersToLobby(speedDateMembers, guildClient, lobby ) {
+	const guildMemberClient = guildClient.members;
+	await Promise.all(
+		_.map(Array.from(speedDateMembers), async userId => {
+			const user = await guildMemberClient.fetch(userId);
+			return user.voice.setChannel(lobby.channelId);
+		})
+	);
+}
+
+async function moveSpeedDatersToLobbyAndDeleteChannel(lobby, rooms, guildClient, deleteCondition) {
+	try {
+		const deletedVoiceChannelIds = await Promise.all(
+			_.map(rooms, async (room) => {
+				try {
+					const dateVoiceChannel = await guildClient.channels.fetch(room.voiceChannelId);
+					const members = dateVoiceChannel.members.keys();
+					if (!_.isFunction(deleteCondition) || deleteCondition(room, dateVoiceChannel.members)) {
+						try {
+							console.log("Moving speed-daters back to lobby", {room: JSON.stringify(room), members})
+							await moveMembersToLobby(members, guildClient, lobby);
+						} catch (e) {
+							console.log("Failed to move speed-daters back to lobby", {members, lobby}, e)
+						}
+						console.log("Deleting speed-daters voice channel room", {room: JSON.stringify(room)})
+						dateVoiceChannel.delete();
+						return room.voiceChannelId
+					}
+				} catch (e) {
+					console.log("Cleanup Round - failed to move ROOM to lobby and delete - FAILED FATAL", {room, lobby, e})
+				}
+				return null
+			})
+		)
+		return _.filter(deletedVoiceChannelIds, _.identity)
+	} catch (e) {
+		console.log("Cleanup Round - failed to move all ROOMS! - FAILED FATAL", {rooms, lobby, e})
+		return []
+	}
+}
+
 module.exports = {
 	createLobbyProtectByRole,
 	createLobbyInvite,
 	createSpeedDateVoiceChannelRoom,
-	getOrCreateCommunityBotAdminRoleAndPersistIfNeeded
+	getOrCreateCommunityBotAdminRoleAndPersistIfNeeded,
+	moveSpeedDatersToLobbyAndDeleteChannel,
 }

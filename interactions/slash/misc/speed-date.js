@@ -6,7 +6,7 @@ const { bootstrapSpeedDateInfrastructureForGuild, startSpeedDateRound, getLobbyI
 const {
 	DEFAULT_SPEED_DATE_DURATION_MINUTES,
 	DEFAULT_ROOM_CAPACITY,
-	MATCH_MAKER_DURATION_SECONDS,
+	MATCH_MAKER_DURATION_PERCENTAGE,
 	MATCH_MAKER_INTERVAL,
 	MATCH_MAKER_TASK_DELAY,
 	ROUND_TERMINATOR_TASK_INTERVAL,
@@ -97,7 +97,8 @@ async function startRound(interaction) {
 		throw Error(`Failed to start round - input errors ${e}`);
 	}
 	try {
-		await startSpeedDateRound(guildId, speedDateDurationMinutes, roomCapacity, MATCH_MAKER_INTERVAL, MATCH_MAKER_TASK_DELAY, MATCH_MAKER_DURATION_SECONDS, ROUND_TERMINATOR_TASK_INTERVAL);
+		const matchMakerDurationSeconds = speedDateDurationMinutes * 60 * MATCH_MAKER_DURATION_PERCENTAGE
+		await startSpeedDateRound(guildId, speedDateDurationMinutes, roomCapacity, MATCH_MAKER_INTERVAL, MATCH_MAKER_TASK_DELAY, matchMakerDurationSeconds, ROUND_TERMINATOR_TASK_INTERVAL);
 	} catch (e){
 		console.log(`Failed to start round for speed dating`, {guildId, e});
 		throw Error(`Failed to start round for speed dating for guild ${guildId} ${e}`);

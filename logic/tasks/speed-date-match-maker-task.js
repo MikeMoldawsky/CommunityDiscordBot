@@ -1,12 +1,13 @@
 const client = require('../discord/client')
-const matchRooms = require('../speed-date-match-maker/speed-date-match-maker-manager')
+const getRandomRoomMembers = require('../speed-date-match-maker/speed-date-match-maker-manager')
+const { cleanupSpeedDateRound } = require('../speed-date-round-cleanup/speed-date-round-cleanup-manager')
 const _ = require('lodash')
 const { getGuildWithActiveSessionOrThrow, updatedMatchMakerFieldsForGuild, findGuildAndUpdate } = require("../db/guild-db-manager");
 const moment = require("moment");
 const { createSpeedDateVoiceChannelRoom } = require("../discord/discord-speed-date-manager");
 
-async function createSpeedDatesMatchesInternal(guildBotDoc, forceMatch = false) {
-	console.log(`Match maker - SEARCHING DATES - ${guildBotDoc.guildInfo}, forceMatch ${forceMatch}`)
+async function createSpeedDatesMatchesInternal(guildBotDoc) {
+	console.log(`Match maker - SEARCHING DATES - ${guildBotDoc.guildInfo}`)
 	const {
 		activeSession: {initialization: { lobby }, round},
 		datesHistory,
@@ -17,55 +18,34 @@ async function createSpeedDatesMatchesInternal(guildBotDoc, forceMatch = false) 
 	const guild = await client.guilds.fetch(guildInfo.guildId)
 	const lobbyChannel = await client.channels.fetch(lobby.channelId)
 
-	// get available members from lobby and members that are alone in a room if any
-	const aloneMemberDates = getMembersAloneInRoom(dates)
-	const membersAloneInRoom = _.keys(aloneMemberDates)
-	const availableMemberIds = [
-		...getLobbyAvailableMembers(lobbyChannel, lobby),
-		...membersAloneInRoom
-	]
-
-	if (availableMemberIds.length < 2){
-		console.log(`Match maker - Not Enough Members in Lobby`,  { guildInfo, membersCount: availableMemberIds.length});
+	let remainingMemberIds = getLobbyAvailableMembers(lobbyChannel, lobby)
+	if (remainingMemberIds.length < 2){
+		console.log(`Match maker - Not Enough Members in Lobby`,  { guildInfo, membersCount: remainingMemberIds.length});
 		return;
 	}
 
-	const { rooms } = matchRooms(availableMemberIds, datesHistory, config.roomCapacity, forceMatch)
-	console.log(`Match maker - Creating ${rooms.length} DATES`, {guildInfo});
-	let newDates = dates
-	const maxRoomNum = _.max(_.map(dates, 'number')) || 0
-	await Promise.all(
-		rooms.map(async (room, i) => {
-			let roomNumber = maxRoomNum + i + 1;
-			let voiceChannel
-			const membersAlreadyInRooms = _.intersection(room, membersAloneInRoom)
-			if (_.isEmpty(membersAlreadyInRooms)) {
-				console.log(`Match maker - CREATING DATE.`, {guildInfo, room});
-				voiceChannel = await createSpeedDateVoiceChannelRoom(guild, roomNumber, room);
-				newDates.push({
-					number: roomNumber,
-					participants: addMembersToRoom(guild, room, voiceChannel),
-					voiceChannelId: voiceChannel.id
-				})
-			}
-			else {
-				console.log(`Match maker - ADDING MEMBER TO EXISTING DATE.`, {guildInfo, room});
-				const joinedRoom = _.find(newDates, ({ number }) => number === aloneMemberDates[membersAlreadyInRooms[0]].number)
-				voiceChannel = await client.channels.fetch(joinedRoom.voiceChannelId)
-				joinedRoom.participants = addMembersToRoom(guild, room, voiceChannel)
-
-				if (membersAlreadyInRooms.length === 2) {
-					// both members are alone in their rooms
-					const roomToDelete = _.find(newDates, ({ number }) => number === aloneMemberDates[membersAlreadyInRooms[1]].number)
-					roomToDelete.participants = []
-				}
-			}
-		})
-	);
+	console.log(`Match maker - Creating DATES`, {guildInfo});
+	const newDates = []
+	while (remainingMemberIds.length > 1) {
+		try	{
+			const roomMembers = getRandomRoomMembers(remainingMemberIds, datesHistory, config.roomCapacity)
+			console.log(`Match maker - CREATING DATE.`, {guildId: guild.id, roomMembers});
+			let voiceChannel = await createSpeedDateVoiceChannelRoom(guild, roomMembers);
+			newDates.push({
+				participants: await addMembersToRoom(guild, roomMembers, voiceChannel),
+				voiceChannelId: voiceChannel.id
+			})
+		}
+		catch (e) {
+			console.log(`Failed to create a room, skipping and trying again. guild ${guildBotDoc.guildInfo}`, e);
+		}
+		remainingMemberIds = getLobbyAvailableMembers(lobbyChannel, lobby)
+	}
 
 	console.log(`Match maker - Created DATES`, {newDates, guildInfo});
+
 	await findGuildAndUpdate(guildInfo.guildId, {
-		'activeSession.round.dates': newDates,
+		'activeSession.round.dates': [...dates, ...newDates],
 	});
 }
 
@@ -77,29 +57,17 @@ const getLobbyAvailableMembers = (lobbyChannel, lobbyConfig) => {
 	)
 }
 
-const getMembersAloneInRoom = dates => {
-	return dates.reduce((aloneMemberDates, date) => {
-		const voiceChannel = client.channels.cache.get(date.voiceChannelId)
-		return _.size(voiceChannel.members) === 1
-			? {
-				...aloneMemberDates,
-				[voiceChannel.members.first().user.id]: date,
-			}
-			: aloneMemberDates
-	}, {})
-}
-
-const addMembersToRoom = (guild, members, vc) => {
-	return members.map((userId) => {
+const addMembersToRoom = async (guild, members, vc) => {
+	return Promise.all(members.map(async (userId) => {
 		const member = guild.members.cache.get(userId)
-		member.voice.setChannel(vc.id)
+		await member.voice.setChannel(vc.id)
 		return {id: userId, name: member.user.username}
-	})
+	}))
 }
 
-async function createSpeedDatesMatches(guildBotDoc, forceMatch = false) {
+async function createSpeedDatesMatches(guildBotDoc) {
 	try {
-		await createSpeedDatesMatchesInternal(guildBotDoc, forceMatch);
+		await createSpeedDatesMatchesInternal(guildBotDoc);
 	} catch (e) {
 		console.log(`Failed to match make for guild ${guildBotDoc.guildInfo}`, e);
 		throw Error(`Failed to match make for guild ${guildBotDoc.guildInfo}`);
@@ -118,16 +86,36 @@ async function startDateMatchMakerTaskForGuild(guildId, interval){
 			return;
 		}
 		const {activeSession:{ round:{ config,  matchMaker} } } = activeGuildBotDoc;
-		const stopMatchingMoment = moment(config.startTime).add(matchMaker.durationInSeconds, "seconds");
-		if(currentMoment > stopMatchingMoment){
-			await createSpeedDatesMatches(activeGuildBotDoc, true);
-			console.log("Match Maker TASK - COMPLETED", {guildInfo: activeGuildBotDoc.guildInfo, roundStartTime: config.startTime, currentMoment, stopMatchingMoment})
+		// room cleanup
+		const stopCleanupMoment = moment(config.startTime).add(config.durationInMinutes, "minutes").subtract(10, "seconds");
+		if (currentMoment <= stopCleanupMoment) {
+			await cleanupSpeedDateRound(guildId)
+		}
+		else {
+			console.log("Match Maker TASK - MATCH MAKING COMPLETED", {guildInfo: activeGuildBotDoc.guildInfo, roundStartTime: config.startTime, currentMoment, stopCleanupMoment})
 			return;
 		}
-		await createSpeedDatesMatches(activeGuildBotDoc, false)
+		// match making
+		const stopMatchingMoment = moment(config.startTime).add(matchMaker.durationInSeconds, "seconds");
+		if(currentMoment <= stopMatchingMoment){
+			await createSpeedDatesMatches(activeGuildBotDoc)
+		}
+		else {
+			console.log("Match Maker TASK - MATCH MAKING ENDED, running room cleanup only", {guildInfo: activeGuildBotDoc.guildInfo, roundStartTime: config.startTime, currentMoment, stopMatchingMoment})
+		}
+
 		console.log(`Match maker TASK - SLEEPING... `, { intervalMs: interval, guildInfo: activeGuildBotDoc.guildInfo})
-		console.log(`Match maker Task - SLEEPING...`, {guildInfo: activeGuildBotDoc.guildInfo, intervalMs: interval, roundStartTime: config.startTime,
-			currentMoment, stopMatchingMoment, secondsLeft: stopMatchingMoment.diff(currentMoment, 'seconds')  })
+		const stopMatchingSecondsLeft = stopMatchingMoment.diff(currentMoment, 'seconds')
+		console.log(`Match maker Task - SLEEPING...`, {
+			guildInfo: activeGuildBotDoc.guildInfo,
+			intervalMs: interval,
+			roundStartTime: config.startTime,
+			currentMoment,
+			stopMatchingMoment,
+			stopMatchingSecondsLeft: stopMatchingSecondsLeft > 0 ? stopMatchingSecondsLeft : 'Done',
+			stopCleanupMoment,
+			cleanupSecondsLeft: stopCleanupMoment.diff(currentMoment, 'seconds'),
+		})
 		setTimeout(() => startDateMatchMakerTaskForGuild(guildId, interval), interval);
 	} catch (e) {
 		console.log(`Match Maker Task - Failed Fatal`, {guildId, e})
