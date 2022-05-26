@@ -86,16 +86,36 @@ async function startDateMatchMakerTaskForGuild(guildId, interval){
 			return;
 		}
 		const {activeSession:{ round:{ config,  matchMaker} } } = activeGuildBotDoc;
-		const stopMatchingMoment = moment(config.startTime).add(matchMaker.durationInSeconds, "seconds");
-		await cleanupSpeedDateRound(guildId)
-		await createSpeedDatesMatches(activeGuildBotDoc)
-		if(currentMoment > stopMatchingMoment){
-			console.log("Match Maker TASK - COMPLETED", {guildInfo: activeGuildBotDoc.guildInfo, roundStartTime: config.startTime, currentMoment, stopMatchingMoment})
+		// room cleanup
+		const stopCleanupMoment = moment(config.startTime).add(config.durationInMinutes, "minutes").subtract(10, "seconds");
+		if (currentMoment <= stopCleanupMoment) {
+			await cleanupSpeedDateRound(guildId)
+		}
+		else {
+			console.log("Match Maker TASK - MATCH MAKING COMPLETED", {guildInfo: activeGuildBotDoc.guildInfo, roundStartTime: config.startTime, currentMoment, stopCleanupMoment})
 			return;
 		}
+		// match making
+		const stopMatchingMoment = moment(config.startTime).add(matchMaker.durationInSeconds, "seconds");
+		if(currentMoment <= stopMatchingMoment){
+			await createSpeedDatesMatches(activeGuildBotDoc)
+		}
+		else {
+			console.log("Match Maker TASK - MATCH MAKING ENDED, running room cleanup only", {guildInfo: activeGuildBotDoc.guildInfo, roundStartTime: config.startTime, currentMoment, stopMatchingMoment})
+		}
+		
 		console.log(`Match maker TASK - SLEEPING... `, { intervalMs: interval, guildInfo: activeGuildBotDoc.guildInfo})
-		console.log(`Match maker Task - SLEEPING...`, {guildInfo: activeGuildBotDoc.guildInfo, intervalMs: interval, roundStartTime: config.startTime,
-			currentMoment, stopMatchingMoment, secondsLeft: stopMatchingMoment.diff(currentMoment, 'seconds')  })
+		const stopMatchingSecondsLeft = stopMatchingMoment.diff(currentMoment, 'seconds')
+		console.log(`Match maker Task - SLEEPING...`, {
+			guildInfo: activeGuildBotDoc.guildInfo,
+			intervalMs: interval,
+			roundStartTime: config.startTime,
+			currentMoment,
+			stopMatchingMoment,
+			stopMatchingSecondsLeft: stopMatchingSecondsLeft > 0 ? stopMatchingSecondsLeft : 'Done',
+			stopCleanupMoment,
+			cleanupSecondsLeft: stopCleanupMoment.diff(currentMoment, 'seconds'),
+		})
 		setTimeout(() => startDateMatchMakerTaskForGuild(guildId, interval), interval);
 	} catch (e) {
 		console.log(`Match Maker Task - Failed Fatal`, {guildId, e})
