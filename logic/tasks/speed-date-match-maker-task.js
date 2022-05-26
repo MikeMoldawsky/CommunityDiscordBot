@@ -103,7 +103,7 @@ async function startDateMatchMakerTaskForGuild(guildId, interval){
 		else {
 			console.log("Match Maker TASK - MATCH MAKING ENDED, running room cleanup only", {guildInfo: activeGuildBotDoc.guildInfo, roundStartTime: config.startTime, currentMoment, stopMatchingMoment})
 		}
-		
+
 		console.log(`Match maker TASK - SLEEPING... `, { intervalMs: interval, guildInfo: activeGuildBotDoc.guildInfo})
 		const stopMatchingSecondsLeft = stopMatchingMoment.diff(currentMoment, 'seconds')
 		console.log(`Match maker Task - SLEEPING...`, {
