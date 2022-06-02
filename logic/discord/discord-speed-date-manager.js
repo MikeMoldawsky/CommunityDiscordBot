@@ -6,23 +6,25 @@ const getRandomEmoji = require("../utils/get-random-emoji");
 
 
 const DEFAULT_LOBBY_NAME = "Connecto Lobby";
+const DEFAULT_ADMIN_ROLE_NAME = "connecto-admin";
+const DEFAULT_MODERATOR_ROLE_NAME = "connecto-moderator";
 
-
-async function getOrCreateCommunityBotAdminRoleAndPersistIfNeeded(guildId, guildName) {
+async function getOrCreateConnectoRolesAndPersistIfNeeded(guildId, guildName) {
 	try {
 		console.log("Get Or Create Community Bot Admin Role - Start", { guildId });
-		const adminRole = await getOrCreateRole(guildId, "connecto-admin", "role to admin the community-bot", "ORANGE");
-		console.log("Get Or Create Community Bot Admin Role - Success", { guildId, adminRoleId: adminRole.id, adminRoleName: adminRole.name});
-		await getOrCreateGuildSpeedDateBotDocument(guildId, guildName, adminRole);
-		return adminRole;
+		const adminRole = await getOrCreateRole(guildId, DEFAULT_ADMIN_ROLE_NAME, "Connecto's admin role", "GOLD");
+		const moderatorRole = await getOrCreateRole(guildId, DEFAULT_MODERATOR_ROLE_NAME, "Connecto's moderator role", "WHITE");
+		console.log("Get Or Create Community Bot Admin Role - Success", { guildId, adminRoleId: adminRole.id, adminRoleName: adminRole.name, moderatorRoleId: moderatorRole.id, moderatorRoleName: moderatorRole.name});
+		await getOrCreateGuildSpeedDateBotDocument(guildId, guildName, adminRole, moderatorRole);
+		return {adminRole, moderatorRole};
 	} catch (e) {
-		console.log("Get Or Create Community Bot Admin Role - Failed", {guildId, e});
-		throw Error(`Get Or Create Community Bot Admin Role - Failed - guild: ${guildId}, e: ${e}`);
+		console.log("Get Or Create Connecto's Roles - Failed", {guildId, e});
+		throw Error(`Get Or Create Connecto's Roles - Failed - guild: ${guildId}, e: ${e}`);
 	}
 }
 
 
-async function getOrCreateVoiceChannelProtectedByRole(guildClient, roleId, creatorId) {
+async function getOrCreateVoiceChannelProtectedByRole(guildClient, adminRoleId) {
 	try {
 		// TODO - should NOT find the router by the name but from DB through the ID
 		let lobbyChannel = guildClient.channels.cache.find(c => c.name === DEFAULT_LOBBY_NAME);
@@ -33,12 +35,11 @@ async function getOrCreateVoiceChannelProtectedByRole(guildClient, roleId, creat
 			console.log(`Creating Lobby ${DEFAULT_LOBBY_NAME} for guild ${guildClient.id}`)
 			return await guildClient.channels.create(DEFAULT_LOBBY_NAME, {
 				type: "GUILD_VOICE",
-				reason: "Staging lobby for speed dating :)",
+				reason: "Connecto's speed dating lobby",
 				permissionOverwrites: [
 					{ id: guildClient.id, deny: [Permissions.FLAGS.VIEW_CHANNEL, Permissions.FLAGS.CONNECT, Permissions.FLAGS.SPEAK] }, // deny
-					{ id: roleId, allow: [Permissions.FLAGS.VIEW_CHANNEL, Permissions.FLAGS.CONNECT] }, // allow role
 					{
-						id: creatorId,
+						id: adminRoleId,
 						allow: [ // allow creator to speak
 							Permissions.FLAGS.VIEW_CHANNEL,
 							Permissions.FLAGS.CONNECT,
@@ -66,19 +67,17 @@ async function getOrCreateVoiceChannelProtectedByRole(guildClient, roleId, creat
 	}
 }
 
-async function createLobbyProtectByRole(guildClient, guildId, creatorId, protectLobbyRole, keepInLobbyRole) {
+async function createLobbyProtectByRole(guildClient, guildId,  adminRole, lobbyModeratorsRole) {
 	try {
-		console.log("Lobby Creation - START", { guildId, creatorId, allowedRoleId: protectLobbyRole.id, allowedRoleName: protectLobbyRole.name });
-		const lobbyChannel = await getOrCreateVoiceChannelProtectedByRole(guildClient, protectLobbyRole.id, creatorId);
+		console.log("Lobby Creation - START", { guildId, adminRoleId: adminRole.id, adminRoleName: adminRole.name});
+		const lobbyChannel = await getOrCreateVoiceChannelProtectedByRole(guildClient, adminRole.id);
 		const lobby = {
-			allowedRoleId: protectLobbyRole.id,
-			allowedRoleName: protectLobbyRole.name,
-			keepInLobbyRoleId: keepInLobbyRole?.id,
-			keepInLobbyRoleName: keepInLobbyRole?.name,
+			lobbyModeratorsRoleId: lobbyModeratorsRole.id,
+			lobbyModeratorsRoleName: lobbyModeratorsRole.name,
 			channelId: lobbyChannel.id,
 			channelName: lobbyChannel.name
 		}
-		console.log(`Lobby Creation - SUCCESS`, { guildId, creatorId, allowedRoleId: protectLobbyRole.id, allowedRoleName: protectLobbyRole.name, keepInLobbyRoleId: keepInLobbyRole?.id, keepInLobbyRoleName: keepInLobbyRole?.name });
+		console.log(`Lobby Creation - SUCCESS`, { guildId, lobbyModeratorsRoleId: lobbyModeratorsRole.id, lobbyModeratorsRoleName: lobbyModeratorsRole.name });
 		await updatedLobby(guildId, lobby);
 		return lobbyChannel;
 	} catch (e) {
@@ -159,6 +158,6 @@ module.exports = {
 	createLobbyProtectByRole,
 	createLobbyInvite,
 	createSpeedDateVoiceChannelRoom,
-	getOrCreateCommunityBotAdminRoleAndPersistIfNeeded,
+	getOrCreateConnectoRolesAndPersistIfNeeded,
 	moveSpeedDatersToLobbyAndDeleteChannel,
 }

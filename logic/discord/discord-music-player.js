@@ -13,9 +13,6 @@ const { getGuildWithActiveSessionOrThrow } = require("../../logic/db/guild-db-ma
 const client = require('../../logic/discord/client')
 const { isActiveSpeedDateSession } = require("../db/guild-db-manager");
 
-const DEFAULT_LOBBY_MUSIC_URL = 'https://soundcloud.com/julian_avila/elevatormusic';
-const DEFAULT_MUSIC_VOLUME = 10;
-
 const guildIdToMusicObject = {}
 
 
@@ -48,8 +45,8 @@ async function updateOrCreateAudioPlayerResourceForGuildIfNeeded(guildId) {
 	const audioPlayer = _.get(guildIdToMusicObject, `${guildId}.player`);
 	const { config: {voiceLobby: { music : musicConfig }},  guildInfo } = await getGuildWithActiveSessionOrThrow(guildId);
 	const activeResource = _.get(guildIdToMusicObject, `${guildId}.resource`);
-	const url = _.get(musicConfig, "url", DEFAULT_LOBBY_MUSIC_URL);
-	const volume = _.get(musicConfig, "volume", DEFAULT_MUSIC_VOLUME);
+	const url = _.get(musicConfig, "url");
+	const volume = _.get(musicConfig, "volume");
 	const adjustedVolume = volume/100;
 	if(!activeResource){
 		console.log("Creating new Audio Resource on Audio Player - No Active Resource", { guildInfo, musicConfig, adjustedVolume });

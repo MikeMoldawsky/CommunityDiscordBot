@@ -103,12 +103,12 @@ async function updatedLobby(guildId, lobby) {
 	await GuildCommunityBotModel.findOneAndUpdate({ _id: guildId }, updateFields);
 }
 
-async function updatedActiveSessionOnCompleteConfig(guildId, memberRewardRole) {
+async function updatedActiveSessionOnCompleteConfig(guildId, rewardPlayersRole) {
 	// TODO - change the ugly implementation
 	const updateFields = {}
-	if(memberRewardRole){
-		updateFields['activeSession.config.onComplete.rewardRoleId'] = memberRewardRole.id;
-		updateFields['activeSession.config.onComplete.rewardRoleName'] = memberRewardRole.name;
+	if(rewardPlayersRole){
+		updateFields['activeSession.config.onComplete.rewardRoleId'] = rewardPlayersRole.id;
+		updateFields['activeSession.config.onComplete.rewardRoleName'] = rewardPlayersRole.name;
 	}
 
 	if(_.isEmpty(updateFields)){
@@ -159,7 +159,7 @@ async function isActiveSpeedDateSession(guildId) {
 	return !isNilOrEmpty(activeSession);
 }
 
-async function getOrCreateGuildSpeedDateBotDocument(guildId, guildName, communityBotAdminRole) {
+async function getOrCreateGuildSpeedDateBotDocument(guildId, guildName, connectoAdminRole, connectoModeratorRole) {
 	try {
 		let guildInfo = await GuildCommunityBotModel.findById(guildId).exec();
 		if (guildInfo) {
@@ -175,9 +175,13 @@ async function getOrCreateGuildSpeedDateBotDocument(guildId, guildName, communit
 			},
 			config: {
 				admin:{
-					roleId: communityBotAdminRole.id,
-					roleName: communityBotAdminRole.name,
-				}
+					roleId: connectoAdminRole.id,
+					roleName: connectoAdminRole.name,
+				},
+				moderator:{
+					roleId: connectoModeratorRole.id,
+					roleName: connectoModeratorRole.name,
+				},
 			}
 		};
 		const guildCommunityBotModel = new GuildCommunityBotModel(document);

@@ -1,7 +1,7 @@
 const { SlashCommandBuilder } = require("@discordjs/builders");
-const { updateMusicIfNeeded, updateIgnoredUsersIfNeeded, updateInviteIfNeeded } = require("../../../logic/speed-date-config-manager/speed-date-config-manager");
+const { updateMusicIfNeeded, updateInviteIfNeeded } = require("../../../logic/speed-date-config-manager/speed-date-config-manager");
 const { bootstrapSpeedDateInfrastructureForGuild, startSpeedDateRound, getLobbyInvite,
-	isCommunityBotAdmin
+	isCommunityBotAdmin, openLobbyForRole
 } = require("../../../logic/speed-date-manager/speed-date-manager");
 const {
 	DEFAULT_SPEED_DATE_DURATION_MINUTES,
@@ -13,11 +13,13 @@ const {
 } = require('../../../logic/config/appconf.prod')
 const { playMusicInLobby, reloadMusicInLobbyIfInActiveSession } = require('../../../logic/discord/discord-music-player')
 const { endSpeedDateSession } = require("../../../logic/speed-date-session-terminator/speed-date-session-cleanup-manager");
+
 // Sub Commands
-const SESSION_GROUP_COMMAND = "session";
-const SESSION_INITIALIZE_SUBCOMMAND = 'initialize';
-const SESSION_POST_INVITE_SUBCOMMAND = 'post-invite';
-const SESSION_END_SUBCOMMAND = 'end';
+const LOBBY_GROUP_COMMAND = "lobby";
+const LOBBY_INITIALIZE_SUBCOMMAND = 'initialize';
+const LOBBY_POST_INVITE_SUBCOMMAND = 'post-invite';
+const LOBBY_OPEN_SUBCOMMAND = 'open';
+const LOBBY_DESTROY_SUBCOMMAND = 'destroy';
 // Round Commands
 const ROUND_GROUP_COMMAND = 'round';
 const ROUND_START_SUBCOMMAND = 'start';
@@ -54,20 +56,31 @@ async function configureMusic(interaction){
 	}
 }
 
-async function initializeSession(interaction){
+async function initializeLobby(interaction){
 	let guildId, guildName;
 	try {
 		guildId = interaction.guild.id;
 		guildName = interaction.guild.name;
-		const protectLobbyRole = interaction.options.getRole('protect-lobby-role');
-		const memberRewardRole = interaction.options.getRole('member-reward-role');
-		const keepInLobbyRole = interaction.options.getRole('keep-in-lobby-role');
+		const rewardPlayersRole = interaction.options.getRole('reward-players');
 		// 1. Bootstrap infrastructure that is required for speed dating (Roles, Voice Channel Router etc.)
-		await bootstrapSpeedDateInfrastructureForGuild(guildId, guildName, interaction.user.id, protectLobbyRole, memberRewardRole, keepInLobbyRole);
+		await bootstrapSpeedDateInfrastructureForGuild(guildId, guildName, rewardPlayersRole);
 		await playMusicInLobby(guildId)
 	} catch (e){
 		console.log(`Failed to initialize speed dating`, {guildId, guildName, e});
 		throw Error(`Failed to initialize speed dating for guild ${guildName} ${e}`);
+	}
+}
+
+async function openLobby(interaction){
+	let guildId, guildName, allowedRole;
+	try {
+		guildId = interaction.guild.id;
+		guildName = interaction.guild.name;
+		allowedRole = interaction.options.getRole('role');
+		await openLobbyForRole(guildId, guildName, allowedRole);
+	} catch (e){
+		console.log(`Failed to open the speed date lobby`, {guildId, guildName, allowedRole, e});
+		throw Error(`Failed to open the speed date lobby of guild ${guildName} to role ${allowedRole} ${e}`);
 	}
 }
 
@@ -106,7 +119,7 @@ async function startRound(interaction) {
 }
 
 function isEphemeral(groupCommand, subCommand){
-	return !(groupCommand === SESSION_GROUP_COMMAND && subCommand === SESSION_POST_INVITE_SUBCOMMAND);
+	return !(groupCommand === LOBBY_GROUP_COMMAND && subCommand === LOBBY_POST_INVITE_SUBCOMMAND);
 }
 
 module.exports = {
@@ -117,24 +130,29 @@ module.exports = {
 		.setDescription(
 			"Helps you CREATE MEETINGS for your community. You'll get a STRONGER and HEALTHIER community!"
 		)
-		.addSubcommandGroup(subCommandGroup => subCommandGroup.setName(SESSION_GROUP_COMMAND).setDescription("Speed date session commands")
+		.addSubcommandGroup(subCommandGroup => subCommandGroup.setName(LOBBY_GROUP_COMMAND).setDescription("Speed date session commands")
 			.addSubcommand(
-				subCommand => subCommand.setName(SESSION_INITIALIZE_SUBCOMMAND)
+				subCommand => subCommand.setName(LOBBY_INITIALIZE_SUBCOMMAND)
 					.setDescription(
 						"Creates the voice channel lobby for the speed dates session - the lobby is protected by a role."
 					)
-					.addRoleOption(option => option.setName('protect-lobby-role').setDescription("Allows to view & join the lobby.").setRequired(true))
-					.addRoleOption(option => option.setName('member-reward-role').setDescription("Granted to all the members that participated in the session."))
-					.addRoleOption(option => option.setName('keep-in-lobby-role').setDescription("Role that will keep its members in the lobby and not assign them to rooms."))
+					.addRoleOption(option => option.setName('reward-players').setDescription("A role assigned to all of the speed-daters."))
 			)
 			.addSubcommand(
-				subCommand => subCommand.setName(SESSION_POST_INVITE_SUBCOMMAND)
+				subCommand => subCommand.setName(LOBBY_POST_INVITE_SUBCOMMAND)
 					.setDescription(
 						"Post the date's session invite in this channel."
 					)
 			)
 			.addSubcommand(
-				subCommand => subCommand.setName(SESSION_END_SUBCOMMAND)
+				subCommand => subCommand.setName(LOBBY_OPEN_SUBCOMMAND)
+					.setDescription(
+						"Opens the speed date lobby for the specified role."
+					)
+					.addRoleOption(option => option.setName('role').setDescription("Allows to view & join the lobby.").setRequired(true))
+			)
+			.addSubcommand(
+				subCommand => subCommand.setName(LOBBY_DESTROY_SUBCOMMAND)
 					.setDescription(
 						"Ends the speed date session! Be Careful When Using This Command."
 					)
@@ -200,16 +218,19 @@ module.exports = {
 			}
 			console.log(`>>>>>>>>>> EXECUTING COMMAND - START`, {guildName, guildId, groupCommand, subcommand });
 			switch (groupCommand) {
-				case SESSION_GROUP_COMMAND:
+				case LOBBY_GROUP_COMMAND:
 					switch (subcommand) {
-						case SESSION_INITIALIZE_SUBCOMMAND:
-							await initializeSession(interaction);
+						case LOBBY_INITIALIZE_SUBCOMMAND:
+							await initializeLobby(interaction);
 							break;
-						case SESSION_POST_INVITE_SUBCOMMAND:
+						case LOBBY_POST_INVITE_SUBCOMMAND:
 							const lobbyChannelInvite = await getInviteToLobby(interaction);
 							await interaction.followUp({ embeds: [lobbyChannelInvite], ephemeral: false,});
 							break;
-						case SESSION_END_SUBCOMMAND:
+						case LOBBY_OPEN_SUBCOMMAND:
+							await openLobby(interaction);
+							break;
+						case LOBBY_DESTROY_SUBCOMMAND:
 							await endSpeedDateSession(guildId).catch(e => console.log(e));
 							break;
 						default:

@@ -19,7 +19,7 @@ async function getOrCreateRole(guildId, name, reason, color) {
 		}
 		return role
 	} catch (e) {
-		console.log(`Failed to create Role`, {guildId, roleInfo});
+		console.log(`Failed to create Role`, {guildId, roleInfo}, e);
 	}
 }
 
