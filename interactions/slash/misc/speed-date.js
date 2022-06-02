@@ -21,7 +21,7 @@ const LOBBY_GROUP_COMMAND = "lobby";
 const LOBBY_INITIALIZE_SUBCOMMAND = 'initialize';
 const LOBBY_POST_INVITE_SUBCOMMAND = 'post-invite';
 const LOBBY_OPEN_SUBCOMMAND = 'open';
-const LOBBY_CLOSE_SUBCOMMAND = 'close';
+const LOBBY_DESTROY_SUBCOMMAND = 'destroy';
 // Round Commands
 const ROUND_GROUP_COMMAND = 'round';
 const ROUND_START_SUBCOMMAND = 'start';
@@ -171,7 +171,7 @@ module.exports = {
 					.addRoleOption(option => option.setName('role').setDescription("Allows to view & join the lobby.").setRequired(true))
 			)
 			.addSubcommand(
-				subCommand => subCommand.setName(LOBBY_CLOSE_SUBCOMMAND)
+				subCommand => subCommand.setName(LOBBY_DESTROY_SUBCOMMAND)
 					.setDescription(
 						"Ends the speed date session! Be Careful When Using This Command."
 					)
@@ -249,7 +249,7 @@ module.exports = {
 						case LOBBY_OPEN_SUBCOMMAND:
 							await openLobby(interaction);
 							break;
-						case LOBBY_CLOSE_SUBCOMMAND:
+						case LOBBY_DESTROY_SUBCOMMAND:
 							await endSpeedDateSession(guildId).catch(e => console.log(e));
 							break;
 						default:
