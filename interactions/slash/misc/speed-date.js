@@ -1,7 +1,7 @@
 const { SlashCommandBuilder } = require("@discordjs/builders");
 const { updateMusicIfNeeded, updateInviteIfNeeded } = require("../../../logic/speed-date-config-manager/speed-date-config-manager");
 const { bootstrapSpeedDateInfrastructureForGuild, startSpeedDateRound, getLobbyInvite,
-	isCommunityBotAdmin
+	isCommunityBotAdmin, openLobbyForRole
 } = require("../../../logic/speed-date-manager/speed-date-manager");
 const {
 	DEFAULT_SPEED_DATE_DURATION_MINUTES,
@@ -13,8 +13,6 @@ const {
 } = require('../../../logic/config/appconf.prod')
 const { playMusicInLobby, reloadMusicInLobbyIfInActiveSession } = require('../../../logic/discord/discord-music-player')
 const { endSpeedDateSession } = require("../../../logic/speed-date-session-terminator/speed-date-session-cleanup-manager");
-const { getGuildWithActiveSessionOrThrow } = require("../../../logic/db/guild-db-manager");
-const client = require("../../../logic/discord/client");
 
 // Sub Commands
 const LOBBY_GROUP_COMMAND = "lobby";
@@ -63,10 +61,9 @@ async function initializeLobby(interaction){
 	try {
 		guildId = interaction.guild.id;
 		guildName = interaction.guild.name;
-		const lobbyModeratorsRole = interaction.options.getRole('lobby-moderators');
 		const rewardPlayersRole = interaction.options.getRole('reward-players');
 		// 1. Bootstrap infrastructure that is required for speed dating (Roles, Voice Channel Router etc.)
-		await bootstrapSpeedDateInfrastructureForGuild(guildId, guildName, lobbyModeratorsRole, rewardPlayersRole);
+		await bootstrapSpeedDateInfrastructureForGuild(guildId, guildName, rewardPlayersRole);
 		await playMusicInLobby(guildId)
 	} catch (e){
 		console.log(`Failed to initialize speed dating`, {guildId, guildName, e});
@@ -80,20 +77,7 @@ async function openLobby(interaction){
 		guildId = interaction.guild.id;
 		guildName = interaction.guild.name;
 		allowedRole = interaction.options.getRole('role');
-		console.log('SPEED DATE  - OPEN LOBBY', {guildName, guildId, allowedRoleName: allowedRole.name, allowedRoleId: allowedRole.id });
-		let activeSpeedDateBotDoc;
-		try {
-			activeSpeedDateBotDoc = await getGuildWithActiveSessionOrThrow(guildId);
-		} catch (e){
-			console.log("SPEED DATE - OPEN LOBBY - FAILED - active speed date session not found", {guildId}, e);
-		}
-		const {activeSession: { initialization: { lobby }}} = activeSpeedDateBotDoc;
-		// Creating clients
-		const guildClient = await client.guilds.fetch(guildId);
-		const lobbyClient = await guildClient.channels.fetch(lobby.channelId);
-
-		//TODO: add array with existing permission
-		await lobbyClient.edit({ permissionOverwrites: [{ id: allowedRole.id, allow: ['VIEW_CHANNEL', 'CONNECT'] }]});
+		await openLobbyForRole(guildId, guildName, allowedRole);
 	} catch (e){
 		console.log(`Failed to open the speed date lobby`, {guildId, guildName, allowedRole, e});
 		throw Error(`Failed to open the speed date lobby of guild ${guildName} to role ${allowedRole} ${e}`);
@@ -152,9 +136,6 @@ module.exports = {
 					.setDescription(
 						"Creates the voice channel lobby for the speed dates session - the lobby is protected by a role."
 					)
-					.addRoleOption(option => option.setName('lobby-moderators')
-						.setDescription("Role that will keep its members in the lobby and not assign them to rooms.")
-						.setRequired(true))
 					.addRoleOption(option => option.setName('reward-players').setDescription("A role assigned to all of the speed-daters."))
 			)
 			.addSubcommand(

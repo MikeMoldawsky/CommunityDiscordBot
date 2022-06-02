@@ -7,7 +7,7 @@ const DEFAULT_INVITE_TITLE = "🫂 Glue With Us 🫂";
 const DEFAULT_INVITE_DESCRIPTION = "Congratulations! You are invited to:\n\nThe Community Glue Event 🫂"
 
 // music defaults
-const DEFAULT_LOBBY_MUSIC_URL = 'https://soundcloud.com/julian_avila/elevatormusic';
+const DEFAULT_LOBBY_MUSIC_URL = 'https://www.youtube.com/watch?v=VBlFHuCzPgY';
 const DEFAULT_LOBBY_MUSIC_VOLUME = 10;
 // match-maker defaults
 const DEFAULT_MATCH_MAKER_DURATION_SECONDS = 30; // match in the first 30 seconds
@@ -83,7 +83,7 @@ const SpeedDateVoiceLobbyConfig = new mongoose.Schema({
 	music: {type: SpeedDateMusicConfig, required: true, default: () => ({})},
 }, { _id : false })
 
-const CommunityBotAdminConfigSchema = new mongoose.Schema({
+const RoleConfigSchema = new mongoose.Schema({
 	roleId: {type: String, required: true },
 	roleName: {type: String, required: true},
 }, { _id : false })
@@ -91,7 +91,8 @@ const CommunityBotAdminConfigSchema = new mongoose.Schema({
 
 const ConfigSchema = new mongoose.Schema({
 	voiceLobby: {type: SpeedDateVoiceLobbyConfig, required: true, default: () => ({})},
-	admin: {type: CommunityBotAdminConfigSchema, required: true},
+	admin: {type: RoleConfigSchema, required: true},
+	moderator: {type: RoleConfigSchema, required: true},
 }, { _id : false })
 
 const GuildInfoSchema = new mongoose.Schema({

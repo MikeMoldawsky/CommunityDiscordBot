@@ -159,7 +159,7 @@ async function isActiveSpeedDateSession(guildId) {
 	return !isNilOrEmpty(activeSession);
 }
 
-async function getOrCreateGuildSpeedDateBotDocument(guildId, guildName, communityBotAdminRole) {
+async function getOrCreateGuildSpeedDateBotDocument(guildId, guildName, connectoAdminRole, connectoModeratorRole) {
 	try {
 		let guildInfo = await GuildCommunityBotModel.findById(guildId).exec();
 		if (guildInfo) {
@@ -175,9 +175,13 @@ async function getOrCreateGuildSpeedDateBotDocument(guildId, guildName, communit
 			},
 			config: {
 				admin:{
-					roleId: communityBotAdminRole.id,
-					roleName: communityBotAdminRole.name,
-				}
+					roleId: connectoAdminRole.id,
+					roleName: connectoAdminRole.name,
+				},
+				moderator:{
+					roleId: connectoModeratorRole.id,
+					roleName: connectoModeratorRole.name,
+				},
 			}
 		};
 		const guildCommunityBotModel = new GuildCommunityBotModel(document);

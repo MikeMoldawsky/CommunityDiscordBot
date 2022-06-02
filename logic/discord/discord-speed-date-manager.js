@@ -7,17 +7,19 @@ const getRandomEmoji = require("../utils/get-random-emoji");
 
 const DEFAULT_LOBBY_NAME = "Connecto Lobby";
 const DEFAULT_ADMIN_ROLE_NAME = "connecto-admin";
+const DEFAULT_MODERATOR_ROLE_NAME = "connecto-moderator";
 
-async function getOrCreateCommunityBotAdminRoleAndPersistIfNeeded(guildId, guildName) {
+async function getOrCreateConnectoRolesAndPersistIfNeeded(guildId, guildName) {
 	try {
 		console.log("Get Or Create Community Bot Admin Role - Start", { guildId });
 		const adminRole = await getOrCreateRole(guildId, DEFAULT_ADMIN_ROLE_NAME, "Connecto's admin role", "GOLD");
-		console.log("Get Or Create Community Bot Admin Role - Success", { guildId, adminRoleId: adminRole.id, adminRoleName: adminRole.name});
-		await getOrCreateGuildSpeedDateBotDocument(guildId, guildName, adminRole);
-		return adminRole;
+		const moderatorRole = await getOrCreateRole(guildId, DEFAULT_MODERATOR_ROLE_NAME, "Connecto's moderator role", "WHITE");
+		console.log("Get Or Create Community Bot Admin Role - Success", { guildId, adminRoleId: adminRole.id, adminRoleName: adminRole.name, moderatorRoleId: moderatorRole.id, moderatorRoleName: moderatorRole.name});
+		await getOrCreateGuildSpeedDateBotDocument(guildId, guildName, adminRole, moderatorRole);
+		return {adminRole, moderatorRole};
 	} catch (e) {
-		console.log("Get Or Create Community Bot Admin Role - Failed", {guildId, e});
-		throw Error(`Get Or Create Community Bot Admin Role - Failed - guild: ${guildId}, e: ${e}`);
+		console.log("Get Or Create Connecto's Roles - Failed", {guildId, e});
+		throw Error(`Get Or Create Connecto's Roles - Failed - guild: ${guildId}, e: ${e}`);
 	}
 }
 
@@ -33,7 +35,7 @@ async function getOrCreateVoiceChannelProtectedByRole(guildClient, adminRoleId) 
 			console.log(`Creating Lobby ${DEFAULT_LOBBY_NAME} for guild ${guildClient.id}`)
 			return await guildClient.channels.create(DEFAULT_LOBBY_NAME, {
 				type: "GUILD_VOICE",
-				reason: "Staging lobby for speed dating :)",
+				reason: "Connecto's speed dating lobby",
 				permissionOverwrites: [
 					{ id: guildClient.id, deny: [Permissions.FLAGS.VIEW_CHANNEL, Permissions.FLAGS.CONNECT, Permissions.FLAGS.SPEAK] }, // deny
 					{
@@ -156,6 +158,6 @@ module.exports = {
 	createLobbyProtectByRole,
 	createLobbyInvite,
 	createSpeedDateVoiceChannelRoom,
-	getOrCreateCommunityBotAdminRoleAndPersistIfNeeded,
+	getOrCreateConnectoRolesAndPersistIfNeeded,
 	moveSpeedDatersToLobbyAndDeleteChannel,
 }

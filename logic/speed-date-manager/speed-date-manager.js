@@ -1,20 +1,20 @@
 const client = require("../discord/client");
 const { getGuildWithActiveSessionOrThrow, updatedRoundConfig, isActiveSpeedDateSession } = require("../db/guild-db-manager");
-const { createLobbyInvite, getOrCreateCommunityBotAdminRoleAndPersistIfNeeded } = require("../discord/discord-speed-date-manager");
+const { createLobbyInvite, getOrCreateConnectoRolesAndPersistIfNeeded } = require("../discord/discord-speed-date-manager");
 const { initializeSpeedDateSessionForGuild } = require("../speed-date-bootstraper/speed-date-bootstrapper");
 const { startDateMatchMakerTaskWithDelay } = require("../tasks/speed-date-match-maker-task");
 const { startSpeedDateRoundTerminatorTask } = require("../tasks/speed-date-round-terminator-task");
 const moment = require("moment");
 
 
-async function bootstrapSpeedDateInfrastructureForGuild(guildId, guildName, lobbyModeratorsRole, rewardPlayersRole = undefined) {
+async function bootstrapSpeedDateInfrastructureForGuild(guildId, guildName, rewardPlayersRole = undefined) {
 	// 0. Active Session check as multiple sessions aren't allowed (should be fixed manually or with bot commands).
 	if(await isActiveSpeedDateSession(guildId)){
 		console.log(`Active speed date session found - can't start a new session for ${guildId}`);
 		throw Error(`There is an active speed date in progress for ${guildId}.`);
 	}
-	const adminRole = await getOrCreateCommunityBotAdminRoleAndPersistIfNeeded(guildId, guildName);
-	await initializeSpeedDateSessionForGuild(guildId, guildName, adminRole, lobbyModeratorsRole, rewardPlayersRole);
+	const {adminRole, moderatorRole} = await getOrCreateConnectoRolesAndPersistIfNeeded(guildId, guildName);
+	await initializeSpeedDateSessionForGuild(guildId, guildName, adminRole, moderatorRole, rewardPlayersRole);
 }
 
 async function getLobbyInvite(guildId) {
@@ -32,6 +32,34 @@ async function getLobbyInvite(guildId) {
 	console.log(`Speed Date CREATE LOBBY INVITE`, {guildId});
 	return await createLobbyInvite(lobbyClient, invite);
 }
+
+async function openLobbyForRole(guildId, guildName, allowedRole) {
+	console.log('SPEED DATE  - OPEN LOBBY', {
+		guildName,
+		guildId,
+		allowedRoleName: allowedRole.name,
+		allowedRoleId: allowedRole.id
+	});
+	let activeSpeedDateBotDoc;
+	try {
+		activeSpeedDateBotDoc = await getGuildWithActiveSessionOrThrow(guildId);
+	} catch (e) {
+		console.log(`SPEED DATE - OPEN LOBBY - FAILED - NO ACTIVE SESSION`, { guildName, allowedRole, e });
+		throw Error(`SPEED DATE - OPEN LOBBY - FAILED - NO ACTIVE SESSION - ${guildName} to role ${allowedRole} ${e}`);
+	}
+	try {
+		const { activeSession: { initialization: { lobby } } } = activeSpeedDateBotDoc;
+		// Creating clients
+		const guildClient = await client.guilds.fetch(guildId);
+		const lobbyClient = await guildClient.channels.fetch(lobby.channelId);
+		await lobbyClient.permissionOverwrites.edit(
+			allowedRole.id, { 'VIEW_CHANNEL': true, 'CONNECT': true }, { reason: "Open Connecto's lobby for role", type: 0 });
+	} catch (e) {
+		console.log(`SPEED DATE - OPEN LOBBY - FAILED - PERMISSION OVERRIDE`, { guildId, guildName, allowedRole, e });
+		throw Error(`SPEED DATE - OPEN LOBBY - FAILED - PERMISSION OVERRIDE - ${guildName} to role ${allowedRole} ${e}`);
+	}
+}
+
 
 
 async function startSpeedDateRound(guildId, speedDateDurationMinutes, roomCapacity, matchMakerInterval, matchMakerTaskDelay, matchMakerDurationInSeconds, dateTerminatorInterval){
@@ -61,7 +89,7 @@ async function startSpeedDateRound(guildId, speedDateDurationMinutes, roomCapaci
 
 async function isCommunityBotAdmin(interactionMember, guildId, guildName){
 	console.log("Checking if guild member is admin", {guildId, guildName, username: interactionMember?.user?.username})
-	const adminRole = await getOrCreateCommunityBotAdminRoleAndPersistIfNeeded(guildId, guildName);
+	const {adminRole} = await getOrCreateConnectoRolesAndPersistIfNeeded(guildId, guildName);
 	return interactionMember.roles.cache.has(adminRole.id);
 }
 
@@ -70,5 +98,6 @@ module.exports = {
 	bootstrapSpeedDateInfrastructureForGuild,
 	startSpeedDateRound,
 	getLobbyInvite,
-	isCommunityBotAdmin
+	isCommunityBotAdmin,
+	openLobbyForRole
 }
