@@ -13,7 +13,7 @@ const { getGuildWithActiveSessionOrThrow } = require("../../logic/db/guild-db-ma
 const client = require('../../logic/discord/client')
 const { isActiveSpeedDateSession } = require("../db/guild-db-manager");
 
-const DEFAULT_LOBBY_MUSIC_URL = 'https://soundcloud.com/julian_avila/elevatormusic';
+const DEFAULT_LOBBY_MUSIC_URL = 'https://www.youtube.com/watch?v=VBlFHuCzPgY';
 const DEFAULT_MUSIC_VOLUME = 10;
 
 const guildIdToMusicObject = {}

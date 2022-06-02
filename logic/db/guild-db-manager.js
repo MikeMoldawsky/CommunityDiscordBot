@@ -103,12 +103,12 @@ async function updatedLobby(guildId, lobby) {
 	await GuildCommunityBotModel.findOneAndUpdate({ _id: guildId }, updateFields);
 }
 
-async function updatedActiveSessionOnCompleteConfig(guildId, memberRewardRole) {
+async function updatedActiveSessionOnCompleteConfig(guildId, rewardPlayersRole) {
 	// TODO - change the ugly implementation
 	const updateFields = {}
-	if(memberRewardRole){
-		updateFields['activeSession.config.onComplete.rewardRoleId'] = memberRewardRole.id;
-		updateFields['activeSession.config.onComplete.rewardRoleName'] = memberRewardRole.name;
+	if(rewardPlayersRole){
+		updateFields['activeSession.config.onComplete.rewardRoleId'] = rewardPlayersRole.id;
+		updateFields['activeSession.config.onComplete.rewardRoleName'] = rewardPlayersRole.name;
 	}
 
 	if(_.isEmpty(updateFields)){

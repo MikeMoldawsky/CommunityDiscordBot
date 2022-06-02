@@ -7,13 +7,14 @@ const { startSpeedDateRoundTerminatorTask } = require("../tasks/speed-date-round
 const moment = require("moment");
 
 
-async function bootstrapSpeedDateInfrastructureForGuild(guildId, guildName, creatorId, protectLobbyRole, memberRewardRole = undefined, keepInLobbyRole = undefined) {
+async function bootstrapSpeedDateInfrastructureForGuild(guildId, guildName, lobbyModeratorsRole, rewardPlayersRole = undefined) {
 	// 0. Active Session check as multiple sessions aren't allowed (should be fixed manually or with bot commands).
 	if(await isActiveSpeedDateSession(guildId)){
 		console.log(`Active speed date session found - can't start a new session for ${guildId}`);
 		throw Error(`There is an active speed date in progress for ${guildId}.`);
 	}
-	await initializeSpeedDateSessionForGuild(guildId, guildName, creatorId, protectLobbyRole, memberRewardRole, keepInLobbyRole);
+	const adminRole = await getOrCreateCommunityBotAdminRoleAndPersistIfNeeded(guildId, guildName);
+	await initializeSpeedDateSessionForGuild(guildId, guildName, adminRole, lobbyModeratorsRole, rewardPlayersRole);
 }
 
 async function getLobbyInvite(guildId) {

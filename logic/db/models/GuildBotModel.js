@@ -42,10 +42,8 @@ const RoundSchema = new mongoose.Schema({
 }, { _id : false });
 
 const LobbySchema = new mongoose.Schema({
-	allowedRoleId: {type: String, required: true},
-	allowedRoleName: {type: String, required: true},
-	keepInLobbyRoleId: {type: String},
-	keepInLobbyRoleName: {type: String},
+	lobbyModeratorsRoleId: {type: String, required: true},
+	lobbyModeratorsRoleName: {type: String, required: true},
 	channelId: {type: String, required: true},
 	channelName: {type: String, required: true}
 }, { _id : false })
