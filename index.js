@@ -87,8 +87,8 @@ const commandJsonData = [
 					deploy commands globally, replace the line below with:
 				Routes.applicationCommands(client_id)
 			 */
-			Routes.applicationCommands(process.env.DISCORD_CLIENT_ID),
-			// Routes.applicationGuildCommands(process.env.DISCORD_CLIENT_ID, process.env.DISCORD_TEST_GUILD_ID),
+			// Routes.applicationCommands(process.env.DISCORD_CLIENT_ID),
+			Routes.applicationGuildCommands(process.env.DISCORD_CLIENT_ID, process.env.DISCORD_TEST_GUILD_ID),
 			{ body: commandJsonData }
 		);
 		console.log("Successfully reloaded application Slash Commands to Discord REST API.");
