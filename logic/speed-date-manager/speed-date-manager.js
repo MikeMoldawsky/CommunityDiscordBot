@@ -5,6 +5,7 @@ const { initializeSpeedDateSessionForGuild } = require("../speed-date-bootstrape
 const { startDateMatchMakerTaskWithDelay } = require("../tasks/speed-date-match-maker-task");
 const { startSpeedDateRoundTerminatorTask } = require("../tasks/speed-date-round-terminator-task");
 const moment = require("moment");
+const { terminateSpeedDateRound } = require("../speed-date-round-terminator/speed-date-round-terminator-manager");
 
 
 async function bootstrapSpeedDateInfrastructureForGuild(guildId, guildName, rewardPlayersRole = undefined) {
@@ -60,8 +61,6 @@ async function openLobbyForRole(guildId, guildName, allowedRole) {
 	}
 }
 
-
-
 async function startSpeedDateRound(guildId, speedDateDurationMinutes, roomCapacity, matchMakerInterval, matchMakerTaskDelay, matchMakerDurationInSeconds, dateTerminatorInterval){
 	let activeSpeedDateBotDoc;
 	try {
@@ -87,6 +86,10 @@ async function startSpeedDateRound(guildId, speedDateDurationMinutes, roomCapaci
 		.catch(e => console.log(e));
 }
 
+async function endSpeedDateRound(guildId){
+	await terminateSpeedDateRound(guildId);
+}
+
 async function isCommunityBotAdmin(interactionMember, guildId, guildName){
 	console.log("Checking if guild member is admin", {guildId, guildName, username: interactionMember?.user?.username})
 	const {adminRole} = await getOrCreateConnectoRolesAndPersistIfNeeded(guildId, guildName);
@@ -99,5 +102,6 @@ module.exports = {
 	startSpeedDateRound,
 	getLobbyInvite,
 	isCommunityBotAdmin,
-	openLobbyForRole
+	openLobbyForRole,
+	endSpeedDateRound
 }

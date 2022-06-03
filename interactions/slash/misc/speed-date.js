@@ -1,7 +1,7 @@
 const { SlashCommandBuilder } = require("@discordjs/builders");
 const { updateMusicIfNeeded, updateInviteIfNeeded } = require("../../../logic/speed-date-config-manager/speed-date-config-manager");
 const { bootstrapSpeedDateInfrastructureForGuild, startSpeedDateRound, getLobbyInvite,
-	isCommunityBotAdmin, openLobbyForRole
+	isCommunityBotAdmin, openLobbyForRole, endSpeedDateRound
 } = require("../../../logic/speed-date-manager/speed-date-manager");
 const {
 	DEFAULT_SPEED_DATE_DURATION_MINUTES,
@@ -23,6 +23,7 @@ const LOBBY_DESTROY_SUBCOMMAND = 'destroy';
 // Round Commands
 const ROUND_GROUP_COMMAND = 'round';
 const ROUND_START_SUBCOMMAND = 'start';
+const ROUND_END_SUBCOMMAND = 'end';
 // Configure Command
 const CONFIGURE_GROUP_SUBCOMMAND = 'configure';
 const CONFIGURE_MUSIC_SUBCOMMAND = 'music';
@@ -118,6 +119,19 @@ async function startRound(interaction) {
 	}
 }
 
+async function endRound(interaction) {
+	let guildId, guildName;
+	try {
+		guildId = interaction.guild.id;
+		guildName = interaction.guild.name;
+		console.log(`End round - START`, {guildId, guildName});
+		await endSpeedDateRound(guildId);
+	} catch (e){
+		console.log(`End round - FAILED`, {guildId, guildName, e});
+		throw Error(`End round - FAILED - guild ${guildName}, id ${guildId} ${e}`);
+	}
+}
+
 function isEphemeral(groupCommand, subCommand){
 	return !(groupCommand === LOBBY_GROUP_COMMAND && subCommand === LOBBY_POST_INVITE_SUBCOMMAND);
 }
@@ -175,6 +189,12 @@ module.exports = {
 					// 		.setName("room-capacity")
 					// 		.setDescription("The capacity of each room."))
 			)
+				.addSubcommand(
+					subCommand => subCommand.setName(ROUND_END_SUBCOMMAND)
+						.setDescription(
+							"End the round ahead of time! Be Careful When Using This Command."
+						)
+				)
 		)
 		.addSubcommandGroup(subCommandGroup => subCommandGroup.setName(CONFIGURE_GROUP_SUBCOMMAND).setDescription("Speed date configure commands")
 			.addSubcommand(
@@ -241,6 +261,9 @@ module.exports = {
 					switch (subcommand) {
 						case ROUND_START_SUBCOMMAND:
 							await startRound(interaction);
+							break;
+						case ROUND_END_SUBCOMMAND:
+							await endRound(interaction);
 							break;
 						default:
 							throw Error(`Unknown ${groupCommand} subcommand: ${subcommand}`);
