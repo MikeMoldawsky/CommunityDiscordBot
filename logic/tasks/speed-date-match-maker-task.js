@@ -1,10 +1,10 @@
 const client = require('../discord/client')
 const getRandomRoomMembers = require('../speed-date-match-maker/speed-date-match-maker-manager')
 const { cleanupSpeedDateRound } = require('../speed-date-round-cleanup/speed-date-round-cleanup-manager')
-const _ = require('lodash')
 const { getGuildWithActiveSessionOrThrow, updatedMatchMakerFieldsForGuild, findGuildAndUpdate } = require("../db/guild-db-manager");
 const moment = require("moment");
 const { createSpeedDateVoiceChannelRoom } = require("../discord/discord-speed-date-manager");
+const { safeSetTimeout } = require("../utils/safe-timeout-utils");
 
 async function createSpeedDatesMatchesInternal(guildBotDoc) {
 	console.log(`Match maker - SEARCHING DATES - ${guildBotDoc.guildInfo}`)
@@ -116,7 +116,7 @@ async function startDateMatchMakerTaskForGuild(guildId, interval){
 			stopCleanupMoment,
 			cleanupSecondsLeft: stopCleanupMoment.diff(currentMoment, 'seconds'),
 		})
-		setTimeout(() => startDateMatchMakerTaskForGuild(guildId, interval), interval);
+		safeSetTimeout(() => startDateMatchMakerTaskForGuild(guildId, interval), interval);
 	} catch (e) {
 		console.log(`Match Maker Task - Failed Fatal`, {guildId, e})
 	}
@@ -139,7 +139,7 @@ async function startDateMatchMakerTaskWithDelay(guildId, matchMakerInterval, mat
 		throw Error(`Match maker TASK with DELAY - FAILED - failed to update match maker config ${guildId}, ${e}`)
 	}
 	// Starting match maker task in delay to let people enter the lobby and enjoy the music
-	setTimeout(() => startDateMatchMakerTaskForGuild(guildId, matchMakerInterval), matchMakerTaskDelay);
+	safeSetTimeout(() => startDateMatchMakerTaskForGuild(guildId, matchMakerInterval), matchMakerTaskDelay);
 }
 
 module.exports = {
