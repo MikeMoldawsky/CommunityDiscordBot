@@ -16,6 +16,7 @@ body {
 
 a {
   color: inherit;
+  text-decoration: none;
 }
 
 header {
@@ -69,10 +70,11 @@ header {
   }
 
   .video-placeholder {
-    width: 100%;
-    aspect-ratio: 16 / 9;
-    background-color: white;
-    opacity: .4;
+    //opacity: .8;
+
+    video {
+      width: 100%;
+    }
   }
 
   .install-box {
