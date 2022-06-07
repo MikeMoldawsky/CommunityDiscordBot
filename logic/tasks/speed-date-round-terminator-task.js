@@ -1,6 +1,7 @@
 const { getGuildWithActiveSessionOrThrow } = require("../db/guild-db-manager");
 const moment = require("moment");
 const { terminateSpeedDateRound } = require("../speed-date-round-terminator/speed-date-round-terminator-manager");
+const { safeSetTimeout } = require("../utils/safe-timeout-utils");
 
 async function startSpeedDateRoundTerminatorTaskInternal(guildId, interval){
 	try{
@@ -24,7 +25,7 @@ async function startSpeedDateRoundTerminatorTaskInternal(guildId, interval){
 		}
 		console.log(`Speed Date Round Terminator Task - SLEEPING...`, {guildInfo: activeGuildBotDoc.guildInfo, intervalMs: interval, roundStartTime: config.startTime,
 			currentMoment, terminateRoundMoment, secondsLeft: terminateRoundMoment.diff(currentMoment, 'seconds')  })
-		setTimeout(() => startSpeedDateRoundTerminatorTaskInternal(guildId, interval), interval);
+		safeSetTimeout(() => startSpeedDateRoundTerminatorTaskInternal(guildId, interval), interval);
 	} catch (e) {
 		console.log(`Speed Date Round Terminator Task - Failed Fatal`, {guildId, e})
 	}
