@@ -17,6 +17,9 @@ const guildIdToMusicObject = {}
 
 
 async function createAudioResourceForGuild(url, adjustedVolume) {
+	await play.setToken({
+		useragent: ['Mozilla/5.0 (compatible; Discordbot/2.0; +https://discordapp.com)']
+	})
 	const stream = await play.stream(url);
 	const resource = createAudioResource(stream.stream, {
 		inputType: stream.type,
