@@ -9,6 +9,15 @@ const DEFAULT_LOBBY_NAME = "Connecto Lobby";
 const DEFAULT_ADMIN_ROLE_NAME = "connecto-admin";
 const DEFAULT_MODERATOR_ROLE_NAME = "connecto-moderator";
 
+const PARTICIPANT_PERMISSIONS = [Permissions.FLAGS.VIEW_CHANNEL, Permissions.FLAGS.CONNECT, Permissions.FLAGS.SPEAK]
+const MOD_PERMISSIONS = [
+	Permissions.FLAGS.VIEW_CHANNEL,
+	Permissions.FLAGS.CONNECT,
+	Permissions.FLAGS.SPEAK,
+	Permissions.FLAGS.MUTE_MEMBERS,
+	Permissions.FLAGS.MOVE_MEMBERS
+]
+
 async function getOrCreateConnectoRolesAndPersistIfNeeded(guildId, guildName) {
 	try {
 		console.log("Get Or Create Community Bot Admin Role - Start", { guildId });
@@ -37,27 +46,9 @@ async function getOrCreateVoiceChannelProtectedByRole(guildClient, adminRoleId) 
 				type: "GUILD_VOICE",
 				reason: "Connecto's speed dating lobby",
 				permissionOverwrites: [
-					{ id: guildClient.id, deny: [Permissions.FLAGS.VIEW_CHANNEL, Permissions.FLAGS.CONNECT, Permissions.FLAGS.SPEAK] }, // deny
-					{
-						id: adminRoleId,
-						allow: [ // allow creator to speak
-							Permissions.FLAGS.VIEW_CHANNEL,
-							Permissions.FLAGS.CONNECT,
-							Permissions.FLAGS.SPEAK,
-							Permissions.FLAGS.MUTE_MEMBERS,
-							Permissions.FLAGS.MOVE_MEMBERS,
-						]
-					},
-					{
-						id: process.env.DISCORD_CLIENT_ID,
-						allow: [ // Connecto permissions
-							Permissions.FLAGS.VIEW_CHANNEL,
-							Permissions.FLAGS.CONNECT,
-							Permissions.FLAGS.SPEAK,
-							Permissions.FLAGS.MUTE_MEMBERS,
-							Permissions.FLAGS.MOVE_MEMBERS
-						]
-					},
+					{ id: guildClient.id, deny: PARTICIPANT_PERMISSIONS }, // deny
+					{ id: adminRoleId, allow: MOD_PERMISSIONS },
+					{ id: process.env.DISCORD_CLIENT_ID, allow: MOD_PERMISSIONS },
 				]
 			});
 		}
@@ -100,11 +91,13 @@ async function createLobbyInvite(lobby, config) {
 	}
 }
 
-async function createSpeedDateVoiceChannelRoom(guild, roomNumber, memberIds) {
+async function createSpeedDateVoiceChannelRoom(guild, memberIds, adminRoleId, modRoleId) {
 	const permissionOverwrites = [
 		{ id: guild.id, deny: [Permissions.FLAGS.CONNECT] },
 		{ id: process.env.DISCORD_CLIENT_ID, allow: [Permissions.FLAGS.VIEW_CHANNEL, Permissions.FLAGS.CONNECT, Permissions.FLAGS.MOVE_MEMBERS] },
-		..._.map(memberIds, id => ({ id: id, allow: [Permissions.FLAGS.VIEW_CHANNEL, Permissions.FLAGS.CONNECT, Permissions.FLAGS.SPEAK] }))
+		{ id: adminRoleId, allow: MOD_PERMISSIONS },
+		{ id: modRoleId, allow: MOD_PERMISSIONS },
+		..._.map(memberIds, id => ({ id: id, allow: PARTICIPANT_PERMISSIONS }))
 	];
 	return guild.channels.create(`Connecto Room ${getRandomEmoji('Animals & Nature')}`, {
 		type: "GUILD_VOICE",

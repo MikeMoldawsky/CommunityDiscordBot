@@ -12,6 +12,7 @@ async function createSpeedDatesMatchesInternal(guildBotDoc) {
 		activeSession: {initialization: { lobby }, round},
 		datesHistory,
 		guildInfo,
+		config: { admin, moderator }
 	} = guildBotDoc;
 	const {config, dates} = round
 
@@ -30,7 +31,7 @@ async function createSpeedDatesMatchesInternal(guildBotDoc) {
 		try	{
 			const roomMembers = getRandomRoomMembers(remainingMemberIds, datesHistory, config.roomCapacity)
 			console.log(`Match maker - CREATING DATE.`, {guildId: guild.id, roomMembers});
-			let voiceChannel = await createSpeedDateVoiceChannelRoom(guild, roomMembers);
+			let voiceChannel = await createSpeedDateVoiceChannelRoom(guild, roomMembers, admin.roleId, moderator.roleId);
 			newDates.push({
 				participants: await addMembersToRoom(guild, roomMembers, voiceChannel),
 				voiceChannelId: voiceChannel.id
