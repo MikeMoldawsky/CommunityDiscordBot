@@ -9,13 +9,20 @@ const DEFAULT_LOBBY_NAME = "Connecto Lobby";
 const DEFAULT_ADMIN_ROLE_NAME = "connecto-admin";
 const DEFAULT_MODERATOR_ROLE_NAME = "connecto-moderator";
 
-const PARTICIPANT_PERMISSIONS = [Permissions.FLAGS.VIEW_CHANNEL, Permissions.FLAGS.CONNECT, Permissions.FLAGS.SPEAK]
+const PARTICIPANT_PERMISSIONS = [
+	Permissions.FLAGS.VIEW_CHANNEL,
+	Permissions.FLAGS.CONNECT,
+	Permissions.FLAGS.SPEAK,
+	Permissions.FLAGS.USE_VAD,
+]
+
 const MOD_PERMISSIONS = [
 	Permissions.FLAGS.VIEW_CHANNEL,
 	Permissions.FLAGS.CONNECT,
 	Permissions.FLAGS.SPEAK,
 	Permissions.FLAGS.MUTE_MEMBERS,
-	Permissions.FLAGS.MOVE_MEMBERS
+	Permissions.FLAGS.MOVE_MEMBERS,
+	Permissions.FLAGS.USE_VAD,
 ]
 
 async function getOrCreateConnectoRolesAndPersistIfNeeded(guildId, guildName) {

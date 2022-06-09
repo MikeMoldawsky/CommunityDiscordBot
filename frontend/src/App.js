@@ -26,7 +26,7 @@ function App() {
           <h1>CONNECTO</h1>
           <h2>Get to know your community members in a fun and exciting way</h2>
           <div className="install-box">
-            <a target="_blank" href="https://discord.com/oauth2/authorize?client_id=968173788946636850&permissions=292552720&scope=bot%20applications.commands">
+            <a target="_blank" href="https://discord.com/oauth2/authorize?client_id=968173788946636850&permissions=326107152&scope=bot%20applications.commands">
               <div className="button">INSTALL CONNECTO</div>
             </a>
           </div>
