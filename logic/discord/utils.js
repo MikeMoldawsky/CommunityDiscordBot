@@ -23,6 +23,16 @@ async function getOrCreateRole(guildId, name, reason, color) {
 	}
 }
 
+async function getRoleById(guildId, roleId) {
+	try {
+		console.log(`Getting role by Id`, {guildId, roleId});
+		const guild = await client.guilds.fetch(guildId);
+		return guild.roles.cache.find(r => r.id === roleId);
+	} catch (e) {
+		console.log(`Failed to get role by Id`, {guildId, roleId}, e);
+	}
+}
+
 async function addRoleToMembers(guildClient, allowedChannelId, allowedUserId, roleId) {
 	console.log(`Adding Role`, {guildId: guildClient.id, allowedChannelId, allowedUserId, roleId});
 	let members = [];
@@ -56,5 +66,6 @@ async function addRoleToMembers(guildClient, allowedChannelId, allowedUserId, ro
 
 module.exports = {
 	getOrCreateRole,
+	getRoleById,
 	addRoleToMembers
 }

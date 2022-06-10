@@ -1,7 +1,7 @@
 const { MessageEmbed, Permissions } = require("discord.js");
-const { updatedLobby, getOrCreateGuildSpeedDateBotDocument } = require("../db/guild-db-manager");
+const { updatedLobby, getOrCreateGuildSpeedDateBotDocument, findGuildAndUpdate, getGuildSpeedDateBotDocumentOrThrow } = require("../db/guild-db-manager");
 const _ = require("lodash");
-const { getOrCreateRole } = require("./utils");
+const { getOrCreateRole, getRoleById } = require("./utils");
 const getRandomEmoji = require("../utils/get-random-emoji");
 
 
@@ -25,20 +25,37 @@ const MOD_PERMISSIONS = [
 	Permissions.FLAGS.USE_VAD,
 ]
 
-async function getOrCreateConnectoRolesAndPersistIfNeeded(guildId, guildName) {
+async function getOrCreateConnectoRolesAndPersistIfNeeded(guildId, interactingMember = undefined) {
 	try {
-		console.log("Get Or Create Community Bot Admin Role - Start", { guildId });
-		const adminRole = await getOrCreateRole(guildId, DEFAULT_ADMIN_ROLE_NAME, "Connecto's admin role", "GOLD");
-		const moderatorRole = await getOrCreateRole(guildId, DEFAULT_MODERATOR_ROLE_NAME, "Connecto's moderator role", "WHITE");
-		console.log("Get Or Create Community Bot Admin Role - Success", { guildId, adminRoleId: adminRole.id, adminRoleName: adminRole.name, moderatorRoleId: moderatorRole.id, moderatorRoleName: moderatorRole.name});
-		await getOrCreateGuildSpeedDateBotDocument(guildId, guildName, adminRole, moderatorRole);
+		const updateFields = {}
+		console.log("Get Or Create Connecto Roles - Start", { guildId });
+		const guildBotDoc = await getGuildSpeedDateBotDocumentOrThrow(guildId);
+		let adminRole = await getRoleById(guildId, _.get(guildBotDoc, 'config.admin.roleId'))
+		if (_.isNil(adminRole)) {
+			adminRole = await getOrCreateRole(guildId, DEFAULT_ADMIN_ROLE_NAME, "Connecto's admin role", "GOLD");
+			updateFields['config.admin'] = { roleId: adminRole.id, roleName: adminRole.name}
+			if (!_.isNil(interactingMember)) {
+				await interactingMember.roles.add(adminRole.id);
+			}
+		}
+		let moderatorRole = await getRoleById(guildId, _.get(guildBotDoc, 'config.moderator.roleId'))
+		if (_.isNil(moderatorRole)) {
+			moderatorRole = await getOrCreateRole(guildId, DEFAULT_MODERATOR_ROLE_NAME, "Connecto's moderator role", "WHITE");
+			updateFields['config.moderator'] = { roleId: moderatorRole.id, roleName: moderatorRole.name}
+		}
+
+		if (!_.isEmpty(updateFields)) {
+			console.log("Connecto Roles created, saving in DB", { guildId, adminRoleId: adminRole.id, adminRoleName: adminRole.name, moderatorRoleId: moderatorRole.id, moderatorRoleName: moderatorRole.name});
+			await findGuildAndUpdate(guildId, updateFields);
+		}
+
+		console.log("Get Or Create Connecto Roles - Success", { guildId, adminRoleId: adminRole.id, adminRoleName: adminRole.name, moderatorRoleId: moderatorRole.id, moderatorRoleName: moderatorRole.name});
 		return {adminRole, moderatorRole};
 	} catch (e) {
 		console.log("Get Or Create Connecto's Roles - Failed", {guildId, e});
 		throw Error(`Get Or Create Connecto's Roles - Failed - guild: ${guildId}, e: ${e}`);
 	}
 }
-
 
 async function getOrCreateVoiceChannelProtectedByRole(guildClient, adminRoleId) {
 	try {

@@ -13,6 +13,7 @@ const {
 } = require('../../../logic/config/appconf.prod')
 const { playMusicInLobby, reloadMusicInLobbyIfInActiveSession } = require('../../../logic/discord/discord-music-player')
 const { endSpeedDateSession } = require("../../../logic/speed-date-session-terminator/speed-date-session-cleanup-manager");
+const { getOrCreateGuildSpeedDateBotDocument } = require("../../../logic/db/guild-db-manager")
 
 // Sub Commands
 const LOBBY_GROUP_COMMAND = "lobby";
@@ -63,7 +64,7 @@ async function initializeLobby(interaction){
 		guildName = interaction.guild.name;
 		const rewardPlayersRole = interaction.options.getRole('reward-players');
 		// 1. Bootstrap infrastructure that is required for speed dating (Roles, Voice Channel Router etc.)
-		await bootstrapSpeedDateInfrastructureForGuild(guildId, guildName, rewardPlayersRole);
+		await bootstrapSpeedDateInfrastructureForGuild(guildId, guildName, interaction.member, rewardPlayersRole);
 		await playMusicInLobby(guildId)
 	} catch (e){
 		console.log(`Failed to initialize speed dating`, {guildId, guildName, e});
@@ -208,6 +209,7 @@ module.exports = {
 			guildName = interaction.guild.name;
 			const ephemeral = isEphemeral(groupCommand, subcommand);
 			await interaction.deferReply({ ephemeral }); // Slash Commands has only 3 seconds to reply to an interaction.
+			await getOrCreateGuildSpeedDateBotDocument(guildId, guildName);
 			const isBotAdmin = await isCommunityBotAdmin(interaction.member, guildId, guildName);
 			if(!isBotAdmin){
 					await interaction.followUp({

@@ -3,7 +3,7 @@ const getRandomRoomMembers = require('../speed-date-match-maker/speed-date-match
 const { cleanupSpeedDateRound } = require('../speed-date-round-cleanup/speed-date-round-cleanup-manager')
 const { getGuildWithActiveSessionOrThrow, updatedMatchMakerFieldsForGuild, findGuildAndUpdate } = require("../db/guild-db-manager");
 const moment = require("moment");
-const { createSpeedDateVoiceChannelRoom } = require("../discord/discord-speed-date-manager");
+const { createSpeedDateVoiceChannelRoom, getOrCreateConnectoRolesAndPersistIfNeeded } = require("../discord/discord-speed-date-manager");
 const { safeSetTimeout } = require("../utils/safe-timeout-utils");
 
 async function createSpeedDatesMatchesInternal(guildBotDoc) {
@@ -12,9 +12,9 @@ async function createSpeedDatesMatchesInternal(guildBotDoc) {
 		activeSession: {initialization: { lobby }, round},
 		datesHistory,
 		guildInfo,
-		config: { admin, moderator }
 	} = guildBotDoc;
 	const {config, dates} = round
+	const { adminRole, moderatorRole } = await getOrCreateConnectoRolesAndPersistIfNeeded(guildInfo.guildId)
 
 	const guild = await client.guilds.fetch(guildInfo.guildId)
 	const lobbyChannel = await client.channels.fetch(lobby.channelId)
@@ -31,7 +31,7 @@ async function createSpeedDatesMatchesInternal(guildBotDoc) {
 		try	{
 			const roomMembers = getRandomRoomMembers(remainingMemberIds, datesHistory, config.roomCapacity)
 			console.log(`Match maker - CREATING DATE.`, {guildId: guild.id, roomMembers});
-			let voiceChannel = await createSpeedDateVoiceChannelRoom(guild, roomMembers, admin.roleId, moderator.roleId);
+			let voiceChannel = await createSpeedDateVoiceChannelRoom(guild, roomMembers, adminRole.id, moderatorRole.id);
 			newDates.push({
 				participants: await addMembersToRoom(guild, roomMembers, voiceChannel),
 				voiceChannelId: voiceChannel.id
@@ -91,6 +91,8 @@ async function startDateMatchMakerTaskForGuild(guildId, interval){
 		const stopCleanupMoment = moment(config.startTime).add(config.durationInMinutes, "minutes").subtract(10, "seconds");
 		if (currentMoment <= stopCleanupMoment) {
 			await cleanupSpeedDateRound(guildId)
+			// re-fetch doc from DB to get the latest "dates" after cleanup
+			activeGuildBotDoc = await getGuildWithActiveSessionOrThrow(guildId);
 		}
 		else {
 			console.log("Match Maker TASK - MATCH MAKING COMPLETED", {guildInfo: activeGuildBotDoc.guildInfo, roundStartTime: config.startTime, currentMoment, stopCleanupMoment})
