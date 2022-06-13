@@ -25,7 +25,7 @@ const MOD_PERMISSIONS = [
 	Permissions.FLAGS.USE_VAD,
 ]
 
-async function getOrCreateConnectoRolesAndPersistIfNeeded(guildId, interactingMember = undefined) {
+async function createAdminRolesIfNeeded(guildId, interactingMember) {
 	try {
 		const updateFields = {}
 		console.log("Get Or Create Connecto Roles - Start", { guildId });
@@ -34,9 +34,7 @@ async function getOrCreateConnectoRolesAndPersistIfNeeded(guildId, interactingMe
 		if (_.isNil(adminRole)) {
 			adminRole = await getOrCreateRole(guildId, DEFAULT_ADMIN_ROLE_NAME, "Connecto's admin role", "GOLD");
 			updateFields['config.admin'] = { roleId: adminRole.id, roleName: adminRole.name}
-			if (!_.isNil(interactingMember)) {
-				await interactingMember.roles.add(adminRole.id);
-			}
+			await interactingMember.roles.add(adminRole.id);
 		}
 		let moderatorRole = await getRoleById(guildId, _.get(guildBotDoc, 'config.moderator.roleId'))
 		if (_.isNil(moderatorRole)) {
@@ -54,6 +52,21 @@ async function getOrCreateConnectoRolesAndPersistIfNeeded(guildId, interactingMe
 	} catch (e) {
 		console.log("Get Or Create Connecto's Roles - Failed", {guildId, e});
 		throw Error(`Get Or Create Connecto's Roles - Failed - guild: ${guildId}, e: ${e}`);
+	}
+}
+
+async function getAdminRoles(guildId) {
+	try {
+		console.log("Get Admin Roles - Start", { guildId });
+		const guildBotDoc = await getGuildSpeedDateBotDocumentOrThrow(guildId);
+		let adminRole = await getRoleById(guildId, _.get(guildBotDoc, 'config.admin.roleId'))
+		let moderatorRole = await getRoleById(guildId, _.get(guildBotDoc, 'config.moderator.roleId'))
+
+		console.log("Get Admin Roles - Success", { guildId, adminRoleId: adminRole.id, adminRoleName: adminRole.name, moderatorRoleId: moderatorRole.id, moderatorRoleName: moderatorRole.name});
+		return {adminRole, moderatorRole};
+	} catch (e) {
+		console.log("Get Admin Roles - Failed", {guildId, e});
+		throw Error(`Get Admin Roles - Failed - guild: ${guildId}, e: ${e}`);
 	}
 }
 
@@ -175,6 +188,7 @@ module.exports = {
 	createLobbyProtectByRole,
 	createLobbyInvite,
 	createSpeedDateVoiceChannelRoom,
-	getOrCreateConnectoRolesAndPersistIfNeeded,
+	createAdminRolesIfNeeded,
+	getAdminRoles,
 	moveSpeedDatersToLobbyAndDeleteChannel,
 }

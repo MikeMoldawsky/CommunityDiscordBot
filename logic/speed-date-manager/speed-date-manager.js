@@ -1,19 +1,19 @@
 const client = require("../discord/client");
 const { getGuildWithActiveSessionOrThrow, updatedRoundConfig, isActiveSpeedDateSession } = require("../db/guild-db-manager");
-const { createLobbyInvite, getOrCreateConnectoRolesAndPersistIfNeeded } = require("../discord/discord-speed-date-manager");
+const { createLobbyInvite, getAdminRoles } = require("../discord/discord-speed-date-manager");
 const { initializeSpeedDateSessionForGuild } = require("../speed-date-bootstraper/speed-date-bootstrapper");
 const { startDateMatchMakerTaskWithDelay } = require("../tasks/speed-date-match-maker-task");
 const { startSpeedDateRoundTerminatorTask } = require("../tasks/speed-date-round-terminator-task");
 const moment = require("moment");
 
 
-async function bootstrapSpeedDateInfrastructureForGuild(guildId, guildName, interactingMember, rewardPlayersRole = undefined) {
+async function bootstrapSpeedDateInfrastructureForGuild(guildId, guildName, rewardPlayersRole = undefined) {
 	// 0. Active Session check as multiple sessions aren't allowed (should be fixed manually or with bot commands).
 	if(await isActiveSpeedDateSession(guildId)){
 		console.log(`Active speed date session found - can't start a new session for ${guildId}`);
 		throw Error(`There is an active speed date in progress for ${guildId}.`);
 	}
-	const {adminRole, moderatorRole} = await getOrCreateConnectoRolesAndPersistIfNeeded(guildId, interactingMember);
+	const {adminRole, moderatorRole} = await getAdminRoles(guildId);
 	await initializeSpeedDateSessionForGuild(guildId, guildName, adminRole, moderatorRole, rewardPlayersRole);
 }
 
@@ -89,7 +89,7 @@ async function startSpeedDateRound(guildId, speedDateDurationMinutes, roomCapaci
 
 async function isCommunityBotAdmin(interactionMember, guildId, guildName){
 	console.log("Checking if guild member is admin", {guildId, guildName, username: interactionMember?.user?.username})
-	const { adminRole } = await getOrCreateConnectoRolesAndPersistIfNeeded(guildId, interactionMember);
+	const { adminRole } = await getAdminRoles(guildId);
 	return interactionMember.roles.cache.has(adminRole.id);
 }
 

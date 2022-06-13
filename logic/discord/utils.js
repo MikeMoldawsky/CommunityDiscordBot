@@ -20,6 +20,7 @@ async function getOrCreateRole(guildId, name, reason, color) {
 		return role
 	} catch (e) {
 		console.log(`Failed to create Role`, {guildId, roleInfo}, e);
+		return undefined
 	}
 }
 
@@ -30,6 +31,7 @@ async function getRoleById(guildId, roleId) {
 		return guild.roles.cache.find(r => r.id === roleId);
 	} catch (e) {
 		console.log(`Failed to get role by Id`, {guildId, roleId}, e);
+		return undefined
 	}
 }
 
