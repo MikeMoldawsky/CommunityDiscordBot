@@ -1,10 +1,11 @@
 const client = require("../discord/client");
 const { getGuildWithActiveSessionOrThrow, updatedRoundConfig, isActiveSpeedDateSession } = require("../db/guild-db-manager");
-const { createLobbyInvite, getOrCreateConnectoRolesAndPersistIfNeeded } = require("../discord/discord-speed-date-manager");
+const { createLobbyInvite, getAdminRoles } = require("../discord/discord-speed-date-manager");
 const { initializeSpeedDateSessionForGuild } = require("../speed-date-bootstraper/speed-date-bootstrapper");
 const { startDateMatchMakerTaskWithDelay } = require("../tasks/speed-date-match-maker-task");
 const { startSpeedDateRoundTerminatorTask } = require("../tasks/speed-date-round-terminator-task");
 const moment = require("moment");
+const { PERMISSIONS } = require("../consts")
 
 
 async function bootstrapSpeedDateInfrastructureForGuild(guildId, guildName, rewardPlayersRole = undefined) {
@@ -13,7 +14,7 @@ async function bootstrapSpeedDateInfrastructureForGuild(guildId, guildName, rewa
 		console.log(`Active speed date session found - can't start a new session for ${guildId}`);
 		throw Error(`There is an active speed date in progress for ${guildId}.`);
 	}
-	const {adminRole, moderatorRole} = await getOrCreateConnectoRolesAndPersistIfNeeded(guildId, guildName);
+	const {adminRole, moderatorRole} = await getAdminRoles(guildId);
 	await initializeSpeedDateSessionForGuild(guildId, guildName, adminRole, moderatorRole, rewardPlayersRole);
 }
 
@@ -53,14 +54,12 @@ async function openLobbyForRole(guildId, guildName, allowedRole) {
 		const guildClient = await client.guilds.fetch(guildId);
 		const lobbyClient = await guildClient.channels.fetch(lobby.channelId);
 		await lobbyClient.permissionOverwrites.edit(
-			allowedRole.id, { 'VIEW_CHANNEL': true, 'CONNECT': true }, { reason: "Open Connecto's lobby for role", type: 0 });
+			allowedRole.id, PERMISSIONS.LOBBY_PARTICIPANT, { reason: "Open Connecto's lobby for role", type: 0 });
 	} catch (e) {
 		console.log(`SPEED DATE - OPEN LOBBY - FAILED - PERMISSION OVERRIDE`, { guildId, guildName, allowedRole, e });
 		throw Error(`SPEED DATE - OPEN LOBBY - FAILED - PERMISSION OVERRIDE - ${guildName} to role ${allowedRole} ${e}`);
 	}
 }
-
-
 
 async function startSpeedDateRound(guildId, speedDateDurationMinutes, roomCapacity, matchMakerInterval, matchMakerTaskDelay, matchMakerDurationInSeconds, dateTerminatorInterval){
 	let activeSpeedDateBotDoc;
@@ -89,7 +88,7 @@ async function startSpeedDateRound(guildId, speedDateDurationMinutes, roomCapaci
 
 async function isCommunityBotAdmin(interactionMember, guildId, guildName){
 	console.log("Checking if guild member is admin", {guildId, guildName, username: interactionMember?.user?.username})
-	const {adminRole} = await getOrCreateConnectoRolesAndPersistIfNeeded(guildId, guildName);
+	const { adminRole } = await getAdminRoles(guildId);
 	return interactionMember.roles.cache.has(adminRole.id);
 }
 

@@ -3,7 +3,7 @@ const getRandomRoomMembers = require('../speed-date-match-maker/speed-date-match
 const { cleanupSpeedDateRound } = require('../speed-date-round-cleanup/speed-date-round-cleanup-manager')
 const { getGuildWithActiveSessionOrThrow, updatedMatchMakerFieldsForGuild, findGuildAndUpdate } = require("../db/guild-db-manager");
 const moment = require("moment");
-const { createSpeedDateVoiceChannelRoom } = require("../discord/discord-speed-date-manager");
+const { createSpeedDateVoiceChannelRoom, getAdminRoles } = require("../discord/discord-speed-date-manager");
 const { safeSetTimeout } = require("../utils/safe-timeout-utils");
 
 async function createSpeedDatesMatchesInternal(guildBotDoc) {
@@ -12,9 +12,9 @@ async function createSpeedDatesMatchesInternal(guildBotDoc) {
 		activeSession: {initialization: { lobby }, round},
 		datesHistory,
 		guildInfo,
-		config: { admin, moderator }
 	} = guildBotDoc;
 	const {config, dates} = round
+	const { adminRole, moderatorRole } = await getAdminRoles(guildInfo.guildId)
 
 	const guild = await client.guilds.fetch(guildInfo.guildId)
 	const lobbyChannel = await client.channels.fetch(lobby.channelId)
@@ -31,7 +31,7 @@ async function createSpeedDatesMatchesInternal(guildBotDoc) {
 		try	{
 			const roomMembers = getRandomRoomMembers(remainingMemberIds, datesHistory, config.roomCapacity)
 			console.log(`Match maker - CREATING DATE.`, {guildId: guild.id, roomMembers});
-			let voiceChannel = await createSpeedDateVoiceChannelRoom(guild, roomMembers, admin.roleId, moderator.roleId);
+			let voiceChannel = await createSpeedDateVoiceChannelRoom(guild, roomMembers, adminRole.id, moderatorRole.id);
 			newDates.push({
 				participants: await addMembersToRoom(guild, roomMembers, voiceChannel),
 				voiceChannelId: voiceChannel.id
@@ -66,12 +66,13 @@ const addMembersToRoom = async (guild, members, vc) => {
 	}))
 }
 
-async function createSpeedDatesMatches(guildBotDoc) {
+async function createSpeedDatesMatches(guildId) {
 	try {
+		const guildBotDoc = await getGuildWithActiveSessionOrThrow(guildId);
 		await createSpeedDatesMatchesInternal(guildBotDoc);
 	} catch (e) {
-		console.log(`Failed to match make for guild ${guildBotDoc.guildInfo}`, e);
-		throw Error(`Failed to match make for guild ${guildBotDoc.guildInfo}`);
+		console.log(`Failed to match make for guild ${guildId}`, e);
+		throw Error(`Failed to match make for guild ${guildId}`);
 	}
 }
 
@@ -99,7 +100,7 @@ async function startDateMatchMakerTaskForGuild(guildId, interval){
 		// match making
 		const stopMatchingMoment = moment(config.startTime).add(matchMaker.durationInSeconds, "seconds");
 		if(currentMoment <= stopMatchingMoment){
-			await createSpeedDatesMatches(activeGuildBotDoc)
+			await createSpeedDatesMatches(guildId)
 		}
 		else {
 			console.log("Match Maker TASK - MATCH MAKING ENDED, running room cleanup only", {guildInfo: activeGuildBotDoc.guildInfo, roundStartTime: config.startTime, currentMoment, stopMatchingMoment})

@@ -2,7 +2,6 @@ const _ = require("lodash");
 const client = require("./client");
 
 
-
 async function getOrCreateRole(guildId, name, reason, color) {
 	const roleInfo = { name, reason, color};
 	try {
@@ -20,6 +19,18 @@ async function getOrCreateRole(guildId, name, reason, color) {
 		return role
 	} catch (e) {
 		console.log(`Failed to create Role`, {guildId, roleInfo}, e);
+		return undefined
+	}
+}
+
+async function getRoleById(guildId, roleId) {
+	try {
+		console.log(`Getting role by Id`, {guildId, roleId});
+		const guild = await client.guilds.fetch(guildId);
+		return guild.roles.cache.find(r => r.id === roleId);
+	} catch (e) {
+		console.log(`Failed to get role by Id`, {guildId, roleId}, e);
+		return undefined
 	}
 }
 
@@ -56,5 +67,6 @@ async function addRoleToMembers(guildClient, allowedChannelId, allowedUserId, ro
 
 module.exports = {
 	getOrCreateRole,
+	getRoleById,
 	addRoleToMembers
 }

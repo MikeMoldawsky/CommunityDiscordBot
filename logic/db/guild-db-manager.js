@@ -1,9 +1,7 @@
 const GuildCommunityBotModel = require("./models/GuildBotModel");
 const _ = require("lodash");
+const isNilOrEmpty = require("../utils/is-nil-or-empty")
 
-function isNilOrEmpty(obj){
-	return _.isNil(obj) || _.isEmpty(obj);
-}
 
 async function getGuildSpeedDateBotDocumentOrThrow(guildId, guildName = "no-param") {
 	const guildBot = await GuildCommunityBotModel.findById(guildId).exec();
@@ -159,7 +157,7 @@ async function isActiveSpeedDateSession(guildId) {
 	return !isNilOrEmpty(activeSession);
 }
 
-async function getOrCreateGuildSpeedDateBotDocument(guildId, guildName, connectoAdminRole, connectoModeratorRole) {
+async function getOrCreateGuildSpeedDateBotDocument(guildId, guildName) {
 	try {
 		let guildInfo = await GuildCommunityBotModel.findById(guildId).exec();
 		if (guildInfo) {
@@ -173,16 +171,6 @@ async function getOrCreateGuildSpeedDateBotDocument(guildId, guildName, connecto
 				guildId: guildId,
 				guildName: guildName,
 			},
-			config: {
-				admin:{
-					roleId: connectoAdminRole.id,
-					roleName: connectoAdminRole.name,
-				},
-				moderator:{
-					roleId: connectoModeratorRole.id,
-					roleName: connectoModeratorRole.name,
-				},
-			}
 		};
 		const guildCommunityBotModel = new GuildCommunityBotModel(document);
 		return await guildCommunityBotModel.save();
@@ -196,6 +184,7 @@ async function findGuildAndUpdate(guildId,  updatedGuildBotFieldsObject){
 }
 
 module.exports = {
+	getGuildSpeedDateBotDocumentOrThrow,
 	getGuildWithActiveSessionOrThrow,
 	getOrCreateGuildSpeedDateBotDocument,
 	updatedConfigFieldsForGuild,

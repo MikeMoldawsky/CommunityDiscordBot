@@ -7,6 +7,8 @@ import {FontAwesomeIcon} from '@fortawesome/react-fontawesome'
 import { faTwitter } from '@fortawesome/free-brands-svg-icons'
 import { faGem } from "@fortawesome/free-solid-svg-icons";
 
+const INSTALL_URL = "https://discord.com/oauth2/authorize?client_id=968173788946636850&permissions=326108176&scope=bot%20applications.commands"
+
 function App() {
   return (
     <div className="App">
@@ -26,8 +28,8 @@ function App() {
           <img src={logo} className="logo" alt="CONNECTO" />
           <h2>Get to know your community members in a fun and exciting way</h2>
           <div className="install-box">
-            <a target="_blank" rel="noreferrer" href="https://discord.com/oauth2/authorize?client_id=968173788946636850&permissions=326107152&scope=bot%20applications.commands">
-              <div className="button">INSTALL</div>
+            <a target="_blank" href={INSTALL_URL}>
+              <div className="button">INSTALL CONNECTO</div>
             </a>
           </div>
         </div>

@@ -97,6 +97,12 @@ const commandJsonData = [
 	}
 })();
 
+if (process.env.DEV !== "true") {
+	process.on('uncaughtException', function(err) {
+		console.error('Caught unhandled exception: ' + err);
+	});
+}
+
 /**********************************************************************/
 // Login into your client application with bot's token.
 client.login(process.env.DISCORD_TOKEN);

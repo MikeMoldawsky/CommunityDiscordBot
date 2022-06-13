@@ -8,7 +8,7 @@ const DEFAULT_INVITE_DESCRIPTION = "Congratulations! You are invited to:\n\nThe 
 
 // music defaults
 const DEFAULT_LOBBY_MUSIC_URL = 'https://www.youtube.com/watch?v=VBlFHuCzPgY';
-const DEFAULT_LOBBY_MUSIC_VOLUME = 10;
+const DEFAULT_LOBBY_MUSIC_VOLUME = 5;
 // match-maker defaults
 const DEFAULT_MATCH_MAKER_DURATION_SECONDS = 30; // match in the first 30 seconds
 
@@ -91,8 +91,8 @@ const RoleConfigSchema = new mongoose.Schema({
 
 const ConfigSchema = new mongoose.Schema({
 	voiceLobby: {type: SpeedDateVoiceLobbyConfig, required: true, default: () => ({})},
-	admin: {type: RoleConfigSchema, required: true},
-	moderator: {type: RoleConfigSchema, required: true},
+	admin: {type: RoleConfigSchema},
+	moderator: {type: RoleConfigSchema},
 }, { _id : false })
 
 const GuildInfoSchema = new mongoose.Schema({

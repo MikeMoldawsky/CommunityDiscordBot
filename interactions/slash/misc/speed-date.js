@@ -13,6 +13,8 @@ const {
 } = require('../../../logic/config/appconf.prod')
 const { playMusicInLobby, reloadMusicInLobbyIfInActiveSession } = require('../../../logic/discord/discord-music-player')
 const { endSpeedDateSession } = require("../../../logic/speed-date-session-terminator/speed-date-session-cleanup-manager");
+const { getOrCreateGuildSpeedDateBotDocument } = require("../../../logic/db/guild-db-manager")
+const { createAdminRolesIfNeeded } = require("../../../logic/discord/discord-speed-date-manager")
 
 // Sub Commands
 const LOBBY_GROUP_COMMAND = "lobby";
@@ -208,6 +210,8 @@ module.exports = {
 			guildName = interaction.guild.name;
 			const ephemeral = isEphemeral(groupCommand, subcommand);
 			await interaction.deferReply({ ephemeral }); // Slash Commands has only 3 seconds to reply to an interaction.
+			await getOrCreateGuildSpeedDateBotDocument(guildId, guildName);
+			await createAdminRolesIfNeeded(guildId, interaction.member)
 			const isBotAdmin = await isCommunityBotAdmin(interaction.member, guildId, guildName);
 			if(!isBotAdmin){
 					await interaction.followUp({

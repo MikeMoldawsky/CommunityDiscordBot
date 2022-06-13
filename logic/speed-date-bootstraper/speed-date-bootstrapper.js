@@ -1,4 +1,4 @@
-const { createLobbyProtectByRole } = require("../discord/discord-speed-date-manager");
+const { createLobby } = require("../discord/discord-speed-date-manager");
 const { updatedActiveSessionOnCompleteConfig } = require("../db/guild-db-manager");
 const client = require("../discord/client");
 
@@ -10,7 +10,7 @@ async function initializeSpeedDateSessionForGuild(guildId, guildName, adminRole,
 			lobbyModeratorsRoleName: lobbyModeratorsRole.name, rewardPlayersRoleId: rewardPlayersRole?.id,
 			rewardPlayersRoleName: rewardPlayersRole?.name});
 		// 1. Initialize Speed Date Infrastructure - Lobby etc...
-		const lobbyChannel = await createLobbyProtectByRole(guildClient, guildId, adminRole, lobbyModeratorsRole);
+		const lobbyChannel = await createLobby(guildClient, guildId, adminRole, lobbyModeratorsRole);
 		await updatedActiveSessionOnCompleteConfig(guildId, rewardPlayersRole);
 		return lobbyChannel;
 	} catch (e) {
