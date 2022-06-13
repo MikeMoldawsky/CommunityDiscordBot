@@ -19,38 +19,47 @@ a {
   text-decoration: none;
 }
 
-header {
-  position: fixed;
-  width: 100%;
-  color: $twitter;
-  display: flex;
-  justify-content: flex-end;
-  padding: 30px;
-
-  svg {
-    height: 30px !important;
-    width: 30px !important;
-    margin-left: 20px;
-  }
-}
-
 .App {
   height: 100%;
   text-align: center;
   color: white;
 }
 
-.top-box {
+header {
+  position: fixed;
+  width: 100%;
+  color: white;
+  display: flex;
+  justify-content: flex-end;
+  padding: 15px;
+  background-color: black;
+
+  svg, img {
+    height: 24px !important;
+    width: 24px !important;
+    margin-left: 15px;
+  }
+
+  svg.fa-twitter {
+    color: $twitter;
+  }
+
+  img {
+    filter: invert(1);
+  }
+}
+
+main {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: space-between;
   height: 100%;
+}
 
-  &>div:nth-child(1) {
-    padding: 30px 30px 0;
-    flex-grow: 2;
-  }
+.top-content {
+  padding: 30px 30px 0;
+  flex-grow: 2;
 
   h1 {
     margin: 20px 0 40px;
@@ -64,21 +73,19 @@ header {
   }
 
   .logo {
-    width: 60%;
+    width: 70%;
     margin-top: 40px;
     z-index: 0;
   }
 
-  .video-placeholder {
-    //opacity: .8;
-
-    video {
-      width: 100%;
-    }
-  }
-
   .install-box {
     padding: 40px;
+  }
+}
+
+.bottom-content {
+  video {
+    width: 100%;
   }
 }
 
@@ -97,17 +104,30 @@ header {
   }
 }
 
-@media (min-aspect-ratio: 1/1) {
-  .top-box {
+@media (min-aspect-ratio: 1/1) and (min-width: 769px){
+  header {
+    padding: 20px;
+
+    svg, img {
+      height: 30px !important;
+      width: 30px !important;
+      margin-left: 20px;
+    }
+  }
+
+  main {
     flex-direction: row;
-    position: relative;
     margin: 0 auto;
     width: 80%;
+    max-width: 1400px;
+  }
 
-    &>div:nth-child(1) {
-      flex-grow: unset;
-      width: 30%;
-    }
+  .top-content {
+    position: relative;
+    max-width: 380px;
+    padding: 0 20px;
+    margin-right: 7%;
+    flex-grow: unset;
 
     .logo {
       margin-top: 0;
@@ -116,19 +136,5 @@ header {
     .install-box {
       padding: 40px 0;
     }
-
-    .video-placeholder {
-      width: 60%;
-
-    }
   }
 }
-
-//@keyframes App-logo-spin {
-//  from {
-//    transform: rotate(0deg);
-//  }
-//  to {
-//    transform: rotate(360deg);
-//  }
-//}
