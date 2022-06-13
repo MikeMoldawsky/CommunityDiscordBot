@@ -66,7 +66,7 @@ async function getOrCreateLobby(guildClient, adminRoleId, lobbyModeratorsRoleId)
 				reason: "Connecto's speed dating lobby",
 				permissionOverwrites: [
 					{ id: guildClient.id, deny: PERMISSIONS.LOBBY_DENY }, // deny
-					{ id: adminRoleId, allow: PERMISSIONS.LOBBY_MODERATOR },
+					{ id: adminRoleId, allow: PERMISSIONS.LOBBY_ADMIN },
 					{ id: lobbyModeratorsRoleId, allow: PERMISSIONS.LOBBY_MODERATOR },
 					{ id: process.env.DISCORD_CLIENT_ID, allow: PERMISSIONS.LOBBY_CONNECTO },
 				]
@@ -115,7 +115,7 @@ async function createSpeedDateVoiceChannelRoom(guild, memberIds, adminRoleId, mo
 	const permissionOverwrites = [
 		{ id: guild.id, deny: PERMISSIONS.ROOM_DENY },
 		{ id: process.env.DISCORD_CLIENT_ID, allow: PERMISSIONS.ROOM_CONNECTO },
-		{ id: adminRoleId, allow: PERMISSIONS.ROOM_MODERATOR },
+		{ id: adminRoleId, allow: PERMISSIONS.ROOM_ADMIN },
 		{ id: modRoleId, allow: PERMISSIONS.ROOM_MODERATOR },
 		..._.map(memberIds, id => ({ id: id, allow: PERMISSIONS.ROOM_PARTICIPANT }))
 	];
