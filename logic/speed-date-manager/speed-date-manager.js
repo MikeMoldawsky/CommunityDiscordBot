@@ -5,6 +5,7 @@ const { initializeSpeedDateSessionForGuild } = require("../speed-date-bootstrape
 const { startDateMatchMakerTaskWithDelay } = require("../tasks/speed-date-match-maker-task");
 const { startSpeedDateRoundTerminatorTask } = require("../tasks/speed-date-round-terminator-task");
 const moment = require("moment");
+const { PERMISSIONS } = require("../consts")
 
 
 async function bootstrapSpeedDateInfrastructureForGuild(guildId, guildName, rewardPlayersRole = undefined) {
@@ -53,14 +54,12 @@ async function openLobbyForRole(guildId, guildName, allowedRole) {
 		const guildClient = await client.guilds.fetch(guildId);
 		const lobbyClient = await guildClient.channels.fetch(lobby.channelId);
 		await lobbyClient.permissionOverwrites.edit(
-			allowedRole.id, { 'VIEW_CHANNEL': true, 'CONNECT': true }, { reason: "Open Connecto's lobby for role", type: 0 });
+			allowedRole.id, PERMISSIONS.LOBBY_PARTICIPANT, { reason: "Open Connecto's lobby for role", type: 0 });
 	} catch (e) {
 		console.log(`SPEED DATE - OPEN LOBBY - FAILED - PERMISSION OVERRIDE`, { guildId, guildName, allowedRole, e });
 		throw Error(`SPEED DATE - OPEN LOBBY - FAILED - PERMISSION OVERRIDE - ${guildName} to role ${allowedRole} ${e}`);
 	}
 }
-
-
 
 async function startSpeedDateRound(guildId, speedDateDurationMinutes, roomCapacity, matchMakerInterval, matchMakerTaskDelay, matchMakerDurationInSeconds, dateTerminatorInterval){
 	let activeSpeedDateBotDoc;

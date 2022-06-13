@@ -1,29 +1,10 @@
-const { MessageEmbed, Permissions } = require("discord.js");
-const { updatedLobby, getOrCreateGuildSpeedDateBotDocument, findGuildAndUpdate, getGuildSpeedDateBotDocumentOrThrow } = require("../db/guild-db-manager");
+const { MessageEmbed } = require("discord.js");
+const { updatedLobby, findGuildAndUpdate, getGuildSpeedDateBotDocumentOrThrow } = require("../db/guild-db-manager");
 const _ = require("lodash");
 const { getOrCreateRole, getRoleById } = require("./utils");
 const getRandomEmoji = require("../utils/get-random-emoji");
+const { PERMISSIONS, DEFAULT_LOBBY_NAME, DEFAULT_ADMIN_ROLE_NAME, DEFAULT_MODERATOR_ROLE_NAME } = require("../consts")
 
-
-const DEFAULT_LOBBY_NAME = "Connecto Lobby";
-const DEFAULT_ADMIN_ROLE_NAME = "connecto-admin";
-const DEFAULT_MODERATOR_ROLE_NAME = "connecto-moderator";
-
-const PARTICIPANT_PERMISSIONS = [
-	Permissions.FLAGS.VIEW_CHANNEL,
-	Permissions.FLAGS.CONNECT,
-	Permissions.FLAGS.SPEAK,
-	Permissions.FLAGS.USE_VAD,
-]
-
-const MOD_PERMISSIONS = [
-	Permissions.FLAGS.VIEW_CHANNEL,
-	Permissions.FLAGS.CONNECT,
-	Permissions.FLAGS.SPEAK,
-	Permissions.FLAGS.MUTE_MEMBERS,
-	Permissions.FLAGS.MOVE_MEMBERS,
-	Permissions.FLAGS.USE_VAD,
-]
 
 async function createAdminRolesIfNeeded(guildId, interactingMember) {
 	try {
@@ -70,7 +51,7 @@ async function getAdminRoles(guildId) {
 	}
 }
 
-async function getOrCreateVoiceChannelProtectedByRole(guildClient, adminRoleId) {
+async function getOrCreateLobby(guildClient, adminRoleId, lobbyModeratorsRoleId) {
 	try {
 		// TODO - should NOT find the router by the name but from DB through the ID
 		let lobbyChannel = guildClient.channels.cache.find(c => c.name === DEFAULT_LOBBY_NAME);
@@ -83,9 +64,10 @@ async function getOrCreateVoiceChannelProtectedByRole(guildClient, adminRoleId) 
 				type: "GUILD_VOICE",
 				reason: "Connecto's speed dating lobby",
 				permissionOverwrites: [
-					{ id: guildClient.id, deny: PARTICIPANT_PERMISSIONS }, // deny
-					{ id: adminRoleId, allow: MOD_PERMISSIONS },
-					{ id: process.env.DISCORD_CLIENT_ID, allow: MOD_PERMISSIONS },
+					{ id: guildClient.id, deny: PERMISSIONS.LOBBY_DENY }, // deny
+					{ id: adminRoleId, allow: PERMISSIONS.LOBBY_MODERATOR },
+					{ id: lobbyModeratorsRoleId, allow: PERMISSIONS.LOBBY_MODERATOR },
+					{ id: process.env.DISCORD_CLIENT_ID, allow: PERMISSIONS.LOBBY_CONNECTO },
 				]
 			});
 		}
@@ -95,10 +77,10 @@ async function getOrCreateVoiceChannelProtectedByRole(guildClient, adminRoleId) 
 	}
 }
 
-async function createLobbyProtectByRole(guildClient, guildId,  adminRole, lobbyModeratorsRole) {
+async function createLobby(guildClient, guildId,  adminRole, lobbyModeratorsRole) {
 	try {
 		console.log("Lobby Creation - START", { guildId, adminRoleId: adminRole.id, adminRoleName: adminRole.name});
-		const lobbyChannel = await getOrCreateVoiceChannelProtectedByRole(guildClient, adminRole.id);
+		const lobbyChannel = await getOrCreateLobby(guildClient, adminRole.id, lobbyModeratorsRole.id);
 		const lobby = {
 			lobbyModeratorsRoleId: lobbyModeratorsRole.id,
 			lobbyModeratorsRoleName: lobbyModeratorsRole.name,
@@ -130,11 +112,11 @@ async function createLobbyInvite(lobby, config) {
 
 async function createSpeedDateVoiceChannelRoom(guild, memberIds, adminRoleId, modRoleId) {
 	const permissionOverwrites = [
-		{ id: guild.id, deny: [Permissions.FLAGS.CONNECT] },
-		{ id: process.env.DISCORD_CLIENT_ID, allow: [Permissions.FLAGS.VIEW_CHANNEL, Permissions.FLAGS.CONNECT, Permissions.FLAGS.MOVE_MEMBERS] },
-		{ id: adminRoleId, allow: MOD_PERMISSIONS },
-		{ id: modRoleId, allow: MOD_PERMISSIONS },
-		..._.map(memberIds, id => ({ id: id, allow: PARTICIPANT_PERMISSIONS }))
+		{ id: guild.id, deny: PERMISSIONS.ROOM_DENY },
+		{ id: process.env.DISCORD_CLIENT_ID, allow: PERMISSIONS.ROOM_CONNECTO },
+		{ id: adminRoleId, allow: PERMISSIONS.ROOM_MODERATOR },
+		{ id: modRoleId, allow: PERMISSIONS.ROOM_MODERATOR },
+		..._.map(memberIds, id => ({ id: id, allow: PERMISSIONS.ROOM_PARTICIPANT }))
 	];
 	return guild.channels.create(`Connecto Room ${getRandomEmoji('Animals & Nature')}`, {
 		type: "GUILD_VOICE",
@@ -185,7 +167,7 @@ async function moveSpeedDatersToLobbyAndDeleteChannel(lobby, rooms, guildClient,
 }
 
 module.exports = {
-	createLobbyProtectByRole,
+	createLobby,
 	createLobbyInvite,
 	createSpeedDateVoiceChannelRoom,
 	createAdminRolesIfNeeded,
