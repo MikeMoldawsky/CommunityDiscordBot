@@ -2,7 +2,6 @@ const _ = require("lodash");
 const client = require("./client");
 
 
-
 async function getOrCreateRole(guildId, name, reason, color) {
 	const roleInfo = { name, reason, color};
 	try {

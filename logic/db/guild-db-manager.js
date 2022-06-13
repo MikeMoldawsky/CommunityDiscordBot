@@ -1,9 +1,7 @@
 const GuildCommunityBotModel = require("./models/GuildBotModel");
 const _ = require("lodash");
+const isNilOrEmpty = require("../utils/is-nil-or-empty")
 
-function isNilOrEmpty(obj){
-	return _.isNil(obj) || _.isEmpty(obj);
-}
 
 async function getGuildSpeedDateBotDocumentOrThrow(guildId, guildName = "no-param") {
 	const guildBot = await GuildCommunityBotModel.findById(guildId).exec();

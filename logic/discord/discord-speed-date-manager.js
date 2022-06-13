@@ -4,6 +4,7 @@ const _ = require("lodash");
 const { getOrCreateRole, getRoleById } = require("./utils");
 const getRandomEmoji = require("../utils/get-random-emoji");
 const { PERMISSIONS, DEFAULT_LOBBY_NAME, DEFAULT_ADMIN_ROLE_NAME, DEFAULT_MODERATOR_ROLE_NAME } = require("../consts")
+const isNilOrEmpty = require("../utils/is-nil-or-empty")
 
 
 async function createAdminRolesIfNeeded(guildId, interactingMember) {
@@ -12,13 +13,13 @@ async function createAdminRolesIfNeeded(guildId, interactingMember) {
 		console.log("Get Or Create Connecto Roles - Start", { guildId });
 		const guildBotDoc = await getGuildSpeedDateBotDocumentOrThrow(guildId);
 		let adminRole = await getRoleById(guildId, _.get(guildBotDoc, 'config.admin.roleId'))
-		if (_.isNil(adminRole)) {
+		if (isNilOrEmpty(adminRole)) {
 			adminRole = await getOrCreateRole(guildId, DEFAULT_ADMIN_ROLE_NAME, "Connecto's admin role", "GOLD");
 			updateFields['config.admin'] = { roleId: adminRole.id, roleName: adminRole.name}
 			await interactingMember.roles.add(adminRole.id);
 		}
 		let moderatorRole = await getRoleById(guildId, _.get(guildBotDoc, 'config.moderator.roleId'))
-		if (_.isNil(moderatorRole)) {
+		if (isNilOrEmpty(moderatorRole)) {
 			moderatorRole = await getOrCreateRole(guildId, DEFAULT_MODERATOR_ROLE_NAME, "Connecto's moderator role", "WHITE");
 			updateFields['config.moderator'] = { roleId: moderatorRole.id, roleName: moderatorRole.name}
 		}
